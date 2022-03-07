@@ -6,21 +6,28 @@
 * Des:         
 */
 #include "Log.h"
+
+#include <memory>
 using namespace SinBack;
 
 Log::Logger::Logger(const char *filename, LogLevel level, Size_t max_log_num)
-    : flag_(false)
+    : stop_(false)
+    , last_time_(clock())
+    , time_()
     , max_log_num_(max_log_num)
     , level_(level)
     , th_(nullptr)
     , file_(nullptr)
+    , front_(std::make_unique<std::queue<std::string>>())
+    , back_(std::make_unique<std::queue<std::string>>())
 {
     if (filename){
-        this->file_.reset(new Base::File(filename, Base::File::RDWR));
+        this->file_ = std::make_unique<Base::File>(filename, Base::File::RDWR);
     }else{
-        this->file_.reset(new Base::File("SinBack-tmp.log", Base::File::RDWR));
+        this->file_ = std::make_unique<Base::File>("SinBack-tmp.log", Base::File::RDWR);
     }
-    this->th_.reset(new std::thread(&Logger::RunInBack, this));
+    this->th_ = std::make_unique<std::thread>(&Logger::RunInBack, this);
+    Base::getdatetimenow(&this->time_);
 }
 
 Log::Logger::~Logger()
@@ -31,23 +38,20 @@ Log::Logger::~Logger()
 
 void Log::Logger::RunInBack()
 {
-    if (this->flag_){
-        return;
-    }
     std::string buf;
-    this->flag_ = true;
-
-    while (this->flag_){
+    for (;;){
         {
             std::unique_lock<std::mutex> lock(this->back_mutex_);
-            this->cv_.wait(lock, [this]() -> bool {
-                return (!this->flag_ || !this->back_.empty());
+            this->cv_.wait(lock, [this]{
+                return (this->stop_ || !this->back_->empty());
             });
-            buf = this->back_.front();
-            this->front_.pop();
-            this->file_->write(buf.c_str(), buf.size(), true);
-            if (!this->flag_){
-                break;
+            if (this->stop_ && this->back_->empty()){
+                return;
+            }
+            if (!this->back_->empty()) {
+                buf = std::move(this->back_->front());
+                this->back_->pop();
+                this->file_->write(buf.c_str(), buf.size(), true);
             }
         }
     }
@@ -57,6 +61,10 @@ void Log::Logger::swap_buffer()
 {
     {
         std::unique_lock<std::mutex> lock(this->back_mutex_);
+        while(!this->back_->empty()){
+            this->front_->push(std::move(this->back_->front()));
+            this->back_->pop();
+        }
         this->back_.swap(this->front_);
     }
     this->cv_.notify_one();
@@ -64,7 +72,8 @@ void Log::Logger::swap_buffer()
 
 void Log::Logger::stop()
 {
-    this->flag_ = false;
+    this->stop_ = true;
+    this->swap_buffer();
     if (this->th_->joinable()){
         this->th_->join();
     }

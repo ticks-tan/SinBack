@@ -38,7 +38,7 @@ namespace SinBack {
 #define SIN_STR(str)    (str)
 #endif
 
-
+#define STR_CTL     ('\n')
 
 }
 

@@ -22,11 +22,11 @@ namespace SinBack
         public:
             enum FileMode
             {
-                RDONLY = 1,
-                WRONLY = 2,
-                RDWR   = 3,
-                APPEND = 4,
-                EXIST  = 5
+                RDONLY = 00,
+                WRONLY = 01,
+                RDWR   = 02,
+                APPEND = 02000,
+                EXIST  = 0200
             };
         public:
             explicit File(const char* filename, int mode = RDWR);

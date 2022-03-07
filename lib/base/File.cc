@@ -53,6 +53,9 @@ Base::File::File(const char *filename, int mode)
         this->mode_ |= APPEND;
     }
     std::strcpy(this->file_name_, filename);
+    if (this->fp_ == nullptr){
+        printf("open file err!\n");
+    }
     ERROR:
     return;
 }
