@@ -61,7 +61,7 @@ namespace SinBack
             }
             // 写入 error 级别日志
             template<typename ... Args>
-            void error(const char* format, const Args&...args){
+            void error(fmt::format_string<Args...> format, const Args&...args){
                 if (this->level_ > Error){
                     return;
                 }
