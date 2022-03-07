@@ -13,7 +13,7 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
-#include "fmt/format.h"
+#include "libfmt/format.h"
 #include "File.h"
 
 namespace SinBack
@@ -39,7 +39,7 @@ namespace SinBack
                 if (this->level_ > Info){
                     return;
                 }
-                std::string buf = fmt::format(format, args...);
+                const std::string buf = fmt::format(format, args...);
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
                 this->front_.push(buf);
                 if (this->front_.size() > this->max_log_num_){
@@ -52,7 +52,7 @@ namespace SinBack
                 if (this->level_ > Warn){
                     return;
                 }
-                std::string buf = fmt::format(format, args...);
+                const std::string buf = fmt::format(format, args...);
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
                 this->front_.push(buf);
                 if (this->front_.size() > this->max_log_num_){
@@ -65,7 +65,7 @@ namespace SinBack
                 if (this->level_ > Error){
                     return;
                 }
-                std::string buf = fmt::format(format, args...);
+                const std::string buf = fmt::format(format, args...);
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
                 this->front_.push(buf);
                 if (this->front_.size() > this->max_log_num_){
