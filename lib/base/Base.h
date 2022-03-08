@@ -29,6 +29,11 @@ namespace SinBack {
     typedef int Int;
     typedef long int Long;
     typedef long long int LLong;
+#ifdef OS_WINDOWS
+    typedef char Char;
+#else
+    typedef char Char;
+#endif
     // 字符串结尾
 #define CHAR_END    ('\0')
 // 字符串
@@ -37,9 +42,8 @@ namespace SinBack {
 #else
 #define SIN_STR(str)    (str)
 #endif
-
+// 字符换行
 #define STR_CTL     ('\n')
-
 }
 
 #endif //SIN_BACK_BASE_H

@@ -31,18 +31,16 @@ SinBack::SSize_t SinBack::Base::gettimeofday_us(){
 bool SinBack::Base::getdatetimenow(DateTime* dt){
     auto now_time = std::chrono::system_clock::now();
     time_t time = std::chrono::system_clock::to_time_t(now_time);
-    tm* t = gmtime(&time);
-    if (t){
-        dt->year = t->tm_year + 1900;
-        dt->month = t->tm_mon + 1;
-        dt->day = t->tm_mday;
-        dt->weekday = t->tm_wday;
-        dt->hour = t->tm_hour;
-        dt->min = t->tm_min;
-        dt->sec = t->tm_sec;
-        return true;
-    }
-    return false;
+    tm t{};
+    localtime_r(&time, &t);
+    dt->year = t.tm_year + 1900;
+    dt->month = t.tm_mon + 1;
+    dt->day = t.tm_mday;
+    dt->weekday = t.tm_wday;
+    dt->hour = t.tm_hour;
+    dt->min = t.tm_min;
+    dt->sec = t.tm_sec;
+    return true;
 }
 // 获取当前时间并格式化为指定格式
 std::string SinBack::Base::getdatetimenow(const std::string& format){

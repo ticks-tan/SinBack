@@ -21,12 +21,12 @@ namespace SinBack
         {
         public:
 #ifdef OS_WINDOWS
-            typedef wchar_t value_type;
-            static constexpr value_type preferred_separator = L'\\';
+            typedef Char value_type;
+            static constexpr value_type preferred_separator = SIN_STR('\\');
 #endif
 #ifdef OS_LINUX
-            typedef char value_type;
-            static constexpr value_type preferred_separator = '/';
+            typedef Char value_type;
+            static constexpr value_type preferred_separator = SIN_STR('/');
 #endif
         typedef std::basic_string<value_type> string_type;
         public:
