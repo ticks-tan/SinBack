@@ -48,7 +48,7 @@ void Log::Logger::thread_run_func()
                 std::unique_lock<std::mutex> lock(this->back_mutex_);
                 // 如果后端缓冲区为空，则休眠超时 3s
                 if (this->back_buf_->empty()) {
-                    this->cv_.wait_for(lock, std::chrono::seconds(1), [this] {
+                    this->cv_.wait_for(lock, std::chrono::seconds(3), [this] {
                         return (this->stop_) || (!this->back_buf_->empty());
                     });
                 }
@@ -56,7 +56,6 @@ void Log::Logger::thread_run_func()
                 if (!this->stop_ && this->back_buf_->empty()) {
                     std::unique_lock<std::mutex> lock1(this->front_mutex_);
                     this->back_buf_.swap(this->front_buf_);
-                    fmt::print("swap. . .\n");
                 }
                 // 全部数据都处理完成，则退出
                 if (this->stop_ && this->back_buf_->empty() && this->front_buf_->empty()) {

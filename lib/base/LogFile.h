@@ -3,7 +3,7 @@
 * CreateDate: 2022-03-03 22:05:39
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:
+* Des:        日志文件
 */
 #ifndef SINBACK_LOGFILE_H
 #define SINBACK_LOGFILE_H
@@ -55,7 +55,7 @@ namespace SinBack
         // 滚动日志文件
         class RollLogFile : public LogFile
         {
-            // 默认滚动日志大小为 10M
+            // 默认滚动日志大小为 30M
             static const Size_t DEFAULT_ROLL_SIZE = 1024 * 1024 * 30;
         public:
             RollLogFile();
@@ -65,7 +65,9 @@ namespace SinBack
             Size_t write(const string_type& buf) override;
 
         private:
+            // 新文件命名
             void roll_file();
+            // 刷新文件大小
             void refresh_file_size();
         private:
             // 基础文件名

@@ -15,6 +15,10 @@ Base::LogFile::LogFile()
 {
 }
 
+/**
+ * 构造函数
+ * @param filename: 文件名字(不包括扩展名)
+ */
 Base::LogFile::LogFile(const Char *filename)
     : LogFile()
 {
@@ -29,6 +33,7 @@ Base::LogFile::~LogFile()
     this->close();
 }
 
+// 刷新文件输出缓冲区
 void Base::LogFile::flush()
 {
     if (this->fp_){
@@ -36,9 +41,10 @@ void Base::LogFile::flush()
     }
 }
 
+// 关闭文件
 void Base::LogFile::close()
 {
-    // 写入缓冲区内容
+    // 文件即将关闭，写入缓冲区剩余内容
     if (!this->buffer_.empty() && this->fp_){
         this->close_ = true;
         this->write("");
@@ -51,27 +57,36 @@ void Base::LogFile::close()
     }
 }
 
+/**
+ * 写入文件
+ * @param buf: 待写入内容
+ * @return
+ */
 Size_t Base::LogFile::write(const string_type& buf)
 {
     if (!buf.empty()) {
         this->buffer_ += buf;
     }
-    // 缓冲区没满，不进行真正的写入操作
+    // 缓冲区未满，不进行真正的写入操作
+    // 如果 close 标志为 true, 说明文件即将关闭，强制写入缓冲区内容
     if (this->buffer_.length() < LOGFILE_MAX_BUFFER_LEN && !this->close_){
         return 0;
     }
     if (!this->fp_){
         return 0;
     }
+    // 缓冲区满，执行写入操作
     Size_t total_len = 0, buf_len = this->buffer_.length();
     Int err_count = 0;
     Size_t write_len;
+    // 确保写入全部内容
     while (total_len < buf_len){
         write_len = ::fwrite(this->buffer_.data() + total_len, 1, sizeof(Char) * (buf_len - total_len), this->fp_);
         if (write_len > 0){
             total_len += write_len
 ;        }
         if (total_len < buf_len){
+            // 判断是否为写入出错，出错重试次数最多为 3
             if (::ferror(this->fp_)){
                 if (err_count > 3){
                     break;
@@ -109,10 +124,15 @@ Base::RollLogFile::RollLogFile(const Char *filename, Size_t max_len)
 
 Base::RollLogFile::~RollLogFile() = default;
 
+/**
+ * 写入内容
+ * @param buf： 待写入内容
+ * @return
+ */
 Size_t Base::RollLogFile::write(const string_type& buf)
 {
     Size_t write_len = LogFile::write(buf);
-    // 真正执行写入操作时更新文件大小，并判断是否需要滚动
+    // 真正执行写入操作才更新文件大小，并判断是否需要滚动
     if (write_len > 0){
         refresh_file_size();
         if (this->file_size_ > this->max_len_){
@@ -122,6 +142,7 @@ Size_t Base::RollLogFile::write(const string_type& buf)
     return write_len;
 }
 
+// 滚动日志
 void Base::RollLogFile::roll_file()
 {
     ++this->roll_count_;
@@ -135,6 +156,7 @@ void Base::RollLogFile::roll_file()
     }
 }
 
+// 刷新文件大小
 void Base::RollLogFile::refresh_file_size()
 {
     FILE* fp = this->file_fp();

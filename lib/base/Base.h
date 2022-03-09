@@ -27,6 +27,7 @@ namespace SinBack {
     typedef unsigned long Size_t;
     typedef long SSize_t;
     typedef int Int;
+    typedef unsigned long ULong;
     typedef long int Long;
     typedef long long int LLong;
 #ifdef OS_WINDOWS
