@@ -80,3 +80,8 @@ SinBack::Long SinBack::Base::datetimeto(DateTime date){
     time.tm_sec = date.sec;
     return mktime(&time);
 }
+
+void SinBack::Base::sleep_ms(Int time)
+{
+    std::this_thread::sleep_for(std::chrono::microseconds(time));
+}

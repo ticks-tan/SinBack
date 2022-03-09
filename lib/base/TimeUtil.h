@@ -10,6 +10,7 @@
 
 #include <chrono>
 #include <string>
+#include <thread>
 #include "Base.h"
 
 #ifdef OS_WINDOWS
@@ -83,6 +84,8 @@ namespace SinBack
         DateTime todatetime(Long time);
         // DateTime转换为 time_t
         Long datetimeto(DateTime date);
+        // 线程休眠
+        void sleep_ms(Int time);
 
     }
 }

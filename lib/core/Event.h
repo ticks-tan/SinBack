@@ -13,6 +13,7 @@
 #include <string>
 #include <queue>
 #include <atomic>
+#include <mutex>
 #include "base/SocketUtil.h"
 
 namespace SinBack
@@ -72,7 +73,7 @@ namespace SinBack
         using IOWriteCB = std::function<void(IOEvent*, const std::string&)>;
         using IOCloseCB = std::function<void(IOEvent*)>;
 
-        using EventLoopPtr = std::shared_ptr<EventLoop>;
+        using EventLoopPtr = EventLoop*;
         // 事件基类
         struct Event{
             // pid
@@ -83,6 +84,8 @@ namespace SinBack
             bool init_ = false;
             // 事件类型
             EventType type_;
+            // 事件优先级
+            EventPriority priority_;
             // EventLoop
             EventLoopPtr loop_;
             // 是否活跃
@@ -100,6 +103,7 @@ namespace SinBack
                 id_ = event_next_id();
                 type_ = EventType::Event_Type_Custom;
                 active_ = destroy_ = pending_ = false;
+                priority_ = Event_Priority_Lowest;
                 init_ = true;
             }
         };
@@ -127,6 +131,8 @@ namespace SinBack
             string_type read_buf_;
             // 写入队列
             std::queue<string_type> write_queue_;
+            // 写入锁
+            std::mutex write_mutex_;
 
             // 初始化
             void init() override{
@@ -157,6 +163,14 @@ namespace SinBack
             }
         };
 
+        // 空闲事件
+        struct IdleEvent : Event
+        {
+            static const Int infinity = -1;
+
+            // 执行次数
+            Int repeat_ = 0;
+        };
     }
 }
 

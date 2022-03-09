@@ -35,7 +35,7 @@ namespace SinBack
             static const Int default_selector_size = 256;
             friend class EventLoop;
         public:
-            Selector();
+            explicit Selector(EventLoop* loop);
             ~Selector();
             // 添加事件
             bool add_event(Base::socket_t fd, Int events);
@@ -49,7 +49,7 @@ namespace SinBack
             // 临时事件数组
             std::array<epoll_event, default_selector_size> events_;
             // EventLoop
-            std::shared_ptr<EventLoop> loop_;
+            EventLoop* loop_;
             // error
             bool error_;
         };

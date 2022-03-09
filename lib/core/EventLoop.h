@@ -8,8 +8,10 @@
 #ifndef SINBACK_EVENTLOOP_H
 #define SINBACK_EVENTLOOP_H
 
-#include <forward_list>
+#include <list>
 #include <unordered_map>
+#include <unordered_set>
+#include "base/Logger.h"
 #include "core/Selector.h"
 
 namespace SinBack
@@ -18,17 +20,108 @@ namespace SinBack
     {
         class EventLoop : noncopyable
         {
-            using EventPtr = std::weak_ptr<Event>;
-            using EventPtrList = std::forward_list<EventPtr>;
+        public:
+            EventLoop();
+            ~EventLoop();
+
+            static ULong event_loop_next_id();
+            // 处理事件
+            static void loop_event_pending(const std::weak_ptr<Event>& ev){
+                std::shared_ptr<Event> event_ptr = ev.lock();
+                if (event_ptr){
+                    if (!event_ptr->pending_){
+                        event_ptr->pending_ = true;
+                        // 将事件添加到待处理事件链表
+                        event_ptr->loop_->pending_evs_[event_ptr->priority_].push_front(event_ptr);
+                    }
+                }
+            }
+            // 让事件活跃
+            static void loop_event_active(const std::weak_ptr<Event>& ev){
+                std::shared_ptr<Event> event_ptr = ev.lock();
+                if (event_ptr){
+                    if (!event_ptr->active_){
+                        event_ptr->active_ = true;
+                        event_ptr->loop_->actives_count_++;
+                    }
+                }
+            }
+            // 让事件处于非活跃
+            static void loop_event_inactive(const std::weak_ptr<Event>& ev){
+                std::shared_ptr<Event> event_ptr = ev.lock();
+                if (event_ptr){
+                    if (event_ptr->active_){
+                        event_ptr->active_ = false;
+                        event_ptr->loop_->actives_count_--;
+                    }
+                }
+            }
+            // 删除事件
+            static void loop_event_delete(std::weak_ptr<Event>& ev){
+
+            }
+            // 添加事件
+            static void loop_event_add(std::weak_ptr<Event>& ev){
+
+            }
+
+            // 运行
+            bool run();
+            // 停止
+            bool stop();
+            // 暂停
+            bool pause();
+            // 恢复执行
+            bool resume();
+
+            // 通过套接字找到 IOEvent
+            std::shared_ptr<IOEvent> get_io_event(Base::socket_t fd);
+
         private:
+            void init_loop();
+            void update_time();
+
+            // 处理事件
+            Int process_events();
+            // 处理空闲事件
+            Int process_idle();
+            // 处理待处理事件
+            Int process_pending();
+            // 处理定时器事件
+            Int process_timer();
+            // 处理IO事件
+            Int process_io(Int timeout);
+
+        public:
+            // 默认等待时间
+            static const Int default_event_loop_wait_timeout = 1000;
+            // 默认暂停等待时间
+            static const Int default_event_loop_pause_timeout = 100;
+            enum LoopStatus : Int {
+                Stop = 1,
+                Running = 2,
+                Pause = 3
+            };
+        private:
+            using EventPtr = std::shared_ptr<Event>;
+            using EventPtrList = std::list<EventPtr>;
+
             // 进程pid
             pid_t pid_;
-            // 开始时间
+            // id
+            ULong id_;
+            // 当前状态
+            LoopStatus status_;
+            // 开始时间 (ms)
             ULong start_time_;
-            // 结束时间
+            // 结束时间 (ms)
             ULong end_time_;
+            // 当前时间 (ms)
+            ULong cur_time_;
             // 循环次数
-            LLong loop_count_;
+            std::atomic<LLong> loop_count_;
+            // 活跃事件数量
+            Int actives_count_;
 
             // Selector
             std::shared_ptr<Selector> selector_;
@@ -44,8 +137,21 @@ namespace SinBack
             Int io_count_;
 
             // 自定义事件队列
-            std::forward_list<std::shared_ptr<Event>> custom_evs_;
+            std::queue<std::shared_ptr<Event>> custom_evs_;
             Int custom_count_;
+
+            // 空闲事件
+            std::list<std::shared_ptr<IdleEvent>> idle_evs_;
+            // 空闲事件数量
+            Int idle_count_;
+
+            // 定时器事件
+            std::unordered_set<std::shared_ptr<TimerEvent>> timer_;
+            // 定时任务数量
+            Int timer_count_;
+
+            // 日志记录器
+            std::shared_ptr<Log::Logger> logger_;
 
         };
     }
