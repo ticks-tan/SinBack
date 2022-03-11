@@ -71,10 +71,10 @@ namespace SinBack
         using IdleEventCB = std::function<void(const std::weak_ptr<IdleEvent>&)>;
         using IOEventCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
         using TimerEventCB = std::function<void(const std::weak_ptr<TimerEvent>&)>;
-        using IOAcceptCB = std::function<void(IOEvent*)>;
-        using IOReadCB = std::function<void(IOEvent*, std::basic_string<Char>&)>;
-        using IOWriteCB = std::function<void(IOEvent*, const std::basic_string<Char>&)>;
-        using IOCloseCB = std::function<void(IOEvent*)>;
+        using IOAcceptCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
+        using IOReadCB = std::function<void(const std::weak_ptr<IOEvent>&, std::basic_string<Char>&)>;
+        using IOWriteCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
+        using IOCloseCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
 
         using EventLoopPtr = EventLoop*;
         // 事件基类

@@ -18,33 +18,43 @@ namespace SinBack {
         class Channel : noncopyable
         {
         public:
+            using StringBuf = std::basic_string<Char>;
             explicit Channel(const std::weak_ptr<Core::IOEvent>& io);
             ~Channel();
         public:
+            UInt get_id() const{
+                return this->io_->id_;
+            }
+            Base::socket_t get_fd() const{
+                return this->fd_;
+            }
+            std::shared_ptr<Core::IOEvent>& get_io(){
+                return this->io_;
+            }
             Int read();
             Int read(Size_t read_len);
             Int write(const void* buf, Size_t len);
-            Int write(const std::basic_string<Char>& buf);
+            Int write(const StringBuf & buf);
             Int close();
 
-            void set_read_cb(const std::function<void(Base::Buffer*)>& func){
+            void set_read_cb(const std::function<void(StringBuf&)>& func){
                 this->read_cb_ = func;
             }
-            void set_write_cb(const std::function<void(const Base::Buffer*)>& func){
+            void set_write_cb(const std::function<void(const StringBuf&)>& func){
                 this->write_cb_ = func;
             }
             void set_close_cb(const std::function<void()>& func){
                 this->close_cb_ = func;
             }
         private:
-            static void on_read(IOEvent* io, std::basic_string<Char>& buf);
-            static void on_write(IOEvent* io, const std::basic_string<Char>& buf);
-            static void on_close(IOEvent* io);
+            static void on_read(const std::weak_ptr<IOEvent>& ev, StringBuf & buf);
+            static void on_write(const std::weak_ptr<IOEvent>& ev, const StringBuf & buf);
+            static void on_close(const std::weak_ptr<IOEvent>& ev);
         private:
             std::shared_ptr<Core::IOEvent> io_;
             Base::socket_t fd_;
-            std::function<void(Base::Buffer* buf)> read_cb_;
-            std::function<void(const Base::Buffer* buf)> write_cb_;
+            std::function<void(StringBuf&)> read_cb_;
+            std::function<void(const StringBuf&)> write_cb_;
             std::function<void()> close_cb_;
         };
     }

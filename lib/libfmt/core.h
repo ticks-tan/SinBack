@@ -2248,7 +2248,7 @@ FMT_CONSTEXPR auto code_point_length(const Char* begin) -> int {
   int len = lengths[static_cast<unsigned char>(*begin) >> 3];
 
   // Compute the pointer to the next character early so that the next
-  // iteration can start working on the next character. Neither Clang
+  // iteration can run working on the next character. Neither Clang
   // nor GCC figure out this reordering on their own.
   return len + !len;
 }

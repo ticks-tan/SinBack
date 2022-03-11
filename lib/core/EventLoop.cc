@@ -384,7 +384,7 @@ Int Core::EventLoop::add_io_event(const std::weak_ptr<Core::IOEvent> &ev, const 
  * @param events ：待删除事件
  * @return
  */
-Int Core::EventLoop::delete_io_event(const std::weak_ptr<Core::IOEvent> &ev, Int events)
+Int Core::EventLoop::remove_io_event(const std::weak_ptr<Core::IOEvent> &ev, Int events)
 {
     std::shared_ptr<Core::IOEvent> io = ev.lock();
     if (io){
@@ -511,7 +511,7 @@ Core::EventLoop::add_timer(const Core::TimerEventCB &cb, UInt timeout, Int repea
  * @param ev：待删除定时器
  */
 void
-Core::EventLoop::delete_timer(const std::weak_ptr<Core::TimerEvent>& ev)
+Core::EventLoop::remove_timer(const std::weak_ptr<Core::TimerEvent>& ev)
 {
     std::shared_ptr<TimerEvent> timer = ev.lock();
     if (timer) {
@@ -558,7 +558,7 @@ Core::EventLoop::add_idle(const Core::IdleEventCB &cb, Int repeat)
  * @param ev：待删除空闲事件
  */
 void
-Core::EventLoop::delete_idle(const std::weak_ptr<Core::IdleEvent>& ev)
+Core::EventLoop::remove_idle(const std::weak_ptr<Core::IdleEvent>& ev)
 {
     std::shared_ptr<Core::IdleEvent> idle = ev.lock();
     if (idle) {
@@ -594,5 +594,22 @@ Core::EventLoop::add_custom(const Core::EventCB &cb) {
         --custom->loop_->custom_count_;
     });
     return custom;
+}
+
+void
+Core::EventLoop::change_io_loop(const std::weak_ptr<Core::IOEvent> &ev, Core::EventLoopPtr loop)
+{
+    auto io = ev.lock();
+    if (io) {
+        Base::socket_t fd = io->fd_;
+        Core::EventLoopPtr old_loop = io->loop_;
+        // 判断新loop里面是否有重复io
+        auto it = old_loop->io_evs_.find(fd);
+        if (it != old_loop->io_evs_.end()){
+            old_loop->io_evs_.erase(it);
+        }
+        io->loop_ = loop;
+        loop->io_evs_[fd] = io;
+    }
 }
 

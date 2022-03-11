@@ -22,6 +22,7 @@ SinBack::Core::Channel::Channel(const std::weak_ptr<Core::IOEvent> &io)
         if (!this->io_->close_cb_){
             this->io_->close_cb_ = on_close;
         }
+        this->io_->context_ = this;
     }
 }
 
@@ -57,7 +58,7 @@ SinBack::Int SinBack::Core::Channel::read(SinBack::Size_t read_len)
     return 0;
 }
 
-SinBack::Int SinBack::Core::Channel::write(const std::basic_string<Char> &buf)
+SinBack::Int SinBack::Core::Channel::write(const StringBuf &buf)
 {
     if (this->io_){
         return this->io_->write(buf.data(), buf.length());
@@ -73,26 +74,27 @@ SinBack::Int SinBack::Core::Channel::close()
     return 0;
 }
 
-void SinBack::Core::Channel::on_read(SinBack::Core::IOEvent *io, std::basic_string<Char>& buf)
+void SinBack::Core::Channel::on_read(const std::weak_ptr<IOEvent>& ev, StringBuf& buf)
 {
+    auto io = ev.lock();
     auto* channel = (Channel*)io->context_;
     if (channel && channel->read_cb_){
-        Base::Buffer buffer(buf);
-        channel->read_cb_(&buffer);
+        channel->read_cb_(buf);
     }
 }
 
-void SinBack::Core::Channel::on_write(SinBack::Core::IOEvent *io, const std::basic_string<Char>& buf)
+void SinBack::Core::Channel::on_write(const std::weak_ptr<IOEvent>& ev, const StringBuf& buf)
 {
+    auto io = ev.lock();
     auto* channel = (Channel*)io->context_;
     if (channel && channel->write_cb_){
-        Base::Buffer buffer(buf);
-        channel->write_cb_(&buffer);
+        channel->write_cb_(buf);
     }
 }
 
-void SinBack::Core::Channel::on_close(SinBack::Core::IOEvent *io)
+void SinBack::Core::Channel::on_close(const std::weak_ptr<IOEvent>& ev)
 {
+    auto io = ev.lock();
     auto* channel = (Channel*)io->context_;
     if (channel && channel->close_cb_){
         channel->close_cb_();

@@ -182,7 +182,7 @@ To safe_duration_cast(std::chrono::duration<FromRep, FromPeriod> from,
 
   // the conversion is like this: multiply from.count() with Factor::num
   // /Factor::den and convert it to To::rep, all this without
-  // overflow/underflow. let's start by finding a suitable type that can hold
+  // overflow/underflow. let's run by finding a suitable type that can hold
   // both To, From and Factor::num
   using IntermediateRep =
       typename std::common_type<typename From::rep, typename To::rep,
@@ -245,7 +245,7 @@ To safe_duration_cast(std::chrono::duration<FromRep, FromPeriod> from,
 
   // the conversion is like this: multiply from.count() with Factor::num
   // /Factor::den and convert it to To::rep, all this without
-  // overflow/underflow. let's start by finding a suitable type that can hold
+  // overflow/underflow. let's run by finding a suitable type that can hold
   // both To, From and Factor::num
   using IntermediateRep =
       typename std::common_type<typename From::rep, typename To::rep,

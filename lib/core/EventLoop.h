@@ -61,7 +61,8 @@ namespace SinBack
             }
             // 添加IO事件
             static Int add_io_event(const std::weak_ptr<Core::IOEvent>& ev, const IOEventCB& cb, Int events);
-            static Int delete_io_event(const std::weak_ptr<Core::IOEvent>& ev, Int events);
+            static Int remove_io_event(const std::weak_ptr<Core::IOEvent>& ev, Int events);
+            static void change_io_loop(const std::weak_ptr<Core::IOEvent>& ev, EventLoopPtr loop);
 
             // 运行
             bool run();
@@ -101,12 +102,12 @@ namespace SinBack
             // 添加 idle事件
             std::shared_ptr<Core::IdleEvent> add_idle(const Core::IdleEventCB& cb, Int repeat);
             // 删除idle事件
-            void delete_idle(const std::weak_ptr<Core::IdleEvent>& ev);
+            void remove_idle(const std::weak_ptr<Core::IdleEvent>& ev);
 
             // 添加定时器事件
             std::shared_ptr<Core::TimerEvent> add_timer(const Core::TimerEventCB& cb, UInt timeout, Int repeat);
             // 删除定时器
-            void delete_timer(const std::weak_ptr<Core::TimerEvent>& ev);
+            void remove_timer(const std::weak_ptr<Core::TimerEvent>& ev);
 
             // 添加 accept 套接字
             std::shared_ptr<Core::IOEvent> accept_io(Base::socket_t listen_fd, const Core::IOAcceptCB& cb);
