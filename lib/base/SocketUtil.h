@@ -44,13 +44,13 @@ namespace SinBack
 
         // 字节序转换
         // long 类型本地字节序转网络字节序
-        static unsigned long htonl(unsigned long host_long) {
-            return ::htonl((unsigned long) host_long);
+        static ULong htonl(ULong host_long) {
+            return ::htonl((ULong) host_long);
         }
 
         // long 类型网络字节序转本地字节序
-        static unsigned long ntohl(unsigned long net_long) {
-            return ::ntohl((unsigned long) net_long);
+        static ULong ntohl(ULong net_long) {
+            return ::ntohl((ULong) net_long);
         }
 
         // short 类型本地字节序转网络字节序
@@ -65,21 +65,26 @@ namespace SinBack
 
         // IP 地址转换
         // IP字符串转换为网络IP结构体
-        static in_addr_t str_ipaddr(const char *ip_str) {
+        static in_addr_t str_ipaddr(const Char* ip_str) {
             return inet_addr(ip_str);
         }
 
-        static bool str_ipaddr(const char *ip_str, in_addr *ip_addr) {
+        static bool str_ipaddr(const Char *ip_str, in_addr *ip_addr) {
             return (inet_aton(ip_str, ip_addr) == 1);
         }
 
         // 网络IP地址转字符串格式
-        static char *ipaddr_str(in_addr ip_addr) {
+        static Char *ipaddr_str(in_addr ip_addr) {
             return inet_ntoa(ip_addr);
         }
 
+        static void socket_reuse_address(socket_t sock){
+            Int opt = 1;
+            ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
+        }
+
         // 更新版本，支持 IPV4 与 IPV6
-        static int str_ipaddr(Ip_Type type, const char *ip_str, void *ip_buf) {
+        static Int str_ipaddr(Ip_Type type, const Char *ip_str, void *ip_buf) {
             switch (type) {
                 case IP_4:
                     return (inet_pton(PF_INET, ip_str, ip_buf) == 1);
@@ -93,7 +98,7 @@ namespace SinBack
             return false;
         }
 
-        static const char *ipaddr_str(Ip_Type type, const void *ip_addr, char *ip_buf, socklen_t buf_len) {
+        static const Char *ipaddr_str(Ip_Type type, const void *ip_addr, Char *ip_buf, socklen_t buf_len) {
             switch (type) {
                 case IP_4:
                     return inet_ntop(type, ip_addr, ip_buf, buf_len);
@@ -138,7 +143,7 @@ namespace SinBack
          */
         static bool
         bind_socket(socket_t sock_fd, const sockaddr_in *my_addr, socklen_t addr_len) {
-            return ::bind(sock_fd, (sockaddr *) (my_addr), addr_len);
+            return (::bind(sock_fd, (sockaddr *) (my_addr), addr_len) == 0);
         }
 
         /**
@@ -150,7 +155,7 @@ namespace SinBack
          * @return : 是否成功
          */
         static bool
-        bind_socket(socket_t sock_fd, Ip_Type ip_type, const char *ip_addr, int port) {
+        bind_socket(socket_t sock_fd, Ip_Type ip_type, const Char *ip_addr, Int port) {
             if (ip_type == IP_4) {
                 sockaddr_in addr{};
                 addr.sin_family = AF_INET;
@@ -182,7 +187,7 @@ namespace SinBack
          * @return
          */
         static bool
-        listen_socket(socket_t sock_fd, int max_listen_cnt = 5) {
+        listen_socket(socket_t sock_fd, Int max_listen_cnt = 5) {
             return (::listen(sock_fd, max_listen_cnt) == 0);
         }
 
@@ -193,13 +198,13 @@ namespace SinBack
          * @param adddr_len : 存储地址信息大小的地址
          * @return
          */
-        static int
+        static Int
         accept_socket(socket_t listen_fd, sockaddr_in *addr, socklen_t *adddr_len) {
             return ::accept(listen_fd, (sockaddr *) addr, adddr_len);
         }
 
-        static int
-        accept_socket(int listen_fd, sockaddr_in6 *addr, socklen_t *adddr_len) {
+        static Int
+        accept_socket(socket_t listen_fd, sockaddr_in6 *addr, socklen_t *adddr_len) {
             return ::accept(listen_fd, (sockaddr *) addr, adddr_len);
         }
 
@@ -211,8 +216,8 @@ namespace SinBack
          * @param flag
          * @return
          */
-        static long
-        recv_socket(socket_t sock_fd, void *buf, long len, int flag = 0) {
+        static Long
+        recv_socket(socket_t sock_fd, void *buf, Size_t len, Int flag = 0) {
             return ::recv(sock_fd, buf, len, flag);
         }
 
@@ -225,13 +230,13 @@ namespace SinBack
          * @param flag
          * @return
          */
-        static long
-        send_socket(socket_t sock_fd, const void *buf, long len, int flag = 0) {
+        static Long
+        send_socket(socket_t sock_fd, const void *buf, Size_t len, Int flag = 0) {
             return ::send(sock_fd, buf, len, flag);
         }
 
         static void
-        close_socket(socket_t sock_fd, int opt = 0) {
+        close_socket(socket_t sock_fd, Int opt = 0) {
             if (opt & SHUT_RD || opt & SHUT_WR || opt & SHUT_RDWR) {
                 ::shutdown(sock_fd, opt);
                 return;

@@ -17,6 +17,8 @@ file(GLOB_RECURSE SinBack_Base "${PROJECT_SOURCE_DIR}/lib/base/*.h" "${PROJECT_S
 # core module
 file(GLOB_RECURSE SinBack_Core "${PROJECT_SOURCE_DIR}/lib/core/*.h" "${PROJECT_SOURCE_DIR}/lib/core/*.cc")
 
+link_libraries(pthread)
+
 add_executable(SinBack
         ${lib_fmt}
         ${SinBack_Base}

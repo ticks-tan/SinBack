@@ -11,7 +11,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <queue>
+#include <deque>
 #include <atomic>
 #include <mutex>
 #include "base/SocketUtil.h"
@@ -67,15 +67,18 @@ namespace SinBack
         struct IdleEvent;
 
         // 回调函数
-        using EventCB = std::function<void(Event*)>;
+        using EventCB = std::function<void(const std::weak_ptr<Event>&)>;
+        using IdleEventCB = std::function<void(const std::weak_ptr<IdleEvent>&)>;
+        using IOEventCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
+        using TimerEventCB = std::function<void(const std::weak_ptr<TimerEvent>&)>;
         using IOAcceptCB = std::function<void(IOEvent*)>;
-        using IOReadCB = std::function<void(IOEvent*, std::string)>;
-        using IOWriteCB = std::function<void(IOEvent*, const std::string&)>;
+        using IOReadCB = std::function<void(IOEvent*, std::basic_string<Char>&)>;
+        using IOWriteCB = std::function<void(IOEvent*, const std::basic_string<Char>&)>;
         using IOCloseCB = std::function<void(IOEvent*)>;
 
         using EventLoopPtr = EventLoop*;
         // 事件基类
-        struct Event{
+    struct Event{
             // pid
             pid_t pid_ = 0;
             //  事件id
@@ -96,6 +99,8 @@ namespace SinBack
             bool pending_ = false;
             // 回调函数
             EventCB cb_;
+            // 自定义数据指针
+            void* context_ = nullptr;
 
             // 初始化
             virtual void init(){
@@ -104,16 +109,19 @@ namespace SinBack
                 type_ = EventType::Event_Type_Custom;
                 active_ = destroy_ = pending_ = false;
                 priority_ = Event_Priority_Lowest;
+                context_ = nullptr;
                 init_ = true;
             }
         };
 
         // IO事件
-        struct IOEvent : public Event
+        struct IOEvent : public Event, public std::enable_shared_from_this<IOEvent>
         {
             using string_type = std::basic_string<Char>;
             // 监听事件
             Int evs_ = 0;
+            // 事件回调
+            IOEventCB cb_;
             // 活动事件
             Int active_evs_ = 0;
             // socket_t
@@ -122,6 +130,8 @@ namespace SinBack
             bool ready_ = false;
             // 是否 accept
             bool accept_ = false;
+            // 是否关闭
+            bool closed = false;
             // 各事件回调
             IOAcceptCB accept_cb_;
             IOReadCB read_cb_;
@@ -130,7 +140,7 @@ namespace SinBack
             // 读取缓冲区
             string_type read_buf_;
             // 写入队列
-            std::queue<string_type> write_queue_;
+            std::deque<string_type> write_queue_;
             // 写入锁
             std::mutex write_mutex_;
 
@@ -142,7 +152,17 @@ namespace SinBack
                 evs_ = active_evs_ = 0;
                 fd_ = Base::socket_t(-1);
                 ready_ = accept_ = false;
+                closed = false;
             }
+
+            // 接收连接
+            Int accept();
+            // 读取数据
+            Int read();
+            // 写入数据
+            Int write(const void* buf, Size_t len);
+            // 关闭连接
+            Int close();
         };
 
         struct TimerEvent : public Event
@@ -154,7 +174,9 @@ namespace SinBack
             // 超时时间
             Long timeout_ = 0;
             // 下次超时时间
-            Long next_time_ = 0;
+            ULong next_time_ = 0;
+            // 回调事件
+            TimerEventCB cb_;
 
             // 初始化
             void init() override{
@@ -167,7 +189,8 @@ namespace SinBack
         struct IdleEvent : Event
         {
             static const Int infinity = -1;
-
+            // 回调函数
+            IdleEventCB cb_;
             // 执行次数
             Int repeat_ = 0;
         };

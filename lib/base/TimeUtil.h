@@ -86,6 +86,7 @@ namespace SinBack
         Long datetimeto(DateTime date);
         // 线程休眠
         void sleep_ms(Int time);
+        void sleep_us(Int time);
 
     }
 }

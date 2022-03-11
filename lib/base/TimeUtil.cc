@@ -83,5 +83,10 @@ SinBack::Long SinBack::Base::datetimeto(DateTime date){
 
 void SinBack::Base::sleep_ms(Int time)
 {
+    std::this_thread::sleep_for(std::chrono::milliseconds(time));
+}
+
+void SinBack::Base::sleep_us(Int time)
+{
     std::this_thread::sleep_for(std::chrono::microseconds(time));
 }

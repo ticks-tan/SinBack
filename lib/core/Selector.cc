@@ -44,20 +44,71 @@ bool Core::Selector::add_event(Base::socket_t fd, Int events)
     if (events & Core::IO_WRITE){
         ev.events |= EPOLLOUT;
     }
-    Int opt = (io->evs_ == 0
-
-            ) ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
-    ::epoll_ctl(this->fd_, opt, fd, &ev);
-    return true;
+    Int opt = (io->evs_ == 0) ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
+    opt = ::epoll_ctl(this->fd_, opt, fd, &ev);
+    return (opt != -1);
 }
 
-bool Core::Selector::del_event(Base::socket_t fd, Int events) {
+bool Core::Selector::del_event(Base::socket_t fd, Int events)
+{
     epoll_event ev{};
-    return false;
+    ev.data.fd = fd;
+    std::shared_ptr<Core::IOEvent> io = this->loop_->get_io_event(fd);
+    if (io->evs_ & Core::IO_READ){
+        ev.events |= EPOLLIN;
+    }
+    if (io->evs_ & Core::IO_WRITE){
+        ev.events |= EPOLLOUT;
+    }
+    if (events & Core::IO_READ){
+        ev.events &= ~EPOLLIN;
+    }
+    if (events & Core::IO_WRITE){
+        ev.events &= ~EPOLLOUT;
+    }
+    Int opt = (ev.events == 0) ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
+    opt = ::epoll_ctl(this->fd_, opt, fd, &ev);
+    return (opt != -1);
 }
 
-Int Core::Selector::poll_event() {
-    return 0;
+Int Core::Selector::poll_event(Int timeout)
+{
+    Int ep_cnt = ::epoll_wait(this->fd_, this->events_.data(), (Int)this->events_.size(), timeout);
+    if (ep_cnt < 0){
+        // 信号中断
+        if (errno == EINTR){
+            return 0;
+        }
+        this->loop_->logger().error("epoll_wait error, return code is {}", ep_cnt);
+        return ep_cnt;
+    }
+    if (ep_cnt == 0){
+        return 0;
+    }
+    Int ev_cnt = 0, i = 0, fd;
+    UInt events;
+    epoll_event* ev_ptr;
+    for (; i < ep_cnt; ++i){
+        ev_ptr = &this->events_[i];
+        fd = ev_ptr->data.fd;
+        events = ev_ptr->events;
+        if (events){
+            ++ev_cnt;
+            // 获取对于套接字，并设置套接字活动事件
+            std::shared_ptr<Core::IOEvent> io = this->loop_->get_io_event(fd);
+            if (io){
+                if (events & (EPOLLIN | EPOLLERR | EPOLLHUP)){
+                    io->active_evs_ |= Core::IO_READ;
+                }
+                if (events & (EPOLLOUT | EPOLLERR | EPOLLHUP)){
+                    io->active_evs_ |= Core::IO_WRITE;
+                }
+                EventLoop::loop_event_pending(io);
+            }
+        }
+        if (ev_cnt == ep_cnt) break;
+    }
+    return ev_cnt;
 }
 
 #endif

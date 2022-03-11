@@ -42,7 +42,7 @@ namespace SinBack
             // 删除事件
             bool del_event(Base::socket_t fd, Int events);
             // 处理事件
-            Int poll_event();
+            Int poll_event(Int timeout);
         private:
             // epoll 套接字
             Int fd_;

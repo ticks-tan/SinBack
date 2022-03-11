@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include "base/Logger.h"
 #include "core/Selector.h"
+#include "base/ThreadPool.h"
 
 namespace SinBack
 {
@@ -31,6 +32,8 @@ namespace SinBack
                 if (event_ptr){
                     if (!event_ptr->pending_){
                         event_ptr->pending_ = true;
+                        // 事件循环待处理事件+1
+                        event_ptr->loop_->pending_count_++;
                         // 将事件添加到待处理事件链表
                         event_ptr->loop_->pending_evs_[event_ptr->priority_].push_front(event_ptr);
                     }
@@ -56,14 +59,9 @@ namespace SinBack
                     }
                 }
             }
-            // 删除事件
-            static void loop_event_delete(std::weak_ptr<Event>& ev){
-
-            }
-            // 添加事件
-            static void loop_event_add(std::weak_ptr<Event>& ev){
-
-            }
+            // 添加IO事件
+            static Int add_io_event(const std::weak_ptr<Core::IOEvent>& ev, const IOEventCB& cb, Int events);
+            static Int delete_io_event(const std::weak_ptr<Core::IOEvent>& ev, Int events);
 
             // 运行
             bool run();
@@ -76,6 +74,32 @@ namespace SinBack
 
             // 通过套接字找到 IOEvent
             std::shared_ptr<IOEvent> get_io_event(Base::socket_t fd);
+            // 获取日志记录器
+            Log::Logger& logger(){
+                return *(this->logger_);
+            }
+
+            // 添加自定义事件
+            std::shared_ptr<Core::Event> add_custom(const Core::EventCB& cb);
+
+            // 添加 idle事件
+            std::shared_ptr<Core::IdleEvent> add_idle(const Core::IdleEventCB& cb, Int repeat);
+            // 删除idle事件
+            void delete_idle(const std::weak_ptr<Core::IdleEvent>& ev);
+
+            // 添加定时器事件
+            std::shared_ptr<Core::TimerEvent> add_timer(const Core::TimerEventCB& cb, UInt timeout, Int repeat);
+            // 删除定时器
+            void delete_timer(const std::weak_ptr<Core::TimerEvent>& ev);
+
+            // 添加 accept 套接字
+            std::shared_ptr<Core::IOEvent> accept_io(Base::socket_t listen_fd, const Core::IOAcceptCB& cb);
+            // 读取套接字
+            std::shared_ptr<Core::IOEvent> read_io(Base::socket_t fd, Size_t read_len, const Core::IOReadCB& cb);
+            // 写入套接字
+            std::shared_ptr<Core::IOEvent> write_io(Base::socket_t fd, const void* buf, Size_t len, const Core::IOWriteCB& cb);
+            // 关闭套接字
+            void close_io(Base::socket_t fd);
 
         private:
             void init_loop();
@@ -97,6 +121,8 @@ namespace SinBack
             static const Int default_event_loop_wait_timeout = 1000;
             // 默认暂停等待时间
             static const Int default_event_loop_pause_timeout = 100;
+            // 默认线程池大小
+            static const Int default_thread_pool_count = 4;
             enum LoopStatus : Int {
                 Stop = 1,
                 Running = 2,
@@ -146,10 +172,11 @@ namespace SinBack
             Int idle_count_;
 
             // 定时器事件
-            std::unordered_set<std::shared_ptr<TimerEvent>> timer_;
+            std::unordered_map<ULong , std::shared_ptr<TimerEvent>> timer_;
             // 定时任务数量
             Int timer_count_;
-
+            // 线程池
+            Base::ThreadPool thread_pool_;
             // 日志记录器
             std::shared_ptr<Log::Logger> logger_;
 
