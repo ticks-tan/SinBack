@@ -10,81 +10,6 @@ Des:
 #include "core/EventLoop.h"
 using namespace SinBack;
 
-struct Pair
-{
-    Int first;
-    Int second;
-};
-
-#define MAX_STACK_SIZE 1024
-
-static Pair g_stack[MAX_STACK_SIZE];
-static Int g_stack_top = 0;
-
-bool stack_empty(){
-    return (g_stack_top == 0);
-}
-bool stack_full(){
-    return (g_stack_top == MAX_STACK_SIZE);
-}
-bool stack_push(Pair pair){
-    if (stack_full()){
-        return false;
-    }
-    g_stack[g_stack_top++] = pair;
-    return true;
-}
-bool stack_pop(){
-    if (stack_empty()){
-        return false;
-    }
-    --g_stack_top;
-    return true;
-}
-Pair stack_top(){
-    return g_stack[g_stack_top - 1];
-}
-
-void stack_clear(){
-    g_stack_top = 0;
-}
-
-void quick_sort(Int array[], Int start, Int end)
-{
-    if (start >= end){
-        return;
-    }
-    stack_push({start, end});
-    Pair top{};
-    while (!stack_empty()){
-        top = stack_top();
-        Int front = top.first, back = top.second;
-        Int tmp = array[front];
-        while (front < back){
-            while (front < back && array[back] > tmp){
-                --back;
-            }
-            if (front < back) {
-                array[front++] = array[back];
-            }
-            while (front < back && array[front] <= tmp){
-                ++front;
-            }
-            if (front < back){
-                array[back--] = array[front];
-            }
-        }
-        array[front] = tmp;
-        stack_pop();
-        if (top.first < front - 1){
-            stack_push({top.first, front - 1});
-        }
-        if (front + 1 < top.second){
-            stack_push({front + 1, top.second});
-        }
-    }
-}
-
 int main()
 {
     // 创建监听套接字
@@ -128,6 +53,9 @@ int main()
             timer->loop_->stop();
         }
     }, 15000, 1);
+    loop.queue_func([](){
+        fmt::print("Hello, I am custom event !\n");
+    });
     loop.run();
     return 0;
 }

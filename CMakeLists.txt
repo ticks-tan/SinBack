@@ -16,11 +16,15 @@ file(GLOB_RECURSE lib_fmt "${PROJECT_SOURCE_DIR}/lib/libfmt/*.h" "${PROJECT_SOUR
 file(GLOB_RECURSE SinBack_Base "${PROJECT_SOURCE_DIR}/lib/base/*.h" "${PROJECT_SOURCE_DIR}/lib/base/*.cc")
 # core module
 file(GLOB_RECURSE SinBack_Core "${PROJECT_SOURCE_DIR}/lib/core/*.h" "${PROJECT_SOURCE_DIR}/lib/core/*.cc")
+# net module
+file(GLOB_RECURSE SinBack_Net "${PROJECT_SOURCE_DIR}/lib/net/*.h" "${PROJECT_SOURCE_DIR}/lib/net/*.cc")
 
+# link [ pthread ]
 link_libraries(pthread)
 
 add_executable(SinBack
         ${lib_fmt}
         ${SinBack_Base}
         ${SinBack_Core}
+        ${SinBack_Net}
         lib/main.cc)

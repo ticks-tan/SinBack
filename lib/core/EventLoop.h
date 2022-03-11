@@ -82,6 +82,22 @@ namespace SinBack
             // 添加自定义事件
             std::shared_ptr<Core::Event> add_custom(const Core::EventCB& cb);
 
+            template<typename Func, typename... Args>
+            void run_in_loop(Func&& func, Args&&... args){
+                using return_type = typename std::result_of<Func(Args...)>::type;
+                auto task = std::make_shared< std::packaged_task<return_type()> >(
+                        std::bind(std::forward<Func>(func), std::forward<Args>(args)...)
+                );
+                if (task){
+                    (*task)();
+                }
+            }
+            // 添加事件到线程池
+            template<typename Func, typename... Args>
+            void queue_func(Func&& f, Args&&... args){
+                this->thread_pool_.enqueue(std::forward<Func>(f), std::forward<Args>(args)...);
+            }
+
             // 添加 idle事件
             std::shared_ptr<Core::IdleEvent> add_idle(const Core::IdleEventCB& cb, Int repeat);
             // 删除idle事件
