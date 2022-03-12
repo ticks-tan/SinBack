@@ -38,17 +38,16 @@ int main()
         return 0;
     };
 
-    signal(SIGPIPE, SIG_IGN);
     TcpServer server;
     server.on_new_client = [](const TcpServer::ChannelPtr& io){
-        fmt::print("新客户端连接, fd = {}.\n", io->get_fd());
+        // fmt::print("新客户端连接, fd = {}.\n", io->get_fd());
         // io->read(256);
     };
     server.on_message = [parse, setting](const TcpServer::ChannelPtr& io, TcpServer::StringBuf& buf){
-
         auto status = llhttp_execute(parse.get(), buf.c_str(), buf.length());
         if (status == HPE_OK){
-            TcpServer::StringBuf data = "看啥，大傻瓜";
+            TcpServer::StringBuf data = "看啥，大傻瓜 -> ";
+            data += Base::getdatetimenow();
             TcpServer::StringBuf msg = fmt::format(
                     "HTTP/1.1 200 OK\r\n"
                     "Connection: close\r\n"
@@ -57,15 +56,22 @@ int main()
                     "Content-Length: {}\r\n\r\n"
                     "{}", data.length(), data.c_str());
             io->write(msg);
+            // fmt::print("parse status = {}\n", status);
         }else{
             fmt::print("parse error : {}\n", llhttp_errno_name(status));
             io->close();
         }
     };
     server.on_close = [](const TcpServer::ChannelPtr& io){
-        fmt::print("客户端关闭，fd = {}.\n", io->get_fd());
+        // fmt::print("客户端关闭，fd = {}.\n", io->get_fd());
+    };
+    server.on_write = [](const TcpServer::ChannelPtr& io, Size_t len){
+        io->read(1);
     };
     server.run(2021);
+    server.loop()->add_timer([](const std::weak_ptr<Core::TimerEvent>& ev){
+        fmt::print("Hello World.\n");
+    }, 5000, 1);
     while (getchar() != '\n');
     return 0;
 }

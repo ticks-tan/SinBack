@@ -21,7 +21,7 @@ namespace SinBack
             using EventLoopPtr = std::shared_ptr<SinBack::Core::EventLoop>;
             using ChannelPtr = std::shared_ptr<SinBack::Core::Channel>;
             using StringBuf = std::basic_string<Char>;
-            static const UInt default_max_accept_count = 2048;
+            static const UInt default_max_accept_count = 4096;
 
             // 新客户端连接
             std::function<void(const ChannelPtr&)> on_new_client;

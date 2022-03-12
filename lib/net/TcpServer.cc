@@ -39,11 +39,8 @@ void
 SinBack::Net::TcpServer::remove_channel(const SinBack::Net::TcpServer::ChannelPtr &channel)
 {
     auto id = channel->get_id();
-    auto it = this->channels_.find(id);
     std::unique_lock<std::mutex> lock(this->mutex);
-    if (it != this->channels_.end()){
-        this->channels_.erase(it);
-    }
+    this->channels_.erase(id);
 }
 
 SinBack::Net::TcpServer::ChannelPtr

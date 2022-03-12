@@ -141,7 +141,7 @@ namespace SinBack
             // 默认暂停等待时间
             static const Int default_event_loop_pause_timeout = 100;
             // 默认线程池大小
-            static const Int default_thread_pool_count = 4;
+            static const Int default_thread_pool_count = 2;
             enum LoopStatus : Int {
                 Stop = 1,
                 Running = 2,

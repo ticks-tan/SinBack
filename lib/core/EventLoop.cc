@@ -367,6 +367,9 @@ Int Core::EventLoop::add_io_event(const std::weak_ptr<Core::IOEvent> &ev, const 
             EventLoop::loop_event_active(io);
             ++io->loop_->io_count_;
         }
+        if (!io->ready_){
+            io->ready_ = true;
+        }
         if (cb){
             io->cb_ = cb;
         }

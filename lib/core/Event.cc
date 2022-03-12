@@ -9,21 +9,35 @@
 
 using namespace SinBack;
 
+// 水平触发 write函数
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len);
+// 边缘触发 write 函数
 Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len);
 
+// 根据活动事件选择 accept、read和write
 void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev);
+//  accept 回调
 void handle_accept_cb(const std::weak_ptr<Core::IOEvent>& ev);
+// read 回调
 void handle_read_cb(const std::weak_ptr<Core::IOEvent>& ev, void* buf, Size_t len);
+// read 错误回调
 void handle_read_err_cb(const std::weak_ptr<Core::IOEvent>& ev, const std::basic_string<Char>& err);
+// write 回调
 void handle_write_cb(const std::weak_ptr<Core::IOEvent>& ev, Size_t write_len);
+// write 错误回调
 void handle_write_err_cb(const std::weak_ptr<Core::IOEvent>& ev, const std::basic_string<Char>& err);
+// close回调
 void handle_close_cb(const std::weak_ptr<Core::IOEvent>& ev);
 
+// accept 封装
 void handle_accept(const std::weak_ptr<Core::IOEvent>& ev);
+// 边缘触发 read 封装
 void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev);
+// 水平触发 read 封装
 void handle_read(const std::weak_ptr<Core::IOEvent>& ev);
+// 水平触发 write 封装
 void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
+// 边缘触发 write 封装
 void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
 
@@ -36,7 +50,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 
     std::unique_lock<std::mutex> lock(io->write_mutex_);
     if (io->write_queue_.empty()){
-
+        // 写入队列为空，尝试写入一次，一次没有写入完再添加到事件循环中等待事件触发
         write_len = Base::send_socket(io->fd_, buf, len);
 
         if (write_len < 0){
@@ -134,6 +148,7 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
     // 错误回调
     handle_write_err_cb(io->shared_from_this(), strerror(io->error));
     DISCONNECT:
+    io->close();
     return (write_len < 0) ? -1 : (Int)write_len;
 }
 
@@ -490,25 +505,22 @@ Int Core::IOEvent::write(const void *buf, Size_t len)
 
 Int Core::IOEvent::close()
 {
-    std::unique_lock<std::mutex> lock(this->write_mutex_);
-    if (this->closed || !this->ready_) return -1;
+    {
+        std::unique_lock<std::mutex> lock(this->write_mutex_);
+        if (this->closed || !this->ready_) return -1;
 
-    if (!this->write_queue_.empty() && this->error == 0){
-        std::weak_ptr<Core::IOEvent> io = shared_from_this();
-        this->loop_->add_timer([io](const std::weak_ptr<Core::TimerEvent>& ev){
-            auto it = io.lock();
-            if (it) {
-                it->close();
-            }
-        }, 5000, 1);
-        return 1;
+        if (!this->write_queue_.empty() && this->error == 0){
+            this->loop_->add_timer([this](const std::weak_ptr<Core::TimerEvent>& ev){
+                this->close();
+            }, 5000, 1);
+            return 1;
+        }
+        this->closed = true;
+        this->destroy_ = true;
+        Core::EventLoop::remove_io_event(shared_from_this(), Core::IO_RDWR | Core::IO_TYPE_ET);
+        Core::EventLoop::loop_event_inactive(shared_from_this());
+        Base::close_socket(this->fd_);
     }
-
-    this->closed = true;
-    this->destroy_ = true;
-    Core::EventLoop::loop_event_inactive(shared_from_this());
-    Core::EventLoop::remove_io_event(shared_from_this(), Core::IO_RDWR);
-    Base::close_socket(this->fd_);
     // 关闭回调
     handle_close_cb(shared_from_this());
     return 0;
