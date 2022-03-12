@@ -118,7 +118,7 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
             }
         }
         WRITE_QUEUE:
-        SinBack::Core::EventLoop::add_io_event(io->weak_from_this(), handle_event_func, Core::IO_WRITE | Core::IO_TYPE_ET);
+        SinBack::Core::EventLoop::add_io_event(io->shared_from_this(), handle_event_func, Core::IO_WRITE | Core::IO_TYPE_ET);
     }
     if (write_len < len){
         std::basic_string<Char> buffer = ((Char*)buf + write_len);
@@ -127,12 +127,12 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
     WRITE_END:
     lock.unlock();
     if (write_len > 0){
-        handle_write_cb(io->weak_from_this(), write_len);
+        handle_write_cb(io->shared_from_this(), write_len);
     }
     return (Int)write_len;
     WRITE_ERR:
     // 错误回调
-    handle_write_err_cb(io->weak_from_this(), strerror(io->error));
+    handle_write_err_cb(io->shared_from_this(), strerror(io->error));
     DISCONNECT:
     return (write_len < 0) ? -1 : (Int)write_len;
 }
