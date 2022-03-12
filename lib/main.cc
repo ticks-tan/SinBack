@@ -8,7 +8,14 @@ Des:
 
 #include <sys/signal.h>
 #include "net/TcpServer.h"
+
+#ifdef __cplusplus
+extern "C"{
+#endif
 #include "llhttp/llhttp.h"
+#ifdef __cplusplus
+}
+#endif
 
 using namespace SinBack::Net;
 using namespace SinBack;
