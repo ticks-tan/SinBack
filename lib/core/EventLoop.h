@@ -112,9 +112,11 @@ namespace SinBack
             // 添加 accept 套接字
             std::shared_ptr<Core::IOEvent> accept_io(Base::socket_t listen_fd, const Core::IOAcceptCB& cb);
             // 读取套接字
-            std::shared_ptr<Core::IOEvent> read_io(Base::socket_t fd, Size_t read_len, const Core::IOReadCB& cb);
+            std::shared_ptr<Core::IOEvent> read_io(Base::socket_t fd, Size_t read_len,
+                                                   const Core::IOReadCB& cb, const Core::IOReadErrCB& err_cb = nullptr);
             // 写入套接字
-            std::shared_ptr<Core::IOEvent> write_io(Base::socket_t fd, const void* buf, Size_t len, const Core::IOWriteCB& cb);
+            std::shared_ptr<Core::IOEvent> write_io(Base::socket_t fd, const void* buf, Size_t len,
+                                                    const Core::IOWriteCB& cb, const Core::IOWriteErrCB& err_cb = nullptr);
             // 关闭套接字
             void close_io(Base::socket_t fd);
 

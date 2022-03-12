@@ -27,8 +27,12 @@ namespace SinBack
             std::function<void(const ChannelPtr&)> on_new_client;
             // 有新消息
             std::function<void(const ChannelPtr&, StringBuf&)> on_message;
-            // 写入完成
-            std::function<void(const ChannelPtr&, const StringBuf&)> on_write;
+            // 读取消息错误
+            std::function<void(const ChannelPtr&, const StringBuf&)> on_error_message;
+            // 写入消息完成
+            std::function<void(const ChannelPtr&, Size_t)> on_write;
+            // 写入消息错误
+            std::function<void(const ChannelPtr&, const StringBuf&)> on_error_write;
             // 关闭
             std::function<void(const ChannelPtr&)> on_close;
         public:

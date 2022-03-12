@@ -73,7 +73,9 @@ namespace SinBack
         using TimerEventCB = std::function<void(const std::weak_ptr<TimerEvent>&)>;
         using IOAcceptCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
         using IOReadCB = std::function<void(const std::weak_ptr<IOEvent>&, std::basic_string<Char>&)>;
-        using IOWriteCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
+        using IOReadErrCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
+        using IOWriteCB = std::function<void(const std::weak_ptr<IOEvent>&, Size_t)>;
+        using IOWriteErrCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
         using IOCloseCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
 
         using EventLoopPtr = EventLoop*;
@@ -122,6 +124,8 @@ namespace SinBack
             Int evs_ = 0;
             // 事件回调
             IOEventCB cb_;
+            // 错误
+            Int error;
             // 活动事件
             Int active_evs_ = 0;
             // socket_t
@@ -135,7 +139,9 @@ namespace SinBack
             // 各事件回调
             IOAcceptCB accept_cb_;
             IOReadCB read_cb_;
+            IOReadErrCB read_err_cb_;
             IOWriteCB write_cb_;
+            IOWriteErrCB write_err_cb_;
             IOCloseCB close_cb_;
             // 读取缓冲区
             string_type read_buf_;
@@ -153,6 +159,7 @@ namespace SinBack
                 fd_ = Base::socket_t(-1);
                 ready_ = accept_ = false;
                 closed = false;
+                error = 0;
             }
 
             // 接收连接

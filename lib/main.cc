@@ -17,6 +17,7 @@ int main()
     TcpServer server;
     server.on_new_client = [](const TcpServer::ChannelPtr& io){
         fmt::print("新客户端连接, fd = {}.\n", io->get_fd());
+        // io->read(256);
     };
     server.on_message = [](const TcpServer::ChannelPtr& io, TcpServer::StringBuf& buf){
         fmt::print("接收的数据: \n{}\n", buf.c_str());

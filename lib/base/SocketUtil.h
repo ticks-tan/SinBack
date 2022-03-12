@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <functional>
 #include "base/Base.h"
 
@@ -78,9 +79,16 @@ namespace SinBack
             return inet_ntoa(ip_addr);
         }
 
+        // 复用端口
         static void socket_reuse_address(socket_t sock){
             Int opt = 1;
             ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
+        }
+
+        // 设置套接字非阻塞
+        static void set_socket_nonblock(socket_t sock){
+            Int flag = ::fcntl(sock, F_GETFL);
+            ::fcntl(sock, F_SETFL, flag | O_NONBLOCK);
         }
 
         // 更新版本，支持 IPV4 与 IPV6

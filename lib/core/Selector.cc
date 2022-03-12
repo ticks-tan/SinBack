@@ -38,11 +38,17 @@ bool Core::Selector::add_event(Base::socket_t fd, Int events)
     if (io->evs_ & Core::IO_WRITE){
         ev.events |= EPOLLOUT;
     }
+    if (io->evs_ & Core::IO_TYPE_ET){
+        ev.events |= EPOLLET;
+    }
     if (events & Core::IO_READ){
         ev.events |= EPOLLIN;
     }
     if (events & Core::IO_WRITE){
         ev.events |= EPOLLOUT;
+    }
+    if (events & Core::IO_TYPE_ET){
+        ev.events |= EPOLLET;
     }
     Int opt = (io->evs_ == 0) ? EPOLL_CTL_ADD : EPOLL_CTL_MOD;
     opt = ::epoll_ctl(this->fd_, opt, fd, &ev);
@@ -60,11 +66,17 @@ bool Core::Selector::del_event(Base::socket_t fd, Int events)
     if (io->evs_ & Core::IO_WRITE){
         ev.events |= EPOLLOUT;
     }
+    if (io->evs_ & Core::IO_TYPE_ET){
+        ev.events |= EPOLLET;
+    }
     if (events & Core::IO_READ){
         ev.events &= ~EPOLLIN;
     }
     if (events & Core::IO_WRITE){
         ev.events &= ~EPOLLOUT;
+    }
+    if (events & Core::IO_TYPE_ET){
+        ev.events &= ~EPOLLET;
     }
     Int opt = (ev.events == 0) ? EPOLL_CTL_DEL : EPOLL_CTL_MOD;
     opt = ::epoll_ctl(this->fd_, opt, fd, &ev);

@@ -40,21 +40,31 @@ namespace SinBack {
             void set_read_cb(const std::function<void(StringBuf&)>& func){
                 this->read_cb_ = func;
             }
-            void set_write_cb(const std::function<void(const StringBuf&)>& func){
+            void set_read_err_cb(const std::function<void(const StringBuf&)>& func){
+                this->read_err_cb_ = func;
+            }
+            void set_write_cb(const std::function<void(Size_t)>& func){
                 this->write_cb_ = func;
+            }
+            void set_write_err_cb(const std::function<void(const StringBuf&)>& func){
+                this->write_err_cb_ = func;
             }
             void set_close_cb(const std::function<void()>& func){
                 this->close_cb_ = func;
             }
         private:
             static void on_read(const std::weak_ptr<IOEvent>& ev, StringBuf & buf);
-            static void on_write(const std::weak_ptr<IOEvent>& ev, const StringBuf & buf);
+            static void on_read_error(const std::weak_ptr<IOEvent>& ev, const StringBuf & buf);
+            static void on_write(const std::weak_ptr<IOEvent>& ev, Size_t write_len);
+            static void on_write_error(const std::weak_ptr<IOEvent>& ev, const StringBuf & buf);
             static void on_close(const std::weak_ptr<IOEvent>& ev);
         private:
             std::shared_ptr<Core::IOEvent> io_;
             Base::socket_t fd_;
             std::function<void(StringBuf&)> read_cb_;
-            std::function<void(const StringBuf&)> write_cb_;
+            std::function<void(const StringBuf&)> read_err_cb_;
+            std::function<void(Size_t)> write_cb_;
+            std::function<void(const StringBuf&)> write_err_cb_;
             std::function<void()> close_cb_;
         };
     }

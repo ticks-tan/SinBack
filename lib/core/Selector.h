@@ -21,10 +21,11 @@ namespace SinBack
 {
     namespace Core
     {
-        enum SelectorEventType {
+        enum SelectorEventType : UInt{
             IO_READ = 0x001,
             IO_WRITE = 0x004,
-            IO_RDWR = (IO_READ | IO_WRITE)
+            IO_RDWR = (IO_READ | IO_WRITE),
+            IO_TYPE_ET = 1u << 31
         };
 #ifdef OS_WINDOWS
 #else

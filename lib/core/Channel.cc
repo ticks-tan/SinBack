@@ -22,6 +22,12 @@ SinBack::Core::Channel::Channel(const std::weak_ptr<Core::IOEvent> &io)
         if (!this->io_->close_cb_){
             this->io_->close_cb_ = on_close;
         }
+        if (!this->io_->read_err_cb_){
+            this->io_->read_err_cb_ = on_read_error;
+        }
+        if (!this->io_->write_err_cb_){
+            this->io_->write_err_cb_ = on_write_error;
+        }
         this->io_->context_ = this;
     }
 }
@@ -77,26 +83,56 @@ SinBack::Int SinBack::Core::Channel::close()
 void SinBack::Core::Channel::on_read(const std::weak_ptr<IOEvent>& ev, StringBuf& buf)
 {
     auto io = ev.lock();
-    auto* channel = (Channel*)io->context_;
-    if (channel && channel->read_cb_){
-        channel->read_cb_(buf);
+    if (io) {
+        auto *channel = (Channel *) io->context_;
+        if (channel && channel->read_cb_) {
+            channel->read_cb_(buf);
+        }
     }
 }
 
-void SinBack::Core::Channel::on_write(const std::weak_ptr<IOEvent>& ev, const StringBuf& buf)
+void SinBack::Core::Channel::on_write(const std::weak_ptr<IOEvent>& ev, Size_t write_len)
 {
     auto io = ev.lock();
-    auto* channel = (Channel*)io->context_;
-    if (channel && channel->write_cb_){
-        channel->write_cb_(buf);
+    if (io) {
+        auto *channel = (Channel *) io->context_;
+        if (channel && channel->write_cb_) {
+            channel->write_cb_(write_len);
+        }
     }
 }
 
 void SinBack::Core::Channel::on_close(const std::weak_ptr<IOEvent>& ev)
 {
     auto io = ev.lock();
-    auto* channel = (Channel*)io->context_;
-    if (channel && channel->close_cb_){
-        channel->close_cb_();
+    if (io) {
+        auto *channel = (Channel *) io->context_;
+        if (channel && channel->close_cb_) {
+            channel->close_cb_();
+        }
+    }
+}
+
+void
+SinBack::Core::Channel::on_read_error(const std::weak_ptr<IOEvent> &ev, const SinBack::Core::Channel::StringBuf &buf)
+{
+    auto io = ev.lock();
+    if (io){
+        auto* channel = (Channel*)io->context_;
+        if (channel && channel->read_err_cb_){
+            channel->read_err_cb_(buf);
+        }
+    }
+}
+
+void
+SinBack::Core::Channel::on_write_error(const std::weak_ptr<IOEvent> &ev, const SinBack::Core::Channel::StringBuf &buf)
+{
+    auto io = ev.lock();
+    if (io){
+        auto* channel = (Channel*)io->context_;
+        if (channel && channel->write_err_cb_){
+            channel->write_err_cb_(buf);
+        }
     }
 }

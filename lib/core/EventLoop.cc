@@ -178,7 +178,8 @@ Int Core::EventLoop::process_events()
             goto PROCESS_TIMER;
         }
         ++block_us;
-        block_time = (block_us < default_event_loop_wait_timeout * 1000) ? (Int)block_us : default_event_loop_wait_timeout * 1000;
+        block_time = (block_us < default_event_loop_wait_timeout * 1000) ?
+                (Int)block_us : default_event_loop_wait_timeout * 1000;
     }
     if (this->io_count_ > 0){
         // 处理IO事件
@@ -431,7 +432,8 @@ Core::EventLoop::accept_io(Base::socket_t listen_fd, const Core::IOAcceptCB &cb)
  * @return
  */
 std::shared_ptr<Core::IOEvent>
-Core::EventLoop::read_io(Base::socket_t fd, Size_t read_len, const Core::IOReadCB &cb)
+Core::EventLoop::read_io(Base::socket_t fd, Size_t read_len,
+                         const Core::IOReadCB &cb, const Core::IOReadErrCB& err_cb)
 {
     std::shared_ptr<Core::IOEvent> io = this->get_io_event(fd);
     if (read_len > 0){
@@ -439,6 +441,9 @@ Core::EventLoop::read_io(Base::socket_t fd, Size_t read_len, const Core::IOReadC
     }
     if (cb){
         io->read_cb_ = cb;
+    }
+    if (err_cb){
+        io->read_err_cb_ = err_cb;
     }
     io->read();
     return io;
@@ -453,11 +458,15 @@ Core::EventLoop::read_io(Base::socket_t fd, Size_t read_len, const Core::IOReadC
  * @return
  */
 std::shared_ptr<Core::IOEvent>
-Core::EventLoop::write_io(Base::socket_t fd, const void *buf, Size_t len, const Core::IOWriteCB &cb)
+Core::EventLoop::write_io(Base::socket_t fd, const void *buf, Size_t len,
+                          const Core::IOWriteCB &cb, const Core::IOWriteErrCB& err_cb)
 {
     std::shared_ptr<Core::IOEvent> io = this->get_io_event(fd);
     if (cb){
         io->write_cb_ = cb;
+    }
+    if (err_cb){
+        io->write_err_cb_ = err_cb;
     }
     if (buf && len > 0){
         io->write(buf, len);

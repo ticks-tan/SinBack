@@ -36,6 +36,7 @@ bool SinBack::Core::EventLoopPool::start(const Func &begin_func, const Func &end
         this->loop_threads_.emplace_back(new EventLoopThread());
         this->loop_threads_.back()->start(begin_func, end_func);
     }
+    return true;
 }
 
 void SinBack::Core::EventLoopPool::stop(bool is_join)
