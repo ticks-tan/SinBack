@@ -43,7 +43,7 @@ Http::get_http_method_name(Http::HttpMethod method)
 {
 #define HTTP_GET_METHOD_NAME(NUM, NAME, STR) case HTTP_##NAME:return STR;break;
     switch (method) {
-        HTTP_METHOD_MAP(HTTP_GET_METHOD_NAME)
+        HTTP_METHOD_DEFINE(HTTP_GET_METHOD_NAME)
         default:
             return "";
             break;

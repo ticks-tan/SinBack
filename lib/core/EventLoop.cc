@@ -439,11 +439,21 @@ Core::EventLoop::read_io(Base::socket_t fd, Size_t read_len,
                          const Core::IOReadCB &cb, const Core::IOReadErrCB& err_cb)
 {
     std::shared_ptr<Core::IOEvent> io = this->get_io_event(fd);
-    if (read_len > 0){
-        io->read_buf_.reserve(io->read_buf_.capacity() + read_len);
-    }
     if (cb){
         io->read_cb_ = cb;
+    }
+    if (read_len > 0){
+        io->read_len_ = read_len;
+        io->read_buf_.reserve(io->read_buf_.capacity() + read_len);
+        if (read_len <= io->read_buf_.length()){
+            // 需要读取的数据已经在缓冲区中，直接调用回调
+            if (io->read_cb_){
+                std::basic_string<Char> buffer(io->read_buf_, read_len);
+                io->read_cb_(io, buffer);
+                io->read_buf_.erase(0, read_len);
+            }
+            return io;
+        }
     }
     if (err_cb){
         io->read_err_cb_ = err_cb;

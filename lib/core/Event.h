@@ -72,7 +72,7 @@ namespace SinBack
         using IOEventCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
         using TimerEventCB = std::function<void(const std::weak_ptr<TimerEvent>&)>;
         using IOAcceptCB = std::function<void(const std::weak_ptr<IOEvent>&)>;
-        using IOReadCB = std::function<void(const std::weak_ptr<IOEvent>&, std::basic_string<Char>&)>;
+        using IOReadCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
         using IOReadErrCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
         using IOWriteCB = std::function<void(const std::weak_ptr<IOEvent>&, Size_t)>;
         using IOWriteErrCB = std::function<void(const std::weak_ptr<IOEvent>&, const std::basic_string<Char>&)>;
@@ -145,7 +145,10 @@ namespace SinBack
             IOCloseCB close_cb_;
             // 读取缓冲区
             string_type read_buf_;
-            // 写入队列
+            // 读取长度
+            Size_t read_len_ = 0;
+            std::mutex read_mutex;
+            // 写入缓冲队列
             std::deque<string_type> write_queue_;
             // 写入锁
             std::mutex write_mutex_;
@@ -160,6 +163,7 @@ namespace SinBack
                 ready_ = accept_ = false;
                 closed = false;
                 error = 0;
+                read_len_ = 0;
             }
 
             // 接收连接

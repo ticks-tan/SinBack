@@ -26,7 +26,7 @@ namespace SinBack
             // 新客户端连接
             std::function<void(const ChannelPtr&)> on_new_client;
             // 有新消息
-            std::function<void(const ChannelPtr&, StringBuf&)> on_message;
+            std::function<void(const ChannelPtr&, const StringBuf&)> on_message;
             // 读取消息错误
             std::function<void(const ChannelPtr&, const StringBuf&)> on_error_message;
             // 写入消息完成

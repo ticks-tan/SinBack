@@ -195,7 +195,8 @@ void handle_read_cb(const std::weak_ptr<Core::IOEvent>& ev, void* buf, Size_t le
     auto io = ev.lock();
     if (io) {
         if (io->read_cb_) {
-            io->read_cb_(io, io->read_buf_);
+            std::basic_string<Char> buffer((Char*)buf, len);
+            io->read_cb_(io, buffer);
         }
     }
 }
@@ -271,23 +272,22 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
 // 处理ET模式下读取事件
 void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
 {
+    // ET模式下必须一次性将数据读取完，不然后续再触发事件就难了
     auto io = ev.lock();
     if (io){
         if (io->closed || io->destroy_) return;
-        if (io->read_buf_.capacity() == 0){
-            io->read_buf_.reserve(256);
-        }
-        // 需要读取长度
-        Size_t need_read_len = 0;
-        // 最开始读取位置
-        Size_t read_start_pos = io->read_buf_.length();
+
+        std::vector<Char> buf;
+        buf.reserve(256);
+        // 每次需要读取长度
+        Size_t need_read_len = 0, handle_len;
+        // 实际读取长度
         Long read_len = 0, len;
 
         while (true){
             // 获取buffer剩余长度
-            need_read_len = io->read_buf_.capacity() - io->read_buf_.length();
-            if (need_read_len == 0) break;
-            len = Base::recv_socket(io->fd_, (void*)(io->read_buf_.data() + io->read_buf_.length()), need_read_len);
+            need_read_len = buf.capacity() - buf.size();
+            len = Base::recv_socket(io->fd_, buf.data(), need_read_len);
             if (len < 0){
                 io->error = errno;
                 if (errno == EAGAIN || errno == EWOULDBLOCK){
@@ -305,11 +305,16 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
             }else{
                 // 成功读取数据
                 read_len += len;
+                io->read_buf_ += buf.data();
+                buf.clear();
             }
         }
         READ_END:
         // 读取结束，调用回调函数
-        handle_read_cb(io, (void*)(io->read_buf_.data() + read_start_pos), read_len);
+        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.length()) ? io->read_len_ : io->read_buf_.length();
+        handle_read_cb(io, (void*)(io->read_buf_.data()), handle_len);
+        // 删除前面数据，防止缓冲区无限膨胀
+        io->read_buf_.erase(0, handle_len);
         return;
         READ_ERR:
         // 错误回调

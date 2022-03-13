@@ -119,7 +119,7 @@ namespace SinBack
             HTTP_FLUSH = 45
         };
 
-#define HTTP_METHOD_MAP(XX) \
+#define HTTP_METHOD_DEFINE(XX) \
   XX(0, DELETE, "DELETE") \
   XX(1, GET, "GET") \
   XX(2, HEAD, "HEAD") \

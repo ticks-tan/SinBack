@@ -96,31 +96,31 @@ SinBack::Net::TcpServer::new_client(const std::weak_ptr<Core::IOEvent>& ev)
             const ChannelPtr channel = server->add_channel(io);
             Base::set_socket_nonblock(channel->get_fd());
             // 设置读取回调
-            channel->set_read_cb([server, channel](StringBuf &buf) {
+            channel->set_read_cb([server, &channel](const StringBuf &buf) {
                 if (server->on_message) {
                     server->on_message(channel, buf);
                 }
             });
             // 设置读取错误回调
-            channel->set_read_err_cb([server, channel](const StringBuf& err){
+            channel->set_read_err_cb([server, &channel](const StringBuf& err){
                 if (server->on_error_message){
                     server->on_error_message(channel, err);
                 }
             });
             // 设置写入回调
-            channel->set_write_cb([server, channel](Size_t len) {
+            channel->set_write_cb([server, &channel](Size_t len) {
                 if (server->on_write) {
                     server->on_write(channel, len);
                 }
             });
             // 设置写入错误回调
-            channel->set_write_err_cb([server, channel](const StringBuf& err){
+            channel->set_write_err_cb([server, &channel](const StringBuf& err){
                 if (server->on_error_write){
                     server->on_error_write(channel, err);
                 }
             });
             // 设置关闭回调
-            channel->set_close_cb([server, channel]() {
+            channel->set_close_cb([server, &channel]() {
                 if (server->on_close) {
                     server->on_close(channel);
                 }
