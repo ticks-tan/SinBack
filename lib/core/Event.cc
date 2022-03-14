@@ -9,6 +9,8 @@
 
 using namespace SinBack;
 
+Int io_read_et(Core::IOEvent* io);
+
 // 水平触发 write函数
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len);
 // 边缘触发 write 函数
@@ -40,6 +42,63 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
 // 边缘触发 write 封装
 void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
+
+Int io_read_et(Core::IOEvent* io)
+{
+    if (io){
+        if (io->closed || io->destroy_) return -1;
+
+        std::vector<Char> buf;
+        buf.reserve(256);
+        // 每次需要读取长度
+        Size_t need_read_len = 0, handle_len;
+        // 实际读取长度
+        Long read_len = 0, len;
+
+        while (true){
+            // 获取buffer剩余长度
+            need_read_len = buf.capacity() - buf.size();
+            len = Base::recv_socket(io->fd_, buf.data(), need_read_len);
+            if (len < 0){
+                io->error = errno;
+                if (errno == EAGAIN || errno == EWOULDBLOCK){
+                    // 没有数据可读，返回
+                    goto READ_END;
+                } else{
+                    // 读取错误，处理错误
+                    io->loop_->logger().error("socket read error, pid = {}, id = {}, error -> {} .",
+                                              io->pid_, io->id_, strerror(io->error));
+                    goto READ_ERR;
+                }
+            }else if (len == 0){
+                // 客户端断开连接
+                goto DISCONNECT;
+            }else{
+                // 成功读取数据
+                read_len += len;
+                io->read_buf_.append(buf.data(), len);
+                buf.clear();
+            }
+        }
+        READ_END:
+        // 读取结束，调用回调函数
+        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.length()) ? io->read_len_ : io->read_buf_.length();
+        if (handle_len > 0) {
+            handle_read_cb(io->shared_from_this(), (void *) (io->read_buf_.data()), handle_len);
+            // 删除前面数据，防止缓冲区无限膨胀
+            io->read_buf_.erase(0, handle_len);
+        }
+        SinBack::Core::EventLoop::add_io_event(io->shared_from_this(), handle_event_func, Core::IO_READ | Core::IO_TYPE_ET);
+        return (Int)handle_len;
+        READ_ERR:
+        // 错误回调
+        handle_read_err_cb(io->shared_from_this(), strerror(io->error));
+        DISCONNECT:
+        // 关闭连接
+        io->close();
+        return 0;
+    }
+}
 
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 {
@@ -305,7 +364,7 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
             }else{
                 // 成功读取数据
                 read_len += len;
-                io->read_buf_ += buf.data();
+                io->read_buf_.append(buf.data(), len);
                 buf.clear();
             }
         }
@@ -332,21 +391,18 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
     auto io = ev.lock();
     if (io){
         if (io->closed) return;
-        if (io->read_buf_.capacity() == 0){
-            io->read_buf_.reserve(256);
-        }
+        std::vector<Char> buf;
+        buf.reserve(256);
         // 需要读取的长度
         Size_t need_read_len = 0;
-        // 开始读取长度
-        Size_t read_start_pos = io->read_buf_.length();
         // 读取长度
         Long read_len = 0;
 
-        need_read_len = io->read_buf_.capacity() - io->read_buf_.length();
+        need_read_len = buf.capacity();
         // 避免读取长度为0,返回0导致错误关闭套接字
         if (need_read_len == 0) return;
         // 开始读取
-        read_len = Base::recv_socket(io->fd_, (void*)(io->read_buf_.data() + io->read_buf_.length()), need_read_len);
+        read_len = Base::recv_socket(io->fd_, (void*)(buf.data()), need_read_len);
         if (read_len < 0){
             io->error = errno;
             // 信号中断，下次再读取
@@ -363,8 +419,11 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         if (read_len == 0){
             goto DISCONNECT;
         }
+        io->read_buf_.append(buf.data(), read_len);
+        buf.clear();
         // 读取回调
-        handle_read_cb(io, (void*)(io->read_buf_.data() + read_start_pos), read_len);
+        handle_read_cb(io, (void*)(io->read_buf_.data()), read_len);
+        io->read_buf_.erase(0, read_len);
         return;
         READ_ERROR:
         // 读取错误回调
@@ -497,7 +556,11 @@ Int Core::IOEvent::accept()
 Int Core::IOEvent::read()
 {
     if (this->closed) return -1;
-    return Core::EventLoop::add_io_event(shared_from_this(), handle_event_func, Core::IO_READ | Core::IO_TYPE_ET);
+    if (this->evs_ & Core::IO_TYPE_ET){
+        fmt::print("read ET\n");
+        return io_read_et(this);
+    }
+    return Core::EventLoop::add_io_event(shared_from_this(), handle_event_func, Core::IO_READ);
 }
 
 Int Core::IOEvent::write(const void *buf, Size_t len)

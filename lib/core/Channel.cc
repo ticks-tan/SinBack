@@ -7,6 +7,7 @@
 */
 
 #include "Channel.h"
+#include "core/EventLoop.h"
 
 SinBack::Core::Channel::Channel(const std::weak_ptr<Core::IOEvent> &io)
 {
@@ -42,6 +43,9 @@ SinBack::Core::Channel::~Channel()
 SinBack::Int SinBack::Core::Channel::read()
 {
     if (this->io_){
+        if (this->io_->evs_ & Core::IO_TYPE_ET){
+            Core::EventLoop::remove_io_event(this->io_, Core::IO_TYPE_ET);
+        }
         return this->io_->read();
     }
     return 0;
@@ -58,6 +62,9 @@ SinBack::Int SinBack::Core::Channel::write(const void* buf, Size_t len)
 SinBack::Int SinBack::Core::Channel::read(SinBack::Size_t read_len)
 {
     if (this->io_){
+        if (this->io_->evs_ & Core::IO_TYPE_ET){
+            Core::EventLoop::remove_io_event(this->io_, Core::IO_TYPE_ET);
+        }
         if (read_len > 0){
             this->io_->read_len_ = read_len;
             this->io_->read_buf_.reserve(this->io_->read_buf_.capacity() + read_len);
@@ -70,8 +77,8 @@ SinBack::Int SinBack::Core::Channel::read(SinBack::Size_t read_len)
                 }
                 return 0;
             }
+            return this->io_->read();
         }
-        return this->io_->read();
     }
     return 0;
 }

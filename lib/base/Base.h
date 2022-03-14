@@ -9,6 +9,7 @@
 #define SIN_BACK_BASE_H
 
 #include <algorithm>
+#include <string>
 
 // platform
 // Windows平台
@@ -36,6 +37,7 @@ namespace SinBack {
 #else
     typedef char Char;
 #endif
+    using String = std::basic_string<Char>;
     // 字符串结尾
 #define CHAR_END    ('\0')
 // 字符串
