@@ -16,9 +16,11 @@ int main()
     HttpServer server;
     HttpService service;
     // 设置http服务器配置
-    server.setting().log_dir = "./LogDir";
+    server.setting().log_dir = SIN_STR("./LogDir/");
+    server.setting().static_file_dir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
     server.setting().work_thread_num = 4;
     server.setting().keep_alive = false;
+
     // 设置 service
     // 拦截 /test下所有 GET 请求
     service.GET("/test/**", [](HttpContext& context) -> Int {

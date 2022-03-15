@@ -8,6 +8,7 @@
 #ifndef SINBACK_HTTPCONTEXT_H
 #define SINBACK_HTTPCONTEXT_H
 
+#include "base/File.h"
 #include "net/HttpParser.h"
 
 namespace SinBack
@@ -19,7 +20,7 @@ namespace SinBack
         {
         public:
 
-            HttpContext();
+            HttpContext(HttpServer* server);
             ~HttpContext();
 
             // 发送文本数据
@@ -40,14 +41,23 @@ namespace SinBack
             HttpResponse& response(){
                 return this->response_;
             }
-
+            // 获取解析器
             HttpParser* parser(){
                 return this->parser_.get();
             }
+
+            HttpServer* server(){
+                return this->server_;
+            }
         private:
+            // Http解析器
             std::shared_ptr<HttpParser> parser_;
+            // Http请求
             HttpRequest request_;
+            // Http回应
             HttpResponse response_;
+            // 对应 HttpServer 指针
+            HttpServer* server_;
         };
     }
 }

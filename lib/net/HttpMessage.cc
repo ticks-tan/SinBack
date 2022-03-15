@@ -10,7 +10,7 @@
 
 using namespace SinBack;
 
-Http::String
+SinBack::String
 Http::HttpRequest::to_string() const
 {
     String request;
@@ -28,17 +28,27 @@ Http::HttpRequest::to_string() const
     return request;
 }
 
-Http::String
-Http::HttpResponse::to_string() const {
+SinBack::String
+Http::HttpResponse::to_string() {
     String response;
-    response += SIN_STR("HTTP/1.1 ");
+    switch (this->http_version) {
+        case HTTP_1_0:
+            response += SIN_STR("HTTP/1.0\r\n");
+            break;
+        default:
+            response += SIN_STR("HTTP/1.1\r\n");
+            break;
+    }
     response += std::to_string(this->status_code) + SIN_STR(" ");
-    response += this->code_string + SIN_STR("\r\n");
+    response += Http::get_http_status_code_name(this->status_code) + SIN_STR("\r\n");
+    if (!this->content.data().empty()){
+        this->header.set_head(SIN_STR("Content-Length"), std::to_string(this->content.data().length()));
+    }
     response += this->header.to_string();
     return response;
 }
 
-Http::String
+SinBack::String
 Http::get_http_method_name(Http::HttpMethod method)
 {
 #define HTTP_GET_METHOD_NAME(NUM, NAME, STR) case HTTP_##NAME:return STR;break;
@@ -50,4 +60,25 @@ Http::get_http_method_name(Http::HttpMethod method)
     }
 #undef HTTP_GET_METHOD_NAME
     return "";
+}
+
+SinBack::String
+Http::get_http_content_type(const String& suffix)
+{
+#define GET_HTTP_CONTENT_TYPE(NUM, SUFFIX, TYPE)    if (suffix == SUFFIX) return TYPE;
+    HTTP_CONTENT_TYPE_MAP(GET_HTTP_CONTENT_TYPE)
+#undef GET_HTTP_CONTENT_TYPE
+    return "application/octet-stream";
+}
+
+SinBack::String
+Http::get_http_status_code_name(UInt code)
+{
+#define GET_HTTP_STATUS_CODE_NAME(NUM, CODE, STR)   case CODE: return STR;
+    switch (code) {
+        HTTP_STATUS_CODE_MAP(GET_HTTP_STATUS_CODE_NAME)
+        default:
+            return "None";
+    }
+#undef GET_HTTP_STATUS_CODE_NAME
 }

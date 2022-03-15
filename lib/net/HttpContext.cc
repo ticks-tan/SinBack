@@ -10,8 +10,9 @@
 
 using namespace SinBack;
 
-Http::HttpContext::HttpContext()
+Http::HttpContext::HttpContext(Http::HttpServer* server)
     : parser_()
+    , server_(server)
 {
     this->parser_.reset(new Http::Http1Parse(&request_, &response_));
 }

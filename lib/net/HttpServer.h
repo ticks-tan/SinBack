@@ -32,15 +32,18 @@ namespace SinBack {
                 Size_t max_accept_cnt;
                 // 是否启用 keep-alive，默认关闭
                 bool keep_alive;
+                // 静态文件路径, 不指定即为当前工作目录
+                String static_file_dir;
             };
         public:
             HttpServer();
             ~HttpServer();
 
+            // 获取 Setting 引用
             Setting& setting(){
                 return this->setting_;
             }
-            // 添加 service,有对应名字
+            // 添加 service,提供对应名字
             bool add_service(const String& name, HttpService* service);
 
             // 开始监听
@@ -54,18 +57,21 @@ namespace SinBack {
                 return this->connect_cnt_;
             }
 
+            // 获取 services
             std::unordered_map<SinBack::String, HttpService*>& services(){
                 return this->services_;
             }
 
-            // 获取 loop
+            // 获取一个工作 loop
             Core::EventLoopPtr loop(Int index = -1){
                 return this->work_th_->loop(index).get();
             }
 
+            // 当前连接客户端数量 +1
             void inc_connect_count(){
                 ++this->connect_cnt_;
             }
+            // 当前连接客户端数量 -1
             void dec_connect_count(){
                 --this->connect_cnt_;
             }
@@ -94,12 +100,16 @@ namespace SinBack {
             // 客户端关闭
             void on_disconnect(const std::weak_ptr<Core::IOEvent>& ev);
             // 发送http回应数据
-            void send_http_response(std::shared_ptr<Core::IOEvent> io, HttpContext* context, Int call_ret);
+            void send_http_response(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, Int call_ret);
+
+            // 静态文件
+            void send_static_file(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, String& path);
         private:
+            // 设置
             Setting setting_;
             // 多个服务
             std::unordered_map<String, HttpService*> services_;
-            // accept线程
+            // accept 线程
             std::shared_ptr<Core::EventLoopThread> accept_th_;
             // 工作线程
             std::shared_ptr<Core::EventLoopPool> work_th_;
@@ -109,7 +119,6 @@ namespace SinBack {
             bool running_;
             // 记录当前连接客户端数量
             std::atomic<Size_t> connect_cnt_{};
-
         };
     }
 }

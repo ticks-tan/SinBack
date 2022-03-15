@@ -83,7 +83,7 @@ SinBack::Int SinBack::Core::Channel::read(SinBack::Size_t read_len)
     return 0;
 }
 
-SinBack::Int SinBack::Core::Channel::write(const StringBuf &buf)
+SinBack::Int SinBack::Core::Channel::write(const String &buf)
 {
     if (this->io_){
         return this->io_->write(buf.data(), buf.length());
@@ -99,7 +99,7 @@ SinBack::Int SinBack::Core::Channel::close()
     return 0;
 }
 
-void SinBack::Core::Channel::on_read(const std::weak_ptr<IOEvent>& ev, const StringBuf& buf)
+void SinBack::Core::Channel::on_read(const std::weak_ptr<IOEvent>& ev, const String& buf)
 {
     auto io = ev.lock();
     if (io) {
@@ -133,7 +133,7 @@ void SinBack::Core::Channel::on_close(const std::weak_ptr<IOEvent>& ev)
 }
 
 void
-SinBack::Core::Channel::on_read_error(const std::weak_ptr<IOEvent> &ev, const SinBack::Core::Channel::StringBuf &buf)
+SinBack::Core::Channel::on_read_error(const std::weak_ptr<IOEvent> &ev, const SinBack::String &buf)
 {
     auto io = ev.lock();
     if (io){
@@ -145,7 +145,7 @@ SinBack::Core::Channel::on_read_error(const std::weak_ptr<IOEvent> &ev, const Si
 }
 
 void
-SinBack::Core::Channel::on_write_error(const std::weak_ptr<IOEvent> &ev, const SinBack::Core::Channel::StringBuf &buf)
+SinBack::Core::Channel::on_write_error(const std::weak_ptr<IOEvent> &ev, const SinBack::String &buf)
 {
     auto io = ev.lock();
     if (io){

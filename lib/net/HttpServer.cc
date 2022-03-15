@@ -15,6 +15,7 @@ Http::HttpServer::HttpServer()
     , running_(false)
     , listen_fd_(-1)
 {
+    // 初始化工作
     init();
 }
 
@@ -27,8 +28,11 @@ Http::HttpServer::~HttpServer()
 
 void Http::HttpServer::init()
 {
-    this->setting_ .keep_alive = false;
+    // 默认设置
+    this->setting_.keep_alive = false;
     this->setting_.log_dir = "./";
+    // 静态文件默认开启，手动指定静态文件根目录才会开启
+    this->setting_.static_file_dir = "";
     this->setting_.max_accept_cnt = 4096;
     this->setting_.work_thread_num = std::thread::hardware_concurrency();
 }
@@ -51,33 +55,41 @@ bool Http::HttpServer::listen(UInt port, const std::function<void(const String &
         }
         return false;
     }
+    // 创建监听套接字并监听
     if (!create_listen_socket_v4(port)){
         goto ERR;
     }
-
+    // 开始运行
     start();
     return true;
 
     ERR:
     if (err_callback){
-        err_callback(SIN_STR("listen error !"));
+        err_callback(strerror(errno));
     }
     return false;
 }
 
 void Http::HttpServer::stop()
 {
+    // 停止运行
     if (this->running_){
         this->running_ = false;
+        // 等待 accept loop 退出
         this->accept_th_->stop(true);
         this->work_th_->stop();
     }
 }
 
+/**
+ * 新客户端连接后会调用该函数
+ * @param ev : 新连接的客户端对应 IO 事件句柄
+ */
 void Http::HttpServer::on_new_client(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
+        // 判断是否超过最大允许的连接数量
         Size_t cnt = this->get_connect_count();
         if (cnt >= this->setting().max_accept_cnt){
             // 超过最大连接数量
@@ -85,44 +97,57 @@ void Http::HttpServer::on_new_client(const std::weak_ptr<Core::IOEvent>& ev)
             io->loop_->close_io(io->fd_);
             return;
         }
+        // 获取一个工作线程来管理该 IO 句柄
         Core::EventLoopPtr new_loop = this->loop();
-        // 更改 io loop
+        // 更改 IO事件 loop
         Core::EventLoop::change_io_loop(io, new_loop);
-        // 设置回调
+        // 设置  事件回调
         io->read_cb_ = std::bind(&HttpServer::on_new_message, this, std::placeholders::_1, std::placeholders::_2);
         io->read_err_cb_ = std::bind(&HttpServer::on_message_error, this, std::placeholders::_1, std::placeholders::_2);
         io->write_cb_ = std::bind(&HttpServer::on_send, this, std::placeholders::_1, std::placeholders::_2);
         io->write_err_cb_ = std::bind(&HttpServer::on_send_error, this, std::placeholders::_1, std::placeholders::_2);
         io->close_cb_ = std::bind(&HttpServer::on_disconnect, this, std::placeholders::_1);
-        auto* http_context = new Http::HttpContext();
+        auto* http_context = new Http::HttpContext(this);
+        // 将 HttpContext与IO事件关联
         io->context_ = http_context;
-        // 当前连接客户端+1
+        // 当前连接客户端 +1
         this->inc_connect_count();
-        // 读取io
+        // 读取数据 (主要作用是将可读事件注册到 Loop)
         io->read();
     }
 }
 
+/**
+ * 有新数据时会调用该函数 -- 核心处理函数
+ * @param ev : 读取数据的IO事件句柄
+ * @param read_msg : 本次读取的数据
+ */
 void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, const String& read_msg)
 {
     // 有新数据到来：解析数据 -> 匹配路由并执行对应回调 -> 解析返回信息 -> 调用write写入数据
     auto io = ev.lock();
     if (io){
+        // 取出 HttpContext
         auto http_context = (HttpContext*)(io->context_);
-        if (http_context){
 
+        if (http_context){
+            // 取出 Http Parser 解析 Http 数据
             auto* parser = http_context->parser();
-            parser->parse_data(read_msg.c_str(), read_msg.length());
+            // 解析数据
+            Int ret = parser->parse_data(read_msg.c_str(), read_msg.length());
+            // 判断是否解析完毕
             if (parser->need_receive()){
-                // 需要继续读取
+                // 需要继续读取数据
                 return;
             } else {
+                // 解析完成, 初始化，初始化失败关闭连接
                 if (!http_context->init()){
                     io->close();
                     return;
                 }
                 Int method = http_context->request().method;
-                const SinBack::String url = http_context->request().url;
+                SinBack::String url = http_context->request().url;
+
                 Int call_ret = 0;
                 bool is_call = false;
 
@@ -130,22 +155,33 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                     auto &routers = service.second->match_service(url, method);
                     // 依次执行 service 回调
                     for (auto& call : routers){
+                        // 如果方法匹配，调用回调
                         if (call->method & method){
                             if (call->callback){
                                 call_ret = call->callback(*http_context);
                                 is_call = true;
                             }
+                            // 如果不为 NEXT, 后续回调被忽略
                             if (call_ret != Http::ServiceCallBackRet::NEXT){
+                                routers.clear();
                                 goto SERVICE_END;
                             }
                         }
                     }
+                    routers.clear();
                 }
+                // 没有执行回调 (请求没有被拦截)
                 if (!is_call){
-                    // 没有执行任何回调
-                    call_ret = http_context->sen_text("." + http_context->request().url);
+                    // 如果启用了静态文件服务，则返回对应文件
+                    if (!this->setting_.static_file_dir.empty()){
+                        send_static_file(io, http_context, url);
+                        return;
+                    }
+                    // 没有启用，返回一段有趣的话吧~
+                    io->close();
+                    return;
                 }
-                call_ret = Http::ServiceCallBackRet::END;
+                // 提前结束回调
                 SERVICE_END:
                 HttpServer::send_http_response(io, http_context, call_ret);
                 return;
@@ -192,15 +228,19 @@ bool Http::HttpServer::create_listen_socket_v4(UInt port)
     if (this->listen_fd_ < 0){
         return false;
     }
+    // 绑定
     if (!Base::bind_socket(this->listen_fd_, Base::IP_4, nullptr, port)){
         goto ERR;
     }
+    // 设置非阻塞
+    Base::set_socket_nonblock(this->listen_fd_);
+    // 设置端口复用
+    Base::socket_reuse_address(this->listen_fd_);
 
+    // 监听
     if (!Base::listen_socket(this->listen_fd_)){
         goto ERR;
     }
-    Base::set_socket_nonblock(this->listen_fd_);
-    Base::socket_reuse_address(this->listen_fd_);
     return true;
     ERR:
     Base::close_socket(this->listen_fd_);
@@ -210,6 +250,7 @@ bool Http::HttpServer::create_listen_socket_v4(UInt port)
 
 void Http::HttpServer::start()
 {
+    // 开始事件循环
     this->accept_th_.reset(new Core::EventLoopThread);
     this->work_th_.reset(new Core::EventLoopPool(setting_.work_thread_num));
     // 设置日志文件路径
@@ -219,37 +260,71 @@ void Http::HttpServer::start()
     if (this->setting_.work_thread_num > 0){
         this->work_th_->start();
     }
+    // 开始监听
     this->accept_th_->start(std::bind(&HttpServer::start_accept, this), nullptr);
 
 }
 
 void Http::HttpServer::start_accept()
 {
+    // 注册 accept 事件并设置回调
     auto acceptor = this->accept_th_->loop()->accept_io(this->listen_fd_,
                                                         std::bind(&HttpServer::on_new_client, this, std::placeholders::_1));
 }
 
-void Http::HttpServer::send_http_response(std::shared_ptr<Core::IOEvent> io, Http::HttpContext *context, Int call_ret)
+/**
+ * 发送 Http 响应
+ * @param io
+ * @param context
+ * @param call_ret
+ */
+void Http::HttpServer::send_http_response(const std::shared_ptr<Core::IOEvent>& io, Http::HttpContext *context, Int call_ret)
 {
-    context->response().code_string = SIN_STR("OK");
+    // 提前结束
     if (call_ret == Http::ServiceCallBackRet::END){
         if (context->response().status_code == 0){
             context->response().status_code = 200;
         }
-    }else if (call_ret > 0){
+    }else if (call_ret > 1){
         context->response().status_code = call_ret;
     }
-    if (!this->setting_.keep_alive){
+    // 是否保持连接
+    if (!this->setting_.keep_alive) {
         context->response().header.set_head(SIN_STR("Connection"), SIN_STR("close"));
     }
-    if (!context->response().content.data().empty()){
-        context->response().header.set_head(SIN_STR("Content-Length"), std::to_string(context->response().content.data().length()));
-    }
+
     SinBack::String buf = context->response().to_string();
     buf += context->response().content.data();
     io->write(buf.c_str(), buf.length());
 }
 
-
-
+void Http::HttpServer::send_static_file(const std::shared_ptr<Core::IOEvent> &io, Http::HttpContext *context, String& path)
+{
+    if (!this->setting_.keep_alive){
+        context->response().header.set_head(SIN_STR("Connection"), SIN_STR("close"));
+    }
+    path.insert(0, this->setting_.static_file_dir);
+    Base::File file(path, Base::ReadOnly);
+    if (!file.exist()){
+        // 文件不存在
+        context->response().status_code = 404;
+        context->response().header.set_head(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+        context->response().content.data() += SIN_STR("-_- -_- -_- 找不到您要访问的页面呢! -_- -_- -_- ");
+        path = context->response().to_string();
+        path += context->response().content.data();
+        io->write(path.c_str(), path.length());
+    } else{
+        // 文件操作。放到线程池中执行
+        io->loop_->queue_func([io, context, path](){
+            Base::File file(path, Base::ReadOnly);
+            context->response().status_code = 200;
+            context->response().header.set_head(SIN_STR("Content-Type"), Http::get_http_content_type(file.suffix()));
+            String buf = context->response().to_string();
+            file >> context->response().content.data();
+            fmt::print("文件读取完成 -- {}\n", io->closed);
+            buf += context->response().content.data();
+            io->write(buf.c_str(), buf.length());
+        });
+    }
+}
 

@@ -20,19 +20,18 @@ namespace SinBack
         public:
             using EventLoopPtr = std::shared_ptr<SinBack::Core::EventLoop>;
             using ChannelPtr = std::shared_ptr<SinBack::Core::Channel>;
-            using StringBuf = std::basic_string<Char>;
             static const UInt default_max_accept_count = 4096;
 
             // 新客户端连接
             std::function<void(const ChannelPtr&)> on_new_client;
             // 有新消息
-            std::function<void(const ChannelPtr&, const StringBuf&)> on_message;
+            std::function<void(const ChannelPtr&, const String&)> on_message;
             // 读取消息错误
-            std::function<void(const ChannelPtr&, const StringBuf&)> on_error_message;
+            std::function<void(const ChannelPtr&, const String&)> on_error_message;
             // 写入消息完成
             std::function<void(const ChannelPtr&, Size_t)> on_write;
             // 写入消息错误
-            std::function<void(const ChannelPtr&, const StringBuf&)> on_error_write;
+            std::function<void(const ChannelPtr&, const String&)> on_error_write;
             // 关闭
             std::function<void(const ChannelPtr&)> on_close;
         public:
