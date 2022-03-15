@@ -27,7 +27,7 @@ Int on_url(llhttp_t* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
-        hp->request.url.append(data, len);
+        hp->request_->url.append(data, len);
         hp->set_status(Http::HP_PARSE_URL);
         return 0;
     }
@@ -48,7 +48,7 @@ Int on_header_field(llhttp_t* parser, const Char* data, Size_t len)
     if (hp){
         hp->header_field.append(data, len);
         if (!hp->header_field.empty() && !hp->header_value.empty()){
-            hp->request.header.set_head(hp->header_field, hp->header_value);
+            hp->request_->header.set_head(hp->header_field, hp->header_value);
             hp->header_field.clear();
             hp->header_value.clear();
         }
@@ -63,7 +63,7 @@ Int on_header_value(llhttp_t* parser, const Char* data, Size_t len)
     if (hp){
         hp->header_value.append(data, len);
         if (!hp->header_field.empty() && !hp->header_value.empty()){
-            hp->request.header.set_head(hp->header_field, hp->header_value);
+            hp->request_->header.set_head(hp->header_field, hp->header_value);
             hp->header_field.clear();
             hp->header_value.clear();
         }
@@ -77,7 +77,7 @@ Int on_body(llhttp_t* parser, const Char* data, Size_t len)
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
         hp->set_status(Http::HP_PARSE_BODY);
-        hp->request.content.data().append(data, len);
+        hp->request_->content.data().append(data, len);
         return 0;
     }
     return 1;
@@ -105,6 +105,7 @@ Int on_message_complete(llhttp_t* parser)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
+        hp->request_->method = (Http::HttpMethod)parser->method;
         hp->set_status(Http::HP_PARSE_END);
         return 0;
     }
@@ -129,16 +130,13 @@ Int on_chunk_complete(llhttp_t* parser)
     return 1;
 }
 
-std::shared_ptr<Http::HttpParser>
-Http::HttpParser::make_http_parser(Http::HttpVersion version) {
-    return std::make_shared<Http::Http1Parse>();
-}
 
-
-Http::Http1Parse::Http1Parse()
+Http::Http1Parse::Http1Parse(HttpRequest* req, HttpResponse* resp)
     : setting_()
     , parser_()
     , status_(HP_NULL)
+    , request_(req)
+    , response_(resp)
 {
     llhttp_settings_init(&this->setting_);
     llhttp_init(&this->parser_, HTTP_REQUEST, &this->setting_);

@@ -94,7 +94,7 @@ namespace SinBack {
             // 客户端关闭
             void on_disconnect(const std::weak_ptr<Core::IOEvent>& ev);
             // 发送http回应数据
-            void send_http_response(HttpContext* context);
+            void send_http_response(std::shared_ptr<Core::IOEvent> io, HttpContext* context, Int call_ret);
         private:
             Setting setting_;
             // 多个服务
@@ -108,7 +108,7 @@ namespace SinBack {
             // 是否运行
             bool running_;
             // 记录当前连接客户端数量
-            std::atomic<Size_t> connect_cnt_;
+            std::atomic<Size_t> connect_cnt_{};
 
         };
     }

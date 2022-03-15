@@ -28,6 +28,12 @@ namespace SinBack
             void pause();
             void resume();
             void join();
+            // 设置日志文件目录
+            void set_logger_dir(const String& log_dir){
+                for (auto& it : this->loop_threads_){
+                    it->set_logger_dir(log_dir);
+                }
+            }
 
             EventLoopThread::EventLoopPtr loop(Int index = -1);
 

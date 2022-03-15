@@ -41,7 +41,7 @@ namespace SinBack
                 String str;
                 for (auto& it : this->data_){
                     str += it.first;
-                    str += SIN_STR(":\t");
+                    str += SIN_STR(": ");
                     str += it.second;
                     str += SIN_STR("\r\n");
                 }
@@ -200,8 +200,6 @@ namespace SinBack
         public:
             // Http版本
             HttpVersion http_version = HTTP_1_1;
-            // Http方法
-            HttpMethod method;
             // 状态代码
             Int status_code;
             // 状态码解释

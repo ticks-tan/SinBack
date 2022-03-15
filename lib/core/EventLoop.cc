@@ -29,6 +29,7 @@ Core::EventLoop::EventLoop()
     , loop_count_(0), actives_count_(0)
     , pending_count_(0), io_count_(0), custom_count_(0), idle_count_(0), timer_count_(0)
     , thread_pool_(default_thread_pool_count)
+    , logger_(nullptr)
 {
     init_loop();
 }
@@ -49,10 +50,6 @@ void Core::EventLoop::init_loop()
 {
     this->id_ = event_loop_next_id();
     this->selector_ = std::make_shared<Core::Selector>(this);
-    std::basic_string<Char> logger_name = SIN_STR("SinBack_EventLoop_");
-    logger_name += std::to_string(this->id_) + SIN_STR("_");
-    logger_name += std::to_string(this->pid_);
-    this->logger_ = std::make_shared<Log::Logger>(Log::LoggerType::Rolling, logger_name);
     this->start_time_ = this->end_time_ = this->cur_time_ = 0;
 }
 
@@ -64,6 +61,12 @@ bool Core::EventLoop::run()
 {
     if (this->status_ == Running){
         return false;
+    }
+    if (this->logger_ == nullptr){
+        std::basic_string<Char> logger_name = SIN_STR("SinBack_EventLoop_");
+        logger_name += std::to_string(this->id_) + SIN_STR("_");
+        logger_name += std::to_string(this->pid_);
+        this->logger_ = std::make_shared<Log::Logger>(Log::LoggerType::Rolling, logger_name);
     }
     this->status_ = Running;
     this->pid_ = getpid();

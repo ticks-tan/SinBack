@@ -33,7 +33,7 @@ namespace SinBack
         class HttpParser {
         public:
             HttpVersion version = HTTP_1_1;
-            static std::shared_ptr<HttpParser> make_http_parser(HttpVersion version = HTTP_1_1);
+            // static std::shared_ptr<HttpParser> make_http_parser(HttpVersion version = HTTP_1_1);
 
             virtual ~HttpParser() = default;
             // 解析数据
@@ -53,8 +53,11 @@ namespace SinBack
         class Http1Parse : public HttpParser
         {
         public:
-            Http1Parse();
+
+            Http1Parse(HttpRequest* req, HttpResponse* resp);
+            Http1Parse() = delete;
             ~Http1Parse() override;
+
             Int parse_data(const Char* data, Size_t len) override;
             Int get_status() override;
             bool need_receive() override;
@@ -63,15 +66,16 @@ namespace SinBack
             Int init_request() override;
             Int init_response() override;
 
-        public:
-            HttpRequest request;
-            HttpResponse response;
-            String header_field;
-            String header_value;
-
             void set_status(HttpParserStatus status){
                 this->status_ = status;
             }
+
+        public:
+            HttpRequest* request_;
+            HttpResponse* response_;
+
+            String header_field;
+            String header_value;
         private:
             llhttp_t parser_;
             HttpParserStatus status_;

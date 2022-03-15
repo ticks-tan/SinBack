@@ -73,6 +73,23 @@ namespace SinBack
             // 恢复执行
             bool resume();
 
+            // 设置日志文件路径
+            void set_logger_path(const String& log_dir = "./"){
+                std::basic_string<Char> logger_name = log_dir + SIN_STR("SinBack_EventLoop_");
+                logger_name += std::to_string(this->id_) + SIN_STR("_");
+                logger_name += std::to_string(this->pid_);
+                this->logger_ = std::make_shared<Log::Logger>(Log::LoggerType::Rolling, logger_name);
+            }
+
+            // 获取 pid
+            pid_t get_pid() const{
+                return this->pid_;
+            }
+            // 获取 id
+            UInt get_id() const{
+                return this->id_;
+            }
+
             // 通过套接字找到 IOEvent
             std::shared_ptr<IOEvent> get_io_event(Base::socket_t fd);
             // 获取日志记录器

@@ -30,13 +30,15 @@ namespace SinBack
             bool parse_url();
             // 解析请求数据
             bool parse_body();
+            // 初始化
+            bool init();
             // 获取请求
-            HttpRequest& request();
+            HttpRequest& request(){
+                return this->request_;
+            }
             // 获取回应
-            HttpResponse& response();
-
-            HttpServer* context(){
-                return this->context_;
+            HttpResponse& response(){
+                return this->response_;
             }
 
             HttpParser* parser(){
@@ -44,7 +46,8 @@ namespace SinBack
             }
         private:
             std::shared_ptr<HttpParser> parser_;
-            HttpServer* context_;
+            HttpRequest request_;
+            HttpResponse response_;
         };
     }
 }

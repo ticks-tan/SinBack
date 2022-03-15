@@ -114,28 +114,41 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
             auto* parser = http_context->parser();
             parser->parse_data(read_msg.c_str(), read_msg.length());
             if (parser->need_receive()){
+                // 需要继续读取
                 return;
             } else {
+                if (!http_context->init()){
+                    io->close();
+                    return;
+                }
                 Int method = http_context->request().method;
                 const SinBack::String url = http_context->request().url;
                 Int call_ret = 0;
+                bool is_call = false;
 
-                for (auto &service: http_context->context()->services()) {
+                for (auto &service: this->services()) {
                     auto &routers = service.second->match_service(url, method);
                     // 依次执行 service 回调
                     for (auto& call : routers){
                         if (call->method & method){
                             if (call->callback){
                                 call_ret = call->callback(*http_context);
+                                is_call = true;
                             }
-                            if (call_ret == Http::ServiceCallBackRet::END){
+                            if (call_ret != Http::ServiceCallBackRet::NEXT){
                                 goto SERVICE_END;
                             }
                         }
                     }
                 }
+                if (!is_call){
+                    // 没有执行任何回调
+                    call_ret = http_context->sen_text("." + http_context->request().url);
+                }
+                call_ret = Http::ServiceCallBackRet::END;
                 SERVICE_END:
-                HttpServer::send_http_response(http_context);
+                HttpServer::send_http_response(io, http_context, call_ret);
+                return;
             }
         }
     }
@@ -186,6 +199,8 @@ bool Http::HttpServer::create_listen_socket_v4(UInt port)
     if (!Base::listen_socket(this->listen_fd_)){
         goto ERR;
     }
+    Base::set_socket_nonblock(this->listen_fd_);
+    Base::socket_reuse_address(this->listen_fd_);
     return true;
     ERR:
     Base::close_socket(this->listen_fd_);
@@ -198,6 +213,9 @@ void Http::HttpServer::start()
     this->accept_th_.reset(new Core::EventLoopThread);
     this->work_th_.reset(new Core::EventLoopPool(setting_.work_thread_num));
     // 设置日志文件路径
+    this->accept_th_->set_logger_dir(setting_.log_dir);
+    this->work_th_->set_logger_dir(setting_.log_dir);
+
     if (this->setting_.work_thread_num > 0){
         this->work_th_->start();
     }
@@ -211,8 +229,25 @@ void Http::HttpServer::start_accept()
                                                         std::bind(&HttpServer::on_new_client, this, std::placeholders::_1));
 }
 
-void Http::HttpServer::send_http_response(Http::HttpContext *context) {
-
+void Http::HttpServer::send_http_response(std::shared_ptr<Core::IOEvent> io, Http::HttpContext *context, Int call_ret)
+{
+    context->response().code_string = SIN_STR("OK");
+    if (call_ret == Http::ServiceCallBackRet::END){
+        if (context->response().status_code == 0){
+            context->response().status_code = 200;
+        }
+    }else if (call_ret > 0){
+        context->response().status_code = call_ret;
+    }
+    if (!this->setting_.keep_alive){
+        context->response().header.set_head(SIN_STR("Connection"), SIN_STR("close"));
+    }
+    if (!context->response().content.data().empty()){
+        context->response().header.set_head(SIN_STR("Content-Length"), std::to_string(context->response().content.data().length()));
+    }
+    SinBack::String buf = context->response().to_string();
+    buf += context->response().content.data();
+    io->write(buf.c_str(), buf.length());
 }
 
 

@@ -31,7 +31,7 @@ Http::HttpRequest::to_string() const
 Http::String
 Http::HttpResponse::to_string() const {
     String response;
-    response += Http::get_http_method_name(this->method) + SIN_STR(" ");
+    response += SIN_STR("HTTP/1.1 ");
     response += std::to_string(this->status_code) + SIN_STR(" ");
     response += this->code_string + SIN_STR("\r\n");
     response += this->header.to_string();
