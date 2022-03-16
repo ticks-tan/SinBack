@@ -33,7 +33,7 @@ bool SinBack::Core::EventLoopPool::start(const Func &begin_func, const Func &end
 {
     UInt i = 0;
     for (; i < this->th_count_; ++i){
-        this->loop_threads_.emplace_back(new EventLoopThread());
+        this->loop_threads_.push_back(std::make_shared<Core::EventLoopThread>());
         this->loop_threads_.back()->start(begin_func, end_func);
     }
     return true;

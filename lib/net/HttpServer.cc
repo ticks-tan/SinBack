@@ -140,14 +140,16 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                 // 需要继续读取数据
                 return;
             } else {
+                parser->reset_parser();
                 // 解析完成, 初始化，初始化失败关闭连接
                 if (!http_context->init()){
                     io->close();
                     return;
                 }
+
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
-
+                bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
                 Int call_ret = 0;
                 bool is_call = false;
 
@@ -175,15 +177,19 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                     // 如果启用了静态文件服务，则返回对应文件
                     if (!this->setting_.static_file_dir.empty()){
                         send_static_file(io, http_context, url);
-                        return;
+                        goto END;
                     }
                     // 没有启用，返回一段有趣的话吧~
                     io->close();
                     return;
                 }
-                // 提前结束回调
+                // 返回数据
                 SERVICE_END:
                 HttpServer::send_http_response(io, http_context, call_ret);
+                END:
+                if (!keep_alive){
+                    io->close();
+                }
                 return;
             }
         }
@@ -280,12 +286,10 @@ void Http::HttpServer::start_accept()
  */
 void Http::HttpServer::send_http_response(const std::shared_ptr<Core::IOEvent>& io, Http::HttpContext *context, Int call_ret)
 {
-    // 提前结束
-    if (call_ret == Http::ServiceCallBackRet::END){
-        if (context->response().status_code == 0){
-            context->response().status_code = 200;
-        }
-    }else if (call_ret > 1){
+    if (context->response().status_code == 0){
+        context->response().status_code = 200;
+    }
+    if (call_ret > 1){
         context->response().status_code = call_ret;
     }
     // 是否保持连接
@@ -314,17 +318,17 @@ void Http::HttpServer::send_static_file(const std::shared_ptr<Core::IOEvent> &io
         path += context->response().content.data();
         io->write(path.c_str(), path.length());
     } else{
+
         // 文件操作。放到线程池中执行
-        io->loop_->queue_func([io, context, path](){
+        io->loop_->queue_func([](const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, const String& path){
             Base::File file(path, Base::ReadOnly);
             context->response().status_code = 200;
             context->response().header.set_head(SIN_STR("Content-Type"), Http::get_http_content_type(file.suffix()));
-            String buf = context->response().to_string();
             file >> context->response().content.data();
-            fmt::print("文件读取完成 -- {}\n", io->closed);
+            String buf = context->response().to_string();
             buf += context->response().content.data();
             io->write(buf.c_str(), buf.length());
-        });
+        }, io, context, path);
     }
 }
 

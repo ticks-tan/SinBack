@@ -580,7 +580,7 @@ Int Core::IOEvent::close()
         if (!this->write_queue_.empty() && this->error == 0){
             this->loop_->add_timer([this](const std::weak_ptr<Core::TimerEvent>& ev){
                 this->close();
-            }, 5000, 1);
+            }, 100, 1);
             return 1;
         }
         this->closed = true;

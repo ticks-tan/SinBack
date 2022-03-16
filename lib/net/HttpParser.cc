@@ -188,3 +188,8 @@ Int Http::Http1Parse::init_request()
 Int Http::Http1Parse::init_response() {
     return 0;
 }
+
+void Http::Http1Parse::reset_parser()
+{
+    llhttp_reset(&this->parser_);
+}

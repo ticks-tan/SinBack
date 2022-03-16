@@ -49,5 +49,8 @@ bool Http::HttpContext::init()
 {
     this->response_.http_version = this->request_.http_version;
     this->response_.header.set_head(SIN_STR("Server"), SIN_STR("SinBack"));
+    if (!this->request_.header.get_head(SIN_STR("Connection")).empty()){
+        this->response_.header[SIN_STR("Connection")] = this->request_.header[SIN_STR("Connection")];
+    }
     return true;
 }

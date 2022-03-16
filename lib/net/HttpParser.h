@@ -38,6 +38,8 @@ namespace SinBack
             virtual ~HttpParser() = default;
             // 解析数据
             virtual Int parse_data(const Char* data, Size_t len) = 0;
+            // 重置解析器
+            virtual void reset_parser() = 0;
             // 获取状态
             virtual Int get_status() = 0;
             // 是否需要获取数据
@@ -59,6 +61,7 @@ namespace SinBack
             ~Http1Parse() override;
 
             Int parse_data(const Char* data, Size_t len) override;
+            void reset_parser() override;
             Int get_status() override;
             bool need_receive() override;
             bool need_send() override;

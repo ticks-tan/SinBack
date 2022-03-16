@@ -75,9 +75,13 @@ namespace SinBack
 
             // 设置日志文件路径
             void set_logger_path(const String& log_dir = "./"){
-                std::basic_string<Char> logger_name = log_dir + SIN_STR("SinBack_EventLoop_");
-                logger_name += std::to_string(this->id_) + SIN_STR("_");
-                logger_name += std::to_string(this->pid_);
+                String logger_name;
+                if (!log_dir.empty() && log_dir.back() == '/') {
+                    logger_name = log_dir + SIN_STR("SinBack_EventLoop_");
+                }else{
+                    logger_name = log_dir + SIN_STR("/SinBack_EventLoop_");
+                }
+                logger_name += std::to_string(this->id_);
                 this->logger_ = std::make_shared<Log::Logger>(Log::LoggerType::Rolling, logger_name);
             }
 
@@ -153,9 +157,9 @@ namespace SinBack
             Int process_io(Int timeout);
 
         public:
-            // 默认等待时间
+            // 默认等待时间 (ms)
             static const Int default_event_loop_wait_timeout = 1000;
-            // 默认暂停等待时间
+            // 默认暂停等待时间 (ms)
             static const Int default_event_loop_pause_timeout = 100;
             // 默认线程池大小
             static const Int default_thread_pool_count = 2;

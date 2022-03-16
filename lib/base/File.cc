@@ -107,21 +107,21 @@ String Base::File::read(Size_t len)
 
 String Base::File::readAll()
 {
+    String buffer;
     if (this->file_){
         std::vector<Char> buf;
         buf.reserve(128);
         Size_t need_read_len = 0;
+        Long read_len = 0;
         while (!::feof(this->file_)){
             need_read_len = buf.capacity() - buf.size();
-            if (need_read_len < 8){
-                buf.reserve(buf.size() + 128);
-                need_read_len = buf.capacity() - buf.size();
-            }
-            this->read(buf.data() + buf.size(), need_read_len);
+            read_len = this->read((void*)buf.data() , need_read_len);
+            buffer.append(buf.data(), read_len);
+            buf.clear();
         }
-        return buf.data();
+        return std::move(buffer);
     }
-    return "";
+    return std::move(buffer);
 }
 
 Long Base::File::write(const void *buf, Size_t len)

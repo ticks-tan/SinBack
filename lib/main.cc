@@ -17,14 +17,21 @@ int main()
     HttpService service;
     // 设置http服务器配置
     server.setting().log_dir = SIN_STR("./LogDir/");
+    // 静态文件根目录
     server.setting().static_file_dir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
     server.setting().work_thread_num = 4;
-    server.setting().keep_alive = false;
-
-    // 设置 service
+    server.setting().keep_alive = true;
     // 拦截 /test下所有 GET 请求
-    service.GET("/test/**", [](HttpContext& context) -> Int {
+    service.GET("/api/test", [](HttpContext& context) -> Int {
         return context.sen_text("我是测试接口 !");
+    });
+    service.GET("/api/getTime", [](HttpContext& context) -> Int{
+        return context.sen_text(Base::getdatetimenow());
+    });
+    service.GET("/api/.*", [](HttpContext& context) -> Int{
+        fmt::print("api拦截成功!\n");
+        // 继续下一个 Service
+        return NEXT;
     });
     // 添加到 Test 服务模块
     server.add_service("Test", &service);

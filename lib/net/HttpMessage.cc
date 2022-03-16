@@ -41,7 +41,7 @@ Http::HttpResponse::to_string() {
     }
     response += std::to_string(this->status_code) + SIN_STR(" ");
     response += Http::get_http_status_code_name(this->status_code) + SIN_STR("\r\n");
-    if (!this->content.data().empty()){
+    if (this->header.get_head(SIN_STR("Content-Length")).empty()){
         this->header.set_head(SIN_STR("Content-Length"), std::to_string(this->content.data().length()));
     }
     response += this->header.to_string();
