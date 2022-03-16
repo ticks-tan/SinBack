@@ -18,7 +18,11 @@ file(GLOB_RECURSE SinBack_Base "${PROJECT_SOURCE_DIR}/lib/base/*.h" "${PROJECT_S
 # core module
 file(GLOB_RECURSE SinBack_Core "${PROJECT_SOURCE_DIR}/lib/core/*.h" "${PROJECT_SOURCE_DIR}/lib/core/*.cc")
 # net module
-file(GLOB_RECURSE SinBack_Net "${PROJECT_SOURCE_DIR}/lib/net/*.h" "${PROJECT_SOURCE_DIR}/lib/net/*.cc")
+file(GLOB_RECURSE SinBack_Net
+        "${PROJECT_SOURCE_DIR}/lib/net/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/net/*.cc"
+        "${PROJECT_SOURCE_DIR}/lib/net/http/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/net/http/*.cc")
 
 # link [ pthread ]
 link_libraries(pthread)

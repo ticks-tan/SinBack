@@ -7,7 +7,7 @@
 */
 
 #include <regex>
-#include "net/HttpMessage.h"
+#include "HttpMessage.h"
 #include "HttpService.h"
 
 using namespace SinBack;

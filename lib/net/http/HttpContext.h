@@ -9,7 +9,7 @@
 #define SINBACK_HTTPCONTEXT_H
 
 #include "base/File.h"
-#include "net/HttpParser.h"
+#include "HttpParser.h"
 
 namespace SinBack
 {
