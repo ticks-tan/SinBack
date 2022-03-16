@@ -38,15 +38,16 @@ void Http::HttpService::remove_service(const String &path, Int method)
     }
 }
 
-std::vector<std::shared_ptr<Http::HttpServiceCall>>&
+std::vector<std::shared_ptr<Http::HttpServiceCall>>
 Http::HttpService::match_service(const String &path, Int method)
 {
+    std::vector<std::shared_ptr<Http::HttpServiceCall>> calls;
     for (auto& item : this->services_){
         if (std::regex_match(path, std::basic_regex<Char>(item.first))){
-            this->calls_.push_back(item.second);
+            calls.push_back(item.second);
         }
     }
-    return this->calls_;
+    return calls;
 }
 
 void Http::HttpService::clear_service()

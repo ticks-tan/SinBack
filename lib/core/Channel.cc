@@ -103,7 +103,7 @@ void SinBack::Core::Channel::on_read(const std::weak_ptr<IOEvent>& ev, const Str
 {
     auto io = ev.lock();
     if (io) {
-        auto *channel = (Channel *) io->context_;
+        auto channel = (Channel*)(io->context_);
         if (channel && channel->read_cb_) {
             channel->read_cb_(buf);
         }
@@ -114,7 +114,7 @@ void SinBack::Core::Channel::on_write(const std::weak_ptr<IOEvent>& ev, Size_t w
 {
     auto io = ev.lock();
     if (io) {
-        auto *channel = (Channel *) io->context_;
+        auto channel = (Channel*)(io->context_);
         if (channel && channel->write_cb_) {
             channel->write_cb_(write_len);
         }
@@ -125,7 +125,7 @@ void SinBack::Core::Channel::on_close(const std::weak_ptr<IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io) {
-        auto *channel = (Channel *) io->context_;
+        auto channel = (Channel*)(io->context_);
         if (channel && channel->close_cb_) {
             channel->close_cb_();
         }
@@ -137,7 +137,7 @@ SinBack::Core::Channel::on_read_error(const std::weak_ptr<IOEvent> &ev, const Si
 {
     auto io = ev.lock();
     if (io){
-        auto* channel = (Channel*)io->context_;
+        auto channel = (Channel*)(io->context_);
         if (channel && channel->read_err_cb_){
             channel->read_err_cb_(buf);
         }
@@ -149,7 +149,7 @@ SinBack::Core::Channel::on_write_error(const std::weak_ptr<IOEvent> &ev, const S
 {
     auto io = ev.lock();
     if (io){
-        auto* channel = (Channel*)io->context_;
+        auto channel = (Channel*)(io->context_);
         if (channel && channel->write_err_cb_){
             channel->write_err_cb_(buf);
         }

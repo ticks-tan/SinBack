@@ -54,7 +54,7 @@ namespace SinBack {
             // 拦截其他请求
             void On(Int method, const String& path, const HttpServiceCall::Call& call);
             // 匹配服务
-            std::vector<std::shared_ptr<HttpServiceCall>>& match_service(const String& path, Int method);
+            std::vector<std::shared_ptr<HttpServiceCall>> match_service(const String& path, Int method);
             // 清空服务
             void clear_service();
         private:

@@ -64,7 +64,10 @@ namespace SinBack {
 
             // 获取一个工作 loop
             Core::EventLoopPtr loop(Int index = -1){
-                return this->work_th_->loop(index).get();
+                std::unique_lock<std::mutex> lock(this->mutex_);
+                Core::EventLoopPtr ptr = this->work_th_->loop(index).get();
+                lock.unlock();
+                return ptr;
             }
 
             // 当前连接客户端数量 +1
@@ -119,6 +122,7 @@ namespace SinBack {
             bool running_;
             // 记录当前连接客户端数量
             std::atomic<Size_t> connect_cnt_{};
+            std::mutex mutex_;
         };
     }
 }

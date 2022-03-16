@@ -36,11 +36,18 @@ Core::EventLoop::EventLoop()
 
 Core::EventLoop::~EventLoop()
 {
-    for (auto& it : io_evs_){
-        selector_->del_event(it.first, Core::IO_RDWR);
-        Base::close_socket(it.first);
+    this->stop();
+    this->io_evs_.clear();
+    this->timer_.clear();
+    Int i = Core::Event_Priority_Highest;
+    for (; i >= Core::Event_Priority_Lowest; --i){
+        this->pending_evs_[i].clear();
     }
-    io_evs_.clear();
+    this->idle_evs_.clear();
+    while (!this->custom_evs_.empty()) {
+        this->custom_evs_.pop();
+    }
+    this->io_count_ = this->custom_count_ = this->idle_count_ = this->timer_count_ = 0;
 }
 
 /**
@@ -148,12 +155,12 @@ std::shared_ptr<Core::IOEvent> Core::EventLoop::get_io_event(Base::socket_t fd)
             ptr->loop_ = this;
             ptr->fd_ = fd;
             ptr->type_ = Event_Type_IO;
-            it->second = ptr;
+            this->io_evs_[fd] = ptr;
         } else{
             ptr = it->second;
         }
     }else{
-        ptr.reset(new IOEvent);
+        ptr = std::make_shared<IOEvent>();
         ptr->init();
         ptr->loop_ = this;
         ptr->fd_ = fd;
@@ -169,6 +176,7 @@ std::shared_ptr<Core::IOEvent> Core::EventLoop::get_io_event(Base::socket_t fd)
  */
 Int Core::EventLoop::process_events()
 {
+    if (this->status_ != Running) return 0;
     Int ios_cnt = 0, timer_cnt = 0, idle_cnt = 0, pending_cnt = 0;
     Int block_time = default_event_loop_wait_timeout;
     // 处理定时器任务
@@ -215,6 +223,7 @@ Int Core::EventLoop::process_events()
  */
 Int Core::EventLoop::process_idle()
 {
+    if (this->status_ != Running) return 0;
     Int idle_cnt = 0;
     std::shared_ptr<Core::IdleEvent> item;
     auto it = this->idle_evs_.begin();
@@ -250,6 +259,7 @@ Int Core::EventLoop::process_pending()
     // 遍历优先级数组 (高 -> 低)
     Int pending_cnt = 0, i = Core::EventPriority::Event_Priority_Highest;
     for (; i >= 0; --i){
+        if (this->status_ != Running) return pending_cnt;
         auto& list = this->pending_evs_[i];
         for (auto& it : list){
             item = it;
@@ -284,10 +294,11 @@ Int Core::EventLoop::process_pending()
                     item->pending_ = false;
                     if (item->destroy_){
                         loop_event_inactive(item);
+                        item->cb_ = nullptr;
                     }
                 }
             }else{
-                fmt::print("event error\n");
+                this->logger_->error("event pending error!");
             }
         }
         // 清理待执行链表
@@ -303,6 +314,7 @@ Int Core::EventLoop::process_pending()
  */
 Int Core::EventLoop::process_timer()
 {
+    if (this->status_ != Running) return 0;
     Int timer_cnt = 0;
     ULong now_time = this->cur_time_;
     std::shared_ptr<Core::TimerEvent> item;
@@ -342,6 +354,7 @@ Int Core::EventLoop::process_timer()
  */
 Int Core::EventLoop::process_io(Int timeout)
 {
+    if (this->status_ != Running) return 0;
     Int io_cnt = this->selector_->poll_event(timeout);
     return (io_cnt < 0) ? 0 : io_cnt;
 }
@@ -630,7 +643,7 @@ Core::EventLoop::change_io_loop(const std::weak_ptr<Core::IOEvent> &ev, Core::Ev
         Core::EventLoopPtr old_loop = io->loop_;
         // 判断新loop里面是否有重复io
         auto it = old_loop->io_evs_.find(fd);
-        if (it != old_loop->io_evs_.end()){
+        if (it != old_loop->io_evs_.end()) {
             old_loop->io_evs_.erase(it);
         }
         io->loop_ = loop;

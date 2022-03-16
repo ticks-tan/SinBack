@@ -20,7 +20,7 @@ int main()
     // 静态文件根目录
     server.setting().static_file_dir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
     server.setting().work_thread_num = 4;
-    server.setting().keep_alive = true;
+    server.setting().keep_alive = false;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
         return context.sen_text("我是测试接口 !");

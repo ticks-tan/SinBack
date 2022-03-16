@@ -28,6 +28,12 @@ Http::HttpRequest::to_string() const
     return request;
 }
 
+void Http::HttpRequest::clear()
+{
+    this->header.clear();
+    this->content.data().clear();
+}
+
 SinBack::String
 Http::HttpResponse::to_string() {
     String response;
@@ -46,6 +52,12 @@ Http::HttpResponse::to_string() {
     }
     response += this->header.to_string();
     return response;
+}
+
+void Http::HttpResponse::clear()
+{
+    this->header.clear();
+    this->content.data().clear();
 }
 
 SinBack::String

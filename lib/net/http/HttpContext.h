@@ -20,7 +20,7 @@ namespace SinBack
         {
         public:
 
-            HttpContext(HttpServer* server);
+            explicit HttpContext(HttpServer* server);
             ~HttpContext();
 
             // 发送文本数据
@@ -48,6 +48,11 @@ namespace SinBack
 
             HttpServer* server(){
                 return this->server_;
+            }
+
+            void clear() {
+                this->request_.clear();
+                this->response_.clear();
             }
         private:
             // Http解析器

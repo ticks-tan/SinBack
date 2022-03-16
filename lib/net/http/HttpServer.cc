@@ -40,6 +40,7 @@ void Http::HttpServer::init()
 bool Http::HttpServer::add_service(const String &name, Http::HttpService *service)
 {
     auto it = this->services_.find(name);
+    std::unique_lock<std::mutex> lock(this->mutex_);
     if (it == this->services_.end()){
         this->services_[name] = service;
         return true;
@@ -55,6 +56,7 @@ bool Http::HttpServer::listen(UInt port, const std::function<void(const String &
         }
         return false;
     }
+    this->running_ = true;
     // 创建监听套接字并监听
     if (!create_listen_socket_v4(port)){
         goto ERR;
@@ -77,7 +79,7 @@ void Http::HttpServer::stop()
         this->running_ = false;
         // 等待 accept loop 退出
         this->accept_th_->stop(true);
-        this->work_th_->stop();
+        this->work_th_->stop(true);
     }
 }
 
@@ -87,6 +89,7 @@ void Http::HttpServer::stop()
  */
 void Http::HttpServer::on_new_client(const std::weak_ptr<Core::IOEvent>& ev)
 {
+
     auto io = ev.lock();
     if (io){
         // 判断是否超过最大允许的连接数量
@@ -94,14 +97,16 @@ void Http::HttpServer::on_new_client(const std::weak_ptr<Core::IOEvent>& ev)
         if (cnt >= this->setting().max_accept_cnt){
             // 超过最大连接数量
             io->loop_->logger().error("over the max connect count -- {} !", cnt);
-            io->loop_->close_io(io->fd_);
+            io->close(false);
             return;
         }
         // 获取一个工作线程来管理该 IO 句柄
         Core::EventLoopPtr new_loop = this->loop();
-        // 更改 IO事件 loop
-        Core::EventLoop::change_io_loop(io, new_loop);
-        // 设置  事件回调
+        if (new_loop) {
+            // 更改 IO事件 loop
+            Core::EventLoop::change_io_loop(io, new_loop);
+        }
+        // 设置事件回调
         io->read_cb_ = std::bind(&HttpServer::on_new_message, this, std::placeholders::_1, std::placeholders::_2);
         io->read_err_cb_ = std::bind(&HttpServer::on_message_error, this, std::placeholders::_1, std::placeholders::_2);
         io->write_cb_ = std::bind(&HttpServer::on_send, this, std::placeholders::_1, std::placeholders::_2);
@@ -135,6 +140,10 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
             auto* parser = http_context->parser();
             // 解析数据
             Int ret = parser->parse_data(read_msg.c_str(), read_msg.length());
+            if (ret != HPE_OK){
+                io->close(false);
+                return;
+            }
             // 判断是否解析完毕
             if (parser->need_receive()){
                 // 需要继续读取数据
@@ -143,10 +152,9 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                 parser->reset_parser();
                 // 解析完成, 初始化，初始化失败关闭连接
                 if (!http_context->init()){
-                    io->close();
+                    io->close(false);
                     return;
                 }
-
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
                 bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
@@ -154,7 +162,7 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                 bool is_call = false;
 
                 for (auto &service: this->services()) {
-                    auto &routers = service.second->match_service(url, method);
+                    auto routers = service.second->match_service(url, method);
                     // 依次执行 service 回调
                     for (auto& call : routers){
                         // 如果方法匹配，调用回调
@@ -165,12 +173,10 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                             }
                             // 如果不为 NEXT, 后续回调被忽略
                             if (call_ret != Http::ServiceCallBackRet::NEXT){
-                                routers.clear();
                                 goto SERVICE_END;
                             }
                         }
                     }
-                    routers.clear();
                 }
                 // 没有执行回调 (请求没有被拦截)
                 if (!is_call){
@@ -180,15 +186,19 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                         goto END;
                     }
                     // 没有启用，返回一段有趣的话吧~
-                    io->close();
+                    io->close(false);
                     return;
                 }
                 // 返回数据
                 SERVICE_END:
                 HttpServer::send_http_response(io, http_context, call_ret);
+                http_context->clear();
                 END:
                 if (!keep_alive){
                     io->close();
+                } else {
+                    io->set_keepalive(5000);
+                    fmt::print("keep-alive, connect = {}, fd = {}, url = {}\n", this->connect_cnt_, io->fd_, http_context->request().url);
                 }
                 return;
             }
@@ -223,8 +233,10 @@ void Http::HttpServer::on_disconnect(const std::weak_ptr<Core::IOEvent> &ev)
     this->dec_connect_count();
     auto io = ev.lock();
     if (io){
+        io->loop_->logger().info("io closed, fd = {}", io->fd_);
         auto http_context = (Http::HttpContext*)(io->context_);
         delete http_context;
+        io->context_ = nullptr;
     }
 }
 
@@ -234,15 +246,15 @@ bool Http::HttpServer::create_listen_socket_v4(UInt port)
     if (this->listen_fd_ < 0){
         return false;
     }
-    // 绑定
-    if (!Base::bind_socket(this->listen_fd_, Base::IP_4, nullptr, port)){
-        goto ERR;
-    }
     // 设置非阻塞
     Base::set_socket_nonblock(this->listen_fd_);
     // 设置端口复用
     Base::socket_reuse_address(this->listen_fd_);
 
+    // 绑定
+    if (!Base::bind_socket(this->listen_fd_, Base::IP_4, nullptr, port)){
+        goto ERR;
+    }
     // 监听
     if (!Base::listen_socket(this->listen_fd_)){
         goto ERR;
@@ -317,6 +329,8 @@ void Http::HttpServer::send_static_file(const std::shared_ptr<Core::IOEvent> &io
         path = context->response().to_string();
         path += context->response().content.data();
         io->write(path.c_str(), path.length());
+        // 发生完成，清空解析数据
+        context->clear();
     } else{
 
         // 文件操作。放到线程池中执行
@@ -328,7 +342,9 @@ void Http::HttpServer::send_static_file(const std::shared_ptr<Core::IOEvent> &io
             String buf = context->response().to_string();
             buf += context->response().content.data();
             io->write(buf.c_str(), buf.length());
+            context->clear();
         }, io, context, path);
     }
 }
+
 

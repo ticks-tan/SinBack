@@ -15,7 +15,7 @@
 namespace SinBack {
     namespace Core {
 
-        class Channel : noncopyable
+        class Channel : public noncopyable, public std::enable_shared_from_this<Channel>
         {
         public:
             explicit Channel(const std::weak_ptr<Core::IOEvent>& io);

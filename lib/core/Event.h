@@ -120,6 +120,7 @@ namespace SinBack
         struct IOEvent : public Event, public std::enable_shared_from_this<IOEvent>
         {
             using string_type = std::basic_string<Char>;
+            static const Size_t default_keep_alive_timeout = 1000;
             // 监听事件
             Int evs_ = 0;
             // 事件回调
@@ -143,6 +144,12 @@ namespace SinBack
             IOWriteCB write_cb_;
             IOWriteErrCB write_err_cb_;
             IOCloseCB close_cb_;
+            // 上次读取事件
+            ULong last_read_time_ = 0;
+            // 上次写入时间
+            ULong last_write_time_ = 0;
+            // 保持活跃时间
+            Size_t keep_alive_ms_ = 0;
             // 读取缓冲区
             string_type read_buf_;
             // 读取长度
@@ -164,6 +171,9 @@ namespace SinBack
                 closed = false;
                 error = 0;
                 read_len_ = 0;
+                last_read_time_ = 0;
+                last_write_time_ = 0;
+                keep_alive_ms_ = 0;
             }
 
             // 接收连接
@@ -173,7 +183,9 @@ namespace SinBack
             // 写入数据
             Int write(const void* buf, Size_t len);
             // 关闭连接
-            Int close();
+            Int close(bool timer = true);
+            // 设置keep-alive时间
+            bool set_keepalive(Size_t timout_ms);
         };
 
         struct TimerEvent : public Event

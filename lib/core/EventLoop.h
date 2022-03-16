@@ -93,6 +93,10 @@ namespace SinBack
             UInt get_id() const{
                 return this->id_;
             }
+            // 获取当前时间
+            ULong get_curtime() const {
+                return this->cur_time_;
+            }
 
             // 通过套接字找到 IOEvent
             std::shared_ptr<IOEvent> get_io_event(Base::socket_t fd);
@@ -219,7 +223,6 @@ namespace SinBack
             Base::ThreadPool thread_pool_;
             // 日志记录器
             std::shared_ptr<Log::Logger> logger_;
-
         };
     }
 }

@@ -6,6 +6,8 @@
 * Des:         
 */
 #include "core/EventLoop.h"
+#include "Event.h"
+
 
 using namespace SinBack;
 
@@ -42,12 +44,15 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
 // 边缘触发 write 封装
 void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
+void handle_keepalive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
+
 
 Int io_read_et(Core::IOEvent* io)
 {
     if (io){
         if (io->closed || io->destroy_) return -1;
 
+        io->last_read_time_ = Base::gettimeofday_us();
         std::vector<Char> buf;
         buf.reserve(256);
         // 每次需要读取长度
@@ -98,6 +103,7 @@ Int io_read_et(Core::IOEvent* io)
         io->close();
         return 0;
     }
+    return -1;
 }
 
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
@@ -105,6 +111,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
     if (io->closed) return -1;
     if (buf == nullptr || len == 0) return 0;
 
+    io->last_write_time_ = Base::gettimeofday_us();
     Long write_len = 0;
 
     std::unique_lock<std::mutex> lock(io->write_mutex_);
@@ -159,6 +166,7 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
     if (io->closed) return -1;
     if (buf == nullptr || len == 0) return 0;
 
+    io->last_write_time_ = Base::gettimeofday_us();
     Long write_len = 0, w_len;
 
     std::unique_lock<std::mutex> lock(io->write_mutex_);
@@ -220,6 +228,7 @@ void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev)
             if (io->accept_){
                 handle_accept(io);
             } else{
+                io->last_read_time_ = Base::gettimeofday_us();
                 if (io->evs_ & Core::IO_TYPE_ET){
                     handle_read_et(io);
                 }else {
@@ -228,10 +237,32 @@ void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev)
             }
         }
         if ((io->active_evs_ & Core::IO_WRITE) && (io->evs_ & Core::IO_WRITE)){
+            io->last_write_time_ = Base::gettimeofday_us();
             if (io->evs_ & Core::IO_TYPE_ET){
                 handle_write_et(io);
             } else {
                 handle_write(io);
+            }
+        }
+    }
+}
+
+// keepalive回调
+void handle_keepalive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev)
+{
+    auto timer = ev.lock();
+    if (timer){
+        if (io){
+            if (io->closed || io->destroy_) return;
+            auto loop = (Core::EventLoopPtr)(io->loop_);
+            if (loop) {
+                ULong last_rw_time = std::max(io->last_read_time_, io->last_write_time_);
+                ULong time_ms = (loop->get_curtime() - last_rw_time) / 1000;
+                if (time_ms + 100 < io->keep_alive_ms_) {
+                    loop->add_timer(std::bind(&handle_keepalive, io, std::placeholders::_1), io->keep_alive_ms_, 1);
+                } else {
+                    io->close(false);
+                }
             }
         }
     }
@@ -571,13 +602,13 @@ Int Core::IOEvent::write(const void *buf, Size_t len)
     return io_write(this, buf, len);
 }
 
-Int Core::IOEvent::close()
+Int Core::IOEvent::close(bool timer)
 {
     {
         std::unique_lock<std::mutex> lock(this->write_mutex_);
         if (this->closed || !this->ready_) return -1;
 
-        if (!this->write_queue_.empty() && this->error == 0){
+        if (!this->write_queue_.empty() && this->error == 0 && timer){
             this->loop_->add_timer([this](const std::weak_ptr<Core::TimerEvent>& ev){
                 this->close();
             }, 100, 1);
@@ -592,4 +623,14 @@ Int Core::IOEvent::close()
     // 关闭回调
     handle_close_cb(shared_from_this());
     return 0;
+}
+
+bool Core::IOEvent::set_keepalive(Size_t timeout_ms)
+{
+    if (this->closed || !this->active_ || !this->loop_) return false;
+    if (this->loop_) {
+        this->keep_alive_ms_ = timeout_ms;
+        this->loop_->add_timer(std::bind(&handle_keepalive, shared_from_this(), std::placeholders::_1), timeout_ms, 1);
+    }
+    return true;
 }

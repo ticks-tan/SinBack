@@ -54,6 +54,9 @@ namespace SinBack
             String& operator [](const String& key){
                 return this->data_[key];
             }
+            void clear() {
+                this->data_.clear();
+            }
         private:
             Map data_;
         };
@@ -64,6 +67,9 @@ namespace SinBack
         public:
             String& data(){
                 return data_;
+            }
+            Size_t size() const {
+                return this->data_.size();
             }
         private:
             String data_;
@@ -288,6 +294,8 @@ namespace SinBack
             HttpContent content;
             // 解析为字符串格式
             String to_string() const;
+            // 清空内容
+            void clear();
         };
         // Http回应
         class HttpResponse
@@ -304,6 +312,8 @@ namespace SinBack
 
             // 解析为字符串格式
             String to_string();
+            // 清空内容
+            void clear();
         };
     }
 }
