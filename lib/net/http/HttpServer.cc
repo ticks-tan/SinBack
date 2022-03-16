@@ -157,6 +157,10 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                 }
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
+                if (url == "/debug/test"){
+                    fmt::print("start debug\n");
+                    sleep(10);
+                }
                 bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
                 Int call_ret = 0;
                 bool is_call = false;
@@ -233,7 +237,6 @@ void Http::HttpServer::on_disconnect(const std::weak_ptr<Core::IOEvent> &ev)
     this->dec_connect_count();
     auto io = ev.lock();
     if (io){
-        io->loop_->logger().info("io closed, fd = {}", io->fd_);
         auto http_context = (Http::HttpContext*)(io->context_);
         delete http_context;
         io->context_ = nullptr;

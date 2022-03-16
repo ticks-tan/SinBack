@@ -108,7 +108,7 @@ Int io_read_et(Core::IOEvent* io)
 
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 {
-    if (io->closed) return -1;
+    if (io->closed || io->destroy_) return -1;
     if (buf == nullptr || len == 0) return 0;
 
     io->last_write_time_ = Base::gettimeofday_us();
@@ -139,9 +139,10 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
         if (write_len == len){
             goto WRITE_END;
         }
-        // 一次性没有写入完成, 加入epoll
+        // 一次性没有写入完成, 添加到事件循环下次可写事件触发时再写
         QUEUE_WRITE:
-        SinBack::Core::EventLoop::add_io_event(io->shared_from_this(), handle_event_func, Core::IO_WRITE | Core::IO_TYPE_ET);
+        // SinBack::Core::EventLoop::add_io_event(io->shared_from_this(), handle_event_func, Core::IO_WRITE | Core::IO_TYPE_ET);
+        SinBack::Core::EventLoop::add_io_event(io->shared_from_this(), handle_event_func, Core::IO_WRITE);
     }
 
     if (write_len < len){
@@ -342,7 +343,7 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
         Base::socket_t client_fd = Base::accept_socket(io->fd_, &address, &len);
         if (client_fd < 0) {
             io->error = errno;
-            if (errno == EINTR || errno == EAGAIN){
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK){
                 return;
             }
             io->loop_->logger().error("accept error, pid = {}, id = {}, error = {} .",
@@ -588,7 +589,6 @@ Int Core::IOEvent::read()
 {
     if (this->closed) return -1;
     if (this->evs_ & Core::IO_TYPE_ET){
-        fmt::print("read ET\n");
         return io_read_et(this);
     }
     return Core::EventLoop::add_io_event(shared_from_this(), handle_event_func, Core::IO_READ);

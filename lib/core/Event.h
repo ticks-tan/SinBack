@@ -100,7 +100,7 @@ namespace SinBack
             // 是否为待处理状态
             bool pending_ = false;
             // 回调函数
-            EventCB cb_;
+            EventCB cb_ = nullptr;
             // 自定义数据指针
             void* context_ = nullptr;
 
@@ -124,7 +124,7 @@ namespace SinBack
             // 监听事件
             Int evs_ = 0;
             // 事件回调
-            IOEventCB cb_;
+            IOEventCB cb_ = nullptr;
             // 错误
             Int error;
             // 活动事件
@@ -138,12 +138,12 @@ namespace SinBack
             // 是否关闭
             bool closed = false;
             // 各事件回调
-            IOAcceptCB accept_cb_;
-            IOReadCB read_cb_;
-            IOReadErrCB read_err_cb_;
-            IOWriteCB write_cb_;
-            IOWriteErrCB write_err_cb_;
-            IOCloseCB close_cb_;
+            IOAcceptCB accept_cb_ = nullptr;
+            IOReadCB read_cb_ = nullptr;
+            IOReadErrCB read_err_cb_ = nullptr;
+            IOWriteCB write_cb_ = nullptr;
+            IOWriteErrCB write_err_cb_ = nullptr;
+            IOCloseCB close_cb_ = nullptr;
             // 上次读取事件
             ULong last_read_time_ = 0;
             // 上次写入时间
@@ -199,7 +199,7 @@ namespace SinBack
             // 下次超时时间
             ULong next_time_ = 0;
             // 回调事件
-            TimerEventCB cb_;
+            TimerEventCB cb_ = nullptr;
 
             // 初始化
             void init() override{
@@ -213,7 +213,7 @@ namespace SinBack
         {
             static const Int infinity = -1;
             // 回调函数
-            IdleEventCB cb_;
+            IdleEventCB cb_ = nullptr;
             // 执行次数
             Int repeat_ = 0;
         };

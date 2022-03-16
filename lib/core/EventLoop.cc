@@ -149,7 +149,7 @@ std::shared_ptr<Core::IOEvent> Core::EventLoop::get_io_event(Base::socket_t fd)
     std::shared_ptr<IOEvent> ptr;
     auto it = this->io_evs_.find(fd);
     if (it != this->io_evs_.end()){
-        if (it->second->destroy_){
+        if (it->second->destroy_ || !it->second->active_){
             ptr = std::make_shared<IOEvent>();
             ptr->init();
             ptr->loop_ = this;
@@ -411,7 +411,7 @@ Int Core::EventLoop::remove_io_event(const std::weak_ptr<Core::IOEvent> &ev, Int
 #ifdef OS_WINDOWS
         if (io->fd_ < 3) return -1;
 #else
-        if (!io->active_) return -1;
+        if (io->destroy_ || !io->active_) return -1;
 #endif
         if (io->evs_ & events){
             io->loop_->selector_->del_event(io->fd_, events);
