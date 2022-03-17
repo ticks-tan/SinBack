@@ -20,6 +20,7 @@ namespace SinBack
         {
         public:
             static const String notfound_str;
+            static const String error_str;
         public:
             explicit HttpContext(HttpServer* server);
             ~HttpContext();
@@ -28,12 +29,26 @@ namespace SinBack
             Int sen_text(const SinBack::String& text);
             // 发送文件
             Int sen_file(const SinBack::String& file_name);
+            // 回应404
+            Int notfound();
             // 解析Url
             bool parse_url();
             // 解析请求数据
             bool parse_body();
             // 初始化
             bool init();
+
+            HttpMethod get_method() const{
+                return this->request_.method;
+            }
+            Int get_status_code() const{
+                return this->response_.status_code;
+            }
+            void set_status_code(Int code){
+                if (code > 0) {
+                    this->response_.status_code = code;
+                }
+            }
             // 获取请求
             HttpRequest& request(){
                 return this->request_;

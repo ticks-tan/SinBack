@@ -186,6 +186,12 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                         goto END;
                     }
                     // 没有启用，返回一段有趣的话吧~
+                    http_context->set_status_code(405);
+                    http_context->response().header.set_head(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+                    http_context->response().content.data() = HttpContext::error_str;
+                    url = http_context->response().to_string();
+                    url += http_context->response().content.data();
+                    io->write(url.c_str(), url.length());
                     io->close(false);
                     return;
                 }
