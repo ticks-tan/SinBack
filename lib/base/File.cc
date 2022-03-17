@@ -10,6 +10,13 @@
 
 using namespace SinBack;
 
+Base::File::File()
+    : name_()
+    , mode_(ReadOnly)
+    , file_(nullptr)
+{
+}
+
 Base::File::File(const String &name, Base::OpenFileMode mode)
     : name_(name)
     , mode_(mode)
@@ -44,6 +51,7 @@ Base::File::~File()
 
 bool Base::File::reopen(const String &name, Base::OpenFileMode mode)
 {
+    if (this->name_ == name && this->mode_ == mode) return true;
     this->close();
     this->name_ = name;
     this->mode_ = mode;

@@ -31,6 +31,7 @@ namespace SinBack {
         class File : public noncopyable
         {
         public:
+            File();
             File(const String& name, OpenFileMode mode);
             ~File();
             // 重新打开一个文件

@@ -19,7 +19,8 @@ namespace SinBack
         class HttpContext
         {
         public:
-
+            static const String notfound_str;
+        public:
             explicit HttpContext(HttpServer* server);
             ~HttpContext();
 
@@ -63,6 +64,8 @@ namespace SinBack
             HttpResponse response_;
             // 对应 HttpServer 指针
             HttpServer* server_;
+            // Cache File
+            std::shared_ptr<Base::File> cache_file_;
         };
     }
 }

@@ -157,10 +157,6 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                 }
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
-                if (url == "/debug/test"){
-                    fmt::print("start debug\n");
-                    sleep(10);
-                }
                 bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
                 Int call_ret = 0;
                 bool is_call = false;
@@ -202,7 +198,6 @@ void Http::HttpServer::on_new_message(const std::weak_ptr<Core::IOEvent>& ev, co
                     io->close();
                 } else {
                     io->set_keepalive(5000);
-                    fmt::print("keep-alive, connect = {}, fd = {}, url = {}\n", this->connect_cnt_, io->fd_, http_context->request().url);
                 }
                 return;
             }
@@ -328,7 +323,7 @@ void Http::HttpServer::send_static_file(const std::shared_ptr<Core::IOEvent> &io
         // 文件不存在
         context->response().status_code = 404;
         context->response().header.set_head(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
-        context->response().content.data() += SIN_STR("-_- -_- -_- 找不到您要访问的页面呢! -_- -_- -_- ");
+        context->response().content.data() += HttpContext::notfound_str;
         path = context->response().to_string();
         path += context->response().content.data();
         io->write(path.c_str(), path.length());

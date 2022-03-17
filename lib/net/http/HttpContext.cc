@@ -10,6 +10,8 @@
 
 using namespace SinBack;
 
+const String Http::HttpContext::notfound_str = SIN_STR("-_- -_- -_- -_- 404 Not Found -_- -_- -_- -_-\n");
+
 Http::HttpContext::HttpContext(Http::HttpServer* server)
     : parser_()
     , server_(server)
@@ -19,6 +21,8 @@ Http::HttpContext::HttpContext(Http::HttpServer* server)
 
 Http::HttpContext::~HttpContext()
 {
+    this->request_.clear();
+    this->response_.clear();
 }
 
 Int Http::HttpContext::sen_text(const String &text)
@@ -31,7 +35,19 @@ Int Http::HttpContext::sen_text(const String &text)
 
 Int Http::HttpContext::sen_file(const String &file_name)
 {
-    this->response_.status_code = 200;
+    if (this->cache_file_ == nullptr){
+        this->cache_file_.reset(new Base::File);
+    }
+    this->cache_file_->reopen(file_name, Base::ReadOnly);
+    if (this->cache_file_->exist()) {
+        this->response_.status_code = 200;
+        this->response_.header.set_head(SIN_STR("Content-Type"), Http::get_http_content_type(this->cache_file_->suffix()));
+        this->response_.content.data() = std::move(this->cache_file_->readAll());
+    } else{
+        this->response_.status_code = 404;
+        this->response_.header.set_head(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+        this->response_.content.data() = notfound_str;
+    }
     return 1;
 }
 
