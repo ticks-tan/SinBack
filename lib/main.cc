@@ -21,7 +21,7 @@ int main()
     // 静态文件根目录
     server.setting().staticFileDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
     server.setting().workThreadNum = 4;
-    server.setting().keepAlive = false;
+    server.setting().keepAlive = true;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
         return context.senText("我是测试接口 !");
@@ -29,8 +29,8 @@ int main()
     service.GET("/api/getTime", [](HttpContext& context) -> Int{
         return context.senText(Base::getDateTimeNow());
     });
-    service.GET("/api/.*", [](HttpContext& context) -> Int{
-        fmt::print("api拦截成功 -- url = {}!\n", Tools::url_decode(context.request().url));
+    service.GET("/.*", [](HttpContext& context) -> Int{
+        Log::logi("api拦截成功 -- url = {}!\n", Tools::url_decode(context.request().url));
         // 继续下一个 Service
         return NEXT;
     });

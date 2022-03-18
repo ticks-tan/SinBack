@@ -140,30 +140,37 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
             auto* parser = http_context->parser();
             // 解析数据
             Int ret = parser->parseData(read_msg.c_str(), read_msg.length());
+            // 解析失败，关闭连接
             if (ret != HPE_OK){
                 io->close(false);
                 return;
             }
-            // 判断是否解析完毕
+            // 判断请求是否完成，是否还需要接受数据
             if (parser->needReceive()){
                 // 需要继续读取数据
                 return;
             } else {
+                // 重置解析器
                 parser->resetParser();
                 // 解析完成, 初始化，初始化失败关闭连接
                 if (!http_context->init()){
                     io->close(false);
                     return;
                 }
+
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
                 bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
+
                 if (!this->setting_.keepAlive){
+                    // 服务器配置为不开启保持连接，指定消息头通知客户端主动关闭连接
                     http_context->response().header.setHead(SIN_STR("Connection"), SIN_STR("close"));
                 }
+
                 Int call_ret = 0;
                 bool is_call = false;
 
+                // 查找匹配的 service
                 for (auto &service: this->services()) {
                     auto routers = service.second->matchService(url, method);
                     // 依次执行 service 回调
@@ -188,7 +195,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                         sendStaticFile(io, http_context, url);
                         goto END;
                     }
-                    // 没有启用，返回一段有趣的话吧~
+                    // 没有启用，返回 405 请求不支持
                     http_context->setStatusCode(405);
                     http_context->response().header.setHead(SIN_STR("Content-Type"),
                                                             SIN_STR("text/plain;charset=UTF-8"));
@@ -196,18 +203,20 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     url = http_context->response().toString();
                     url += http_context->response().content.data();
                     io->write(url.c_str(), url.length());
-                    io->close(false);
-                    return;
+                    goto END;
                 }
-                // 返回数据
                 SERVICE_END:
+                // 回应数据
                 HttpServer::sendHttpResponse(io, http_context, call_ret);
+                // 清空解析器数据，为下一次请求解析准备
                 http_context->clear();
                 END:
                 if (!keep_alive){
+                    // 不保持连接，数据发送完成关闭
                     io->close();
                 } else {
-                    io->setKeepalive(5000);
+                    // 保持连接 1 min
+                    io->setKeepalive(60000);
                 }
                 return;
             }
@@ -323,7 +332,6 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
     if (!context->cache_file_->reOpen(path, Base::ReadOnly)){
         goto NotFound;
     }
-    fmt::print("file path : {}\n", context->cache_file_->fileName());
     if (!context->cache_file_->exist()){
         NotFound:
         // 文件不存在
@@ -343,6 +351,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
             String buf = context->response().toString();
             buf += context->response().content.data();
             io->write(buf.c_str(), buf.length());
+            // 清空数据
             context->clear();
         }, io, context, path);
     }

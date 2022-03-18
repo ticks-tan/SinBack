@@ -52,7 +52,6 @@ Int io_read_et(Core::IOEvent* io)
     if (io){
         if (io->closed || io->destroy_) return -1;
 
-        io->last_read_time_ = Base::getTimeOfDayUs();
         std::vector<Char> buf;
         buf.reserve(256);
         // 每次需要读取长度
@@ -64,6 +63,8 @@ Int io_read_et(Core::IOEvent* io)
             // 获取buffer剩余长度
             need_read_len = buf.capacity() - buf.size();
             len = Base::readSocket(io->fd_, buf.data(), need_read_len);
+            io->last_read_time_ = Base::getTimeOfDayUs();
+
             if (len < 0){
                 io->error = errno;
                 if (errno == EAGAIN || errno == EWOULDBLOCK){
@@ -112,13 +113,14 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
     if (io->closed || io->destroy_) return -1;
     if (buf == nullptr || len == 0) return 0;
 
-    io->last_write_time_ = Base::getTimeOfDayUs();
     Long write_len = 0;
 
     std::unique_lock<std::mutex> lock(io->write_mutex_);
+
     if (io->write_queue_.empty()){
         // 写入队列为空，尝试写入一次，一次没有写入完再添加到事件循环中等待事件触发
         write_len = Base::writeSocket(io->fd_, buf, len);
+        io->last_write_time_ = Base::getTimeOfDayUs();
 
         if (write_len < 0){
             io->error = errno;
@@ -150,6 +152,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
         std::basic_string<Char> buffer = ((Char*)buf + write_len);
         io->write_queue_.push_back(buffer);
     }
+    io->last_write_time_ = Base::getTimeOfDayUs();
     WRITE_END:
     lock.unlock();
     if (write_len > 0){
@@ -168,7 +171,6 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
     if (io->closed) return -1;
     if (buf == nullptr || len == 0) return 0;
 
-    io->last_write_time_ = Base::getTimeOfDayUs();
     Long write_len = 0, w_len;
 
     std::unique_lock<std::mutex> lock(io->write_mutex_);
@@ -176,6 +178,7 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
 
         while (true) {
             w_len = Base::writeSocket(io->fd_, (Char *) buf + write_len, len - write_len);
+            io->last_write_time_ = Base::getTimeOfDayUs();
 
             if (w_len < 0) {
                 io->error = errno;
@@ -257,6 +260,7 @@ void handle_keepalive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_
     if (timer){
         if (io){
             if (io->closed || io->destroy_) return;
+            /*
             auto loop = (Core::EventLoopPtr)(io->loop_);
             if (loop) {
                 ULong last_rw_time = std::max(io->last_read_time_, io->last_write_time_);
@@ -267,6 +271,8 @@ void handle_keepalive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_
                     io->close(false);
                 }
             }
+            */
+            io->close();
         }
     }
 }
@@ -381,6 +387,8 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
             // 获取buffer剩余长度
             need_read_len = buf.capacity() - buf.size();
             len = Base::readSocket(io->fd_, buf.data(), need_read_len);
+            io->last_read_time_ = Base::getTimeOfDayUs();
+
             if (len < 0){
                 io->error = errno;
                 if (errno == EAGAIN || errno == EWOULDBLOCK){
@@ -435,8 +443,11 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         need_read_len = buf.capacity();
         // 避免读取长度为0,返回0导致错误关闭套接字
         if (need_read_len == 0) return;
+
         // 开始读取
         read_len = Base::readSocket(io->fd_, (void *) (buf.data()), need_read_len);
+        io->last_read_time_ = Base::getTimeOfDayUs();
+
         if (read_len < 0){
             io->error = errno;
             // 信号中断，下次再读取
@@ -453,7 +464,6 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         if (read_len == 0){
             goto DISCONNECT;
         }
-        io->read_buf_.append(buf.data(), read_len);
         buf.clear();
         // 读取回调
         handle_read_cb(io, (void*)(io->read_buf_.data()), read_len);
@@ -490,6 +500,8 @@ void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
             io->write_queue_.pop_front();
 
             len = Base::writeSocket(io->fd_, buf.data(), buf.length());
+            io->last_write_time_ = Base::getTimeOfDayUs();
+
             if (len < 0){
                 io->error = errno;
                 if (errno == EAGAIN || errno == EWOULDBLOCK){
@@ -546,6 +558,8 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
         io->write_queue_.pop_front();
 
         len = Base::writeSocket(io->fd_, buf.data(), buf.length());
+        io->last_write_time_ = Base::getTimeOfDayUs();
+
         if (write_len < 0) {
             io->error = errno;
             // 写入失败，下次再写
@@ -610,6 +624,7 @@ Int Core::IOEvent::close(bool timer)
         std::unique_lock<std::mutex> lock(this->write_mutex_);
         if (this->closed || !this->ready_) return -1;
 
+        // 还有数据没完成，加入定时器
         if (!this->write_queue_.empty() && this->error == 0 && timer){
             this->loop_->addTimer([this](const std::weak_ptr<Core::TimerEvent> &ev) {
                 this->close();
@@ -631,6 +646,7 @@ bool Core::IOEvent::setKeepalive(Size_t timeout_ms)
 {
     if (this->closed || !this->active_ || !this->loop_) return false;
     if (this->loop_) {
+        this->last_read_time_ = this->last_write_time_ = this->loop_->getCurrentTime();
         this->keep_alive_ms_ = timeout_ms;
         this->loop_->addTimer(std::bind(&handle_keepalive, shared_from_this(), std::placeholders::_1), timeout_ms, 1);
     }
