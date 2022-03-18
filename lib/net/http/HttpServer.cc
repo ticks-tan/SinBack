@@ -188,8 +188,9 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                         }
                     }
                 }
-                // 没有执行回调 (请求没有被拦截)
-                if (!is_call){
+                // 没有执行回调 (请求没有被拦截，或者拦截后没有需要返回的数据)
+                if (!is_call && http_context->response().content.empty() &&
+                    http_context->response().status_code == 0){
                     // 如果启用了静态文件服务，则返回对应文件
                     if (!this->setting_.staticFileDir.empty()){
                         sendStaticFile(io, http_context, url);

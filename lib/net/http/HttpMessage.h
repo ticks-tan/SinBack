@@ -71,6 +71,9 @@ namespace SinBack
             Size_t size() const {
                 return this->data_.size();
             }
+            bool empty() const {
+                return this->data_.empty();
+            }
         private:
             String data_;
         };

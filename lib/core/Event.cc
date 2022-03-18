@@ -365,7 +365,8 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
         return;
     }
     ACCEPT_ERROR:
-    io->close();
+    // io->close();
+    return;
 }
 
 // 处理ET模式下读取事件
@@ -432,7 +433,8 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
-        if (io->closed) return;
+        if (io->closed || io->destroy_) return;
+
         std::vector<Char> buf;
         buf.reserve(256);
         // 需要读取的长度
@@ -464,6 +466,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         if (read_len == 0){
             goto DISCONNECT;
         }
+        io->read_buf_.append(buf.data(), read_len);
         buf.clear();
         // 读取回调
         handle_read_cb(io, (void*)(io->read_buf_.data()), read_len);

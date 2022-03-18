@@ -8,19 +8,21 @@ Des:
 
 #include "net/http/HttpServer.h"
 #include "tools/Url.h"
+#include <sys/signal.h>
 
 using namespace SinBack::Http;
 using namespace SinBack;
 
 int main()
 {
+    signal(SIGPIPE, SIG_IGN);
     HttpServer server;
     HttpService service;
     // 设置http服务器配置
     server.setting().logDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/cmake-build-debug");
     // 静态文件根目录
     server.setting().staticFileDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
-    server.setting().workThreadNum = 4;
+    server.setting().workThreadNum = 8;
     server.setting().keepAlive = true;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
@@ -28,11 +30,6 @@ int main()
     });
     service.GET("/api/getTime", [](HttpContext& context) -> Int{
         return context.senText(Base::getDateTimeNow());
-    });
-    service.GET("/.*", [](HttpContext& context) -> Int{
-        Log::logi("api拦截成功 -- url = {}!\n", Tools::url_decode(context.request().url));
-        // 继续下一个 Service
-        return NEXT;
     });
     // 添加到 Test 服务模块
     server.addService("Test", &service);
