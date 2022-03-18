@@ -8,7 +8,7 @@
 #include "base/TimeUtil.h"
 
 // 获取时间
-void SinBack::Base::gettimeofday(timeval* tv){
+void SinBack::Base::getTimeOfDay(timeval* tv){
     auto time_now = std::chrono::system_clock::now();
     auto tv_s = std::chrono::duration_cast<std::chrono::seconds>(time_now.time_since_epoch()).count();
     auto tv_us = std::chrono::duration_cast<std::chrono::microseconds>(time_now.time_since_epoch()).count();
@@ -16,19 +16,19 @@ void SinBack::Base::gettimeofday(timeval* tv){
     tv->tv_usec = tv_us;
 }
 // 获取距离1900过去多少毫秒
-SinBack::SSize_t SinBack::Base::gettimeofday_ms(){
+SinBack::SSize_t SinBack::Base::getTimeOfDayMs(){
     timeval time{};
-    SinBack::Base::gettimeofday(&time);
+    SinBack::Base::getTimeOfDay(&time);
     return (time.tv_sec * 1000) + (time.tv_usec / 1000);
 }
 // 获取距离1900过去多少微妙
-SinBack::SSize_t SinBack::Base::gettimeofday_us(){
+SinBack::SSize_t SinBack::Base::getTimeOfDayUs(){
     timeval time{};
-    SinBack::Base::gettimeofday(&time);
+    SinBack::Base::getTimeOfDay(&time);
     return (time.tv_sec * 1000000) + time.tv_usec;
 }
 // 获取当前日期时间
-bool SinBack::Base::getdatetimenow(DateTime* dt){
+bool SinBack::Base::getDateTimeNow(DateTime* dt){
     auto now_time = std::chrono::system_clock::now();
     time_t time = std::chrono::system_clock::to_time_t(now_time);
     tm t{};
@@ -43,7 +43,7 @@ bool SinBack::Base::getdatetimenow(DateTime* dt){
     return true;
 }
 // 获取当前时间并格式化为指定格式
-std::string SinBack::Base::getdatetimenow(const std::string& format){
+std::string SinBack::Base::getDateTimeNow(const std::string& format){
     auto now_time = std::chrono::system_clock::now();
     time_t time = std::chrono::system_clock::to_time_t(now_time);
     tm* t = gmtime(&time);
@@ -55,7 +55,7 @@ std::string SinBack::Base::getdatetimenow(const std::string& format){
 }
 
 // time_t转换为 DateTime
-SinBack::Base::DateTime SinBack::Base::todatetime(Long time){
+SinBack::Base::DateTime SinBack::Base::toDateTime(Long time){
     DateTime dt{};
     tm* t = gmtime(&time);
     if (t){
@@ -70,7 +70,7 @@ SinBack::Base::DateTime SinBack::Base::todatetime(Long time){
     return dt;
 }
 // DateTime转换为 time_t
-SinBack::Long SinBack::Base::datetimeto(DateTime date){
+SinBack::Long SinBack::Base::dateTimeTo(DateTime date){
     tm time{};
     time.tm_year = date.year - 1900;
     time.tm_mon = date.month - 1;
@@ -81,12 +81,12 @@ SinBack::Long SinBack::Base::datetimeto(DateTime date){
     return mktime(&time);
 }
 
-void SinBack::Base::sleep_ms(Int time)
+void SinBack::Base::sleepMs(Int time)
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(time));
 }
 
-void SinBack::Base::sleep_us(Int time)
+void SinBack::Base::sleepUs(Int time)
 {
     std::this_thread::sleep_for(std::chrono::microseconds(time));
 }

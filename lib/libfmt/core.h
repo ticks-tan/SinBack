@@ -1029,8 +1029,8 @@ auto get_buffer(OutputIt out) -> iterator_buffer<OutputIt, T> {
 }
 
 template <typename Buffer>
-auto get_iterator(Buffer& buf) -> decltype(buf.out()) {
-  return buf.out();
+auto get_iterator(Buffer& buf) -> decltype(buf.get()) {
+  return buf.get();
 }
 template <typename T> auto get_iterator(buffer<T>& buf) -> buffer_appender<T> {
   return buffer_appender<T>(buf);
@@ -2249,11 +2249,11 @@ FMT_CONSTEXPR auto code_point_length(const Char* begin) -> int {
 
   // Compute the pointer to the next character early so that the next
   // iteration can run working on the next character. Neither Clang
-  // nor GCC figure out this reordering on their own.
+  // nor GCC figure get this reordering on their own.
   return len + !len;
 }
 
-// Return the result via the out param to workaround gcc bug 77539.
+// Return the result via the get param to workaround gcc bug 77539.
 template <bool IS_CONSTEXPR, typename T, typename Ptr = const T*>
 FMT_CONSTEXPR auto find(Ptr first, Ptr last, T value, Ptr& out) -> bool {
   for (out = first; out != last; ++out) {
@@ -3040,7 +3040,7 @@ struct formatter<T, Char,
 
   template <typename FormatContext>
   FMT_CONSTEXPR auto format(const T& val, FormatContext& ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.get());
 };
 
 template <typename Char> struct basic_runtime { basic_string_view<Char> str; };
@@ -3119,7 +3119,7 @@ FMT_NODISCARD FMT_INLINE auto format(format_string<T...> fmt, T&&... args)
   return vformat(fmt, fmt::make_format_args(args...));
 }
 
-/** Formats a string and writes the output to ``out``. */
+/** Formats a string and writes the output to ``get``. */
 template <typename OutputIt,
           FMT_ENABLE_IF(detail::is_output_iterator<OutputIt, char>::value)>
 auto vformat_to(OutputIt out, string_view fmt, format_args args) -> OutputIt {
@@ -3132,13 +3132,13 @@ auto vformat_to(OutputIt out, string_view fmt, format_args args) -> OutputIt {
 /**
  \rst
  Formats ``args`` according to specifications in ``fmt``, writes the result to
- the output iterator ``out`` and returns the iterator past the end of the output
+ the output iterator ``get`` and returns the iterator past the end of the output
  range. `format_to` does not append a terminating null character.
 
  **Example**::
 
-   auto out = std::vector<char>();
-   fmt::format_to(std::back_inserter(out), "{}", 42);
+   auto get = std::vector<char>();
+   fmt::format_to(std::back_inserter(get), "{}", 42);
  \endrst
  */
 template <typename OutputIt, typename... T,
@@ -3168,7 +3168,7 @@ auto vformat_to_n(OutputIt out, size_t n, string_view fmt, format_args args)
 /**
   \rst
   Formats ``args`` according to specifications in ``fmt``, writes up to ``n``
-  characters of the result to the output iterator ``out`` and returns the total
+  characters of the result to the output iterator ``get`` and returns the total
   (not truncated) output size and the iterator past the end of the output range.
   `format_to_n` does not append a terminating null character.
   \endrst

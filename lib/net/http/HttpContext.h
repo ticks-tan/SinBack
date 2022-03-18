@@ -26,25 +26,25 @@ namespace SinBack
             ~HttpContext();
 
             // 发送文本数据
-            Int sen_text(const SinBack::String& text);
+            Int senText(const SinBack::String& text);
             // 发送文件
-            Int sen_file(const SinBack::String& file_name);
+            Int senFile(const SinBack::String& file_name);
             // 回应404
-            Int notfound();
+            Int notFound();
             // 解析Url
-            bool parse_url();
+            bool parseUrl();
             // 解析请求数据
-            bool parse_body();
+            bool parseBody();
             // 初始化
             bool init();
 
-            HttpMethod get_method() const{
+            HttpMethod getMethod() const{
                 return this->request_.method;
             }
-            Int get_status_code() const{
+            Int getStatusCode() const{
                 return this->response_.status_code;
             }
-            void set_status_code(Int code){
+            void setStatusCode(Int code){
                 if (code > 0) {
                     this->response_.status_code = code;
                 }
@@ -70,6 +70,10 @@ namespace SinBack
                 this->request_.clear();
                 this->response_.clear();
             }
+
+        public:
+            // Cache File
+            std::shared_ptr<Base::File> cache_file_;
         private:
             // Http解析器
             std::shared_ptr<HttpParser> parser_;
@@ -79,8 +83,6 @@ namespace SinBack
             HttpResponse response_;
             // 对应 HttpServer 指针
             HttpServer* server_;
-            // Cache File
-            std::shared_ptr<Base::File> cache_file_;
         };
     }
 }

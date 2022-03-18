@@ -598,7 +598,7 @@ inline std::basic_string<Char> format(const text_style& ts, const S& format_str,
 }
 
 /**
-  Formats a string with the given text_style and writes the output to ``out``.
+  Formats a string with the given text_style and writes the output to ``get``.
  */
 template <typename OutputIt, typename Char,
           FMT_ENABLE_IF(detail::is_output_iterator<OutputIt, Char>::value)>
@@ -613,12 +613,12 @@ OutputIt vformat_to(
 /**
   \rst
   Formats arguments with the given text_style, writes the result to the output
-  iterator ``out`` and returns the iterator past the end of the output range.
+  iterator ``get`` and returns the iterator past the end of the output range.
 
   **Example**::
 
-    std::vector<char> out;
-    fmt::format_to(std::back_inserter(out),
+    std::vector<char> get;
+    fmt::format_to(std::back_inserter(get),
                    fmt::emphasis::bold | fg(fmt::color::red), "{}", 42);
   \endrst
 */

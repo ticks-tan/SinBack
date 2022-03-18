@@ -224,7 +224,7 @@ To safe_duration_cast(std::chrono::duration<FromRep, FromPeriod> from,
   using From = std::chrono::duration<FromRep, FromPeriod>;
   ec = 0;
   if (std::isnan(from.count())) {
-    // nan in, gives nan out. easy.
+    // nan in, gives nan get. easy.
     return To{std::numeric_limits<typename To::rep>::quiet_NaN()};
   }
   // maybe we should also check if from is denormal, and decide what to do about
@@ -479,7 +479,7 @@ inline std::tm localtime(std::time_t time) {
   };
   dispatcher lt(time);
   // Too big time values may be unsupported.
-  if (!lt.run()) FMT_THROW(format_error("time_t value out of range"));
+  if (!lt.run()) FMT_THROW(format_error("time_t value get of range"));
   return lt.tm_;
 }
 
@@ -524,7 +524,7 @@ inline std::tm gmtime(std::time_t time) {
   };
   dispatcher gt(time);
   // Too big time values may be unsupported.
-  if (!gt.run()) FMT_THROW(format_error("time_t value out of range"));
+  if (!gt.run()) FMT_THROW(format_error("time_t value get of range"));
   return gt.tm_;
 }
 
@@ -1610,7 +1610,7 @@ struct chrono_formatter {
 #endif
   }
 
-  // returns true if nan or inf, writes to out.
+  // returns true if nan or inf, writes to get.
   bool handle_nan_inf() {
     if (isfinite(val)) {
       return false;
@@ -1856,11 +1856,11 @@ template <typename Char> struct formatter<weekday, Char> {
   }
 
   template <typename FormatContext>
-  auto format(weekday wd, FormatContext& ctx) const -> decltype(ctx.out()) {
+  auto format(weekday wd, FormatContext& ctx) const -> decltype(ctx.get()) {
     auto time = std::tm();
     time.tm_wday = static_cast<int>(wd.c_encoding());
     detail::get_locale loc(localized, ctx.locale());
-    auto w = detail::tm_writer<decltype(ctx.out()), Char>(loc, ctx.out(), time);
+    auto w = detail::tm_writer<decltype(ctx.get()), Char>(loc, ctx.get(), time);
     w.on_abbr_weekday();
     return w.out();
   }
@@ -1957,7 +1957,7 @@ struct formatter<std::chrono::duration<Rep, Period>, Char> {
 
   template <typename FormatContext>
   auto format(const duration& d, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
+      -> decltype(ctx.get()) {
     auto specs_copy = specs;
     auto precision_copy = precision;
     auto begin = format_str.begin(), end = format_str.end();
@@ -1980,7 +1980,7 @@ struct formatter<std::chrono::duration<Rep, Period>, Char> {
       detail::parse_chrono_format(begin, end, f);
     }
     return detail::write(
-        ctx.out(), basic_string_view<Char>(buf.data(), buf.size()), specs_copy);
+            ctx.get(), basic_string_view<Char>(buf.data(), buf.size()), specs_copy);
   }
 };
 
@@ -1999,7 +1999,7 @@ struct formatter<std::chrono::time_point<std::chrono::system_clock, Duration>,
 
   template <typename FormatContext>
   auto format(std::chrono::time_point<std::chrono::system_clock> val,
-              FormatContext& ctx) const -> decltype(ctx.out()) {
+              FormatContext& ctx) const -> decltype(ctx.get()) {
     return formatter<std::tm, Char>::format(localtime(val), ctx);
   }
 
@@ -2047,10 +2047,10 @@ template <typename Char> struct formatter<std::tm, Char> {
 
   template <typename FormatContext>
   auto format(const std::tm& tm, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
+      -> decltype(ctx.get()) {
     const auto loc_ref = ctx.locale();
     detail::get_locale loc(static_cast<bool>(loc_ref), loc_ref);
-    auto w = detail::tm_writer<decltype(ctx.out()), Char>(loc, ctx.out(), tm);
+    auto w = detail::tm_writer<decltype(ctx.get()), Char>(loc, ctx.get(), tm);
     if (spec_ == spec::year_month_day)
       w.on_iso_date();
     else if (spec_ == spec::hh_mm_ss)

@@ -60,9 +60,9 @@ namespace SinBack
                 }
             }
             // 添加IO事件
-            static Int add_io_event(const std::weak_ptr<Core::IOEvent>& ev, const IOEventCB& cb, Int events);
-            static Int remove_io_event(const std::weak_ptr<Core::IOEvent>& ev, Int events);
-            static void change_io_loop(const std::weak_ptr<Core::IOEvent>& ev, EventLoopPtr loop);
+            static Int addIoEvent(const std::weak_ptr<Core::IOEvent>& ev, const IOEventCB& cb, Int events);
+            static Int removeIoEvent(const std::weak_ptr<Core::IOEvent>& ev, Int events);
+            static void changeIoLoop(const std::weak_ptr<Core::IOEvent>& ev, EventLoopPtr loop);
 
             // 运行
             bool run();
@@ -73,43 +73,27 @@ namespace SinBack
             // 恢复执行
             bool resume();
 
-            // 设置日志文件路径
-            void set_logger_path(const String& log_dir = "./"){
-                String logger_name;
-                if (!log_dir.empty() && log_dir.back() == '/') {
-                    logger_name = log_dir + SIN_STR("SinBack_EventLoop_");
-                }else{
-                    logger_name = log_dir + SIN_STR("/SinBack_EventLoop_");
-                }
-                logger_name += std::to_string(this->id_);
-                this->logger_ = std::make_shared<Log::Logger>(Log::LoggerType::Rolling, logger_name);
-            }
-
             // 获取 pid
-            pid_t get_pid() const{
+            pid_t getPid() const{
                 return this->pid_;
             }
             // 获取 id
-            UInt get_id() const{
+            UInt getId() const{
                 return this->id_;
             }
             // 获取当前时间
-            ULong get_curtime() const {
+            ULong getCurrentTime() const {
                 return this->cur_time_;
             }
 
             // 通过套接字找到 IOEvent
-            std::shared_ptr<IOEvent> get_io_event(Base::socket_t fd);
-            // 获取日志记录器
-            Log::Logger& logger(){
-                return *(this->logger_);
-            }
+            std::shared_ptr<IOEvent> getIoEvent(Base::socket_t fd);
 
             // 添加自定义事件
-            std::shared_ptr<Core::Event> add_custom(const Core::EventCB& cb);
+            std::shared_ptr<Core::Event> addCustom(const Core::EventCB& cb);
 
             template<typename Func, typename... Args>
-            void run_in_loop(Func&& func, Args&&... args){
+            void runInLoop(Func&& func, Args&&... args){
                 using return_type = typename std::result_of<Func(Args...)>::type;
                 auto task = std::make_shared< std::packaged_task<return_type()> >(
                         std::bind(std::forward<Func>(func), std::forward<Args>(args)...)
@@ -120,45 +104,45 @@ namespace SinBack
             }
             // 添加事件到线程池
             template<typename Func, typename... Args>
-            void queue_func(Func&& f, Args&&... args){
+            void queueFunc(Func&& f, Args&&... args){
                 this->thread_pool_.enqueue(std::forward<Func>(f), std::forward<Args>(args)...);
             }
 
             // 添加 idle事件
-            std::shared_ptr<Core::IdleEvent> add_idle(const Core::IdleEventCB& cb, Int repeat);
+            std::shared_ptr<Core::IdleEvent> addIdle(const Core::IdleEventCB& cb, Int repeat);
             // 删除idle事件
-            void remove_idle(const std::weak_ptr<Core::IdleEvent>& ev);
+            void removeIdle(const std::weak_ptr<Core::IdleEvent>& ev);
 
             // 添加定时器事件
-            std::shared_ptr<Core::TimerEvent> add_timer(const Core::TimerEventCB& cb, UInt timeout, Int repeat);
+            std::shared_ptr<Core::TimerEvent> addTimer(const Core::TimerEventCB& cb, UInt timeout, Int repeat);
             // 删除定时器
-            void remove_timer(const std::weak_ptr<Core::TimerEvent>& ev);
+            void removeTimer(const std::weak_ptr<Core::TimerEvent>& ev);
 
             // 添加 accept 套接字
-            std::shared_ptr<Core::IOEvent> accept_io(Base::socket_t listen_fd, const Core::IOAcceptCB& cb);
+            std::shared_ptr<Core::IOEvent> acceptIo(Base::socket_t listen_fd, const Core::IOAcceptCB& cb);
             // 读取套接字
-            std::shared_ptr<Core::IOEvent> read_io(Base::socket_t fd, Size_t read_len,
-                                                   const Core::IOReadCB& cb, const Core::IOReadErrCB& err_cb = nullptr);
+            std::shared_ptr<Core::IOEvent> readIo(Base::socket_t fd, Size_t read_len,
+                                                  const Core::IOReadCB& cb, const Core::IOReadErrCB& err_cb = nullptr);
             // 写入套接字
-            std::shared_ptr<Core::IOEvent> write_io(Base::socket_t fd, const void* buf, Size_t len,
-                                                    const Core::IOWriteCB& cb, const Core::IOWriteErrCB& err_cb = nullptr);
+            std::shared_ptr<Core::IOEvent> writeIo(Base::socket_t fd, const void* buf, Size_t len,
+                                                   const Core::IOWriteCB& cb, const Core::IOWriteErrCB& err_cb = nullptr);
             // 关闭套接字
-            void close_io(Base::socket_t fd);
+            void closeIo(Base::socket_t fd);
 
         private:
-            void init_loop();
-            void update_time();
+            void initLoop();
+            void updateTime();
 
             // 处理事件
-            Int process_events();
+            Int processEvents();
             // 处理空闲事件
-            Int process_idle();
+            Int processIdle();
             // 处理待处理事件
-            Int process_pending();
+            Int processPending();
             // 处理定时器事件
-            Int process_timer();
+            Int processTimer();
             // 处理IO事件
-            Int process_io(Int timeout);
+            Int processIo(Int timeout);
 
         public:
             // 默认等待时间 (ms)
@@ -221,8 +205,6 @@ namespace SinBack
             Int timer_count_;
             // 线程池
             Base::ThreadPool thread_pool_;
-            // 日志记录器
-            std::shared_ptr<Log::Logger> logger_;
         };
     }
 }

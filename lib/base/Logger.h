@@ -70,7 +70,7 @@ namespace SinBack
                 return *this;
             }
 
-            string_type filename() const {
+            string_type fileName() const {
                 return log_->name();
             }
 
@@ -92,15 +92,15 @@ namespace SinBack
                     msg += SIN_STR(" error ");
                 }
                 timeval tv{};
-                Base::gettimeofday(&tv);
+                Base::getTimeOfDay(&tv);
                 if (this->sec_ / 60 == tv.tv_sec / 60) {
                     this->sec_ = (tv.tv_sec) % 60;
                     if (this->datetime_.min != this->sec_ / 60) {
-                        Base::getdatetimenow(&this->datetime_);
-                        format_time();
+                        Base::getDateTimeNow(&this->datetime_);
+                        formatTime();
                         this->sec_ = datetime_.sec;
                     } else {
-                        format_time_sec();
+                        formatTimeSec();
                     }
                 }
                 msg += this->time_str_;
@@ -113,9 +113,9 @@ namespace SinBack
             // 线程执行函数
             void thread_run_func();
             // 解析时间
-            void format_time();
+            void formatTime();
             // 解析时间秒部分
-            void format_time_sec();
+            void formatTimeSec();
         private:
             // 日志类型
             LoggerType type_;
@@ -145,9 +145,34 @@ namespace SinBack
             bool stop_;
         };
 
+        static String& default_logger_path(){
+            static String $_default_logger_path_$;
+            return $_default_logger_path_$;
+        }
+        static void set_default_logger_path(const String& path){
+            default_logger_path() = path;
+        }
+
+        static LogLevel& default_logger_level(){
+            static LogLevel $_default_logger_level_$;
+            return $_default_logger_level_$;
+        }
+        static void set_default_logger_level(LogLevel level){
+            default_logger_level() = level;
+        }
+
+        static UInt& default_logger_thread_num(){
+            static UInt $_default_logger_thread_num_$;
+            return $_default_logger_thread_num_$;
+        }
+        static void set_default_logger_thread_num(UInt num){
+            default_logger_thread_num() = num;
+        }
+
         static Logger* default_logger(){
             // 默认日志记录器
-            static Logger $_default_logger_$(LoggerType::Rolling, "Default_Global_SinBack", 2);
+            static Logger $_default_logger_$(LoggerType::Rolling, default_logger_path(), default_logger_thread_num());
+            $_default_logger_$.set_loglevel(default_logger_level());
             return &($_default_logger_$);
         }
 

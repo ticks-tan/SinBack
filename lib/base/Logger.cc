@@ -20,18 +20,21 @@ Log::Logger::Logger(Log::LoggerType type, const Log::Logger::string_type &file_n
 {
     this->front_buf_.reset(new queue_type);
     this->back_buf_.reset(new queue_type);
-    Base::getdatetimenow(&this->datetime_);
-    format_time();
+    Base::getDateTimeNow(&this->datetime_);
+    formatTime();
     this->sec_ = datetime_.sec;
 
     string_type name = file_name;
     if (name.empty()){
-        name = SIN_STR("SinBack");
+        name = SIN_STR("SinBack_Logger");
     }
     if (type_ == Normal){
         this->log_.reset(new Base::LogFile(name.c_str()));
     }else if (type_ == Rolling){
         this->log_.reset(new Base::RollLogFile(name.c_str()));
+    }
+    if (this->th_num_ == 0){
+        this->th_num_ = 2;
     }
     Size_t i = 0;
     for (; i < this->th_num_; ++i){
@@ -89,15 +92,15 @@ void Log::Logger::thread_run_func()
     }
 }
 
-void Log::Logger::format_time()
+void Log::Logger::formatTime()
 {
-    snprintf(time_str_, 20, "%04d-%02d-%02d %02d:%02d:%02d",
+    snprintf(time_str_, 20, SIN_STR("%04d-%02d-%02d %02d:%02d:%02d"),
              datetime_.year, datetime_.month, datetime_.day, datetime_.hour, datetime_.min, datetime_.sec);
 }
 
-void Log::Logger::format_time_sec()
+void Log::Logger::formatTimeSec()
 {
-    snprintf(time_str_ + 17, 3, "%02d", this->sec_);
+    snprintf(time_str_ + 17, 3, SIN_STR("%02d"), this->sec_);
 }
 
 Log::Logger::~Logger(){

@@ -8,6 +8,8 @@
 #ifndef SINBACK_SOCKETUTIL_H
 #define SINBACK_SOCKETUTIL_H
 
+#ifdef OS_WINDOWS
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -16,19 +18,20 @@
 #include <fcntl.h>
 #include <functional>
 #include "base/Base.h"
+#endif
 
 namespace SinBack
 {
     namespace Base {
-#define IPV4_ADDRESS_LEN INET_ADDRSTRLEN
-#define IPV6_ADDRESS_LEN INET6_ADDRSTRLEN
 
 #ifdef OS_WINDOWS
         typedef HANDLE socket_t;
 #else
-        typedef Int socket_t;
-#endif
+#define IPV4_ADDRESS_LEN INET_ADDRSTRLEN
+#define IPV6_ADDRESS_LEN INET6_ADDRSTRLEN
+typedef Int socket_t;
 
+#endif
         // 定义Socket类型和协议族类型
         enum Socket_Type {
             S_TCP = 0,
@@ -39,7 +42,7 @@ namespace SinBack
             IP_6 = 1
         };
 
-        constexpr bool check_ipv4(Ip_Type type) {
+        constexpr bool checkIpv4(Ip_Type type) {
             return (type == IP_4);
         }
 
@@ -80,13 +83,13 @@ namespace SinBack
         }
 
         // 复用端口
-        static void socket_reuse_address(socket_t sock){
+        static void socketReuseAddress(socket_t sock){
             Int opt = 1;
             ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
         }
 
         // 设置套接字非阻塞
-        static void set_socket_nonblock(socket_t sock){
+        static void setSocketNonblock(socket_t sock){
             Int flag = ::fcntl(sock, F_GETFL);
             ::fcntl(sock, F_SETFL, flag | O_NONBLOCK);
         }
@@ -130,7 +133,7 @@ namespace SinBack
          * @return : 成功返回套接字，失败返回 -1
          */
         static socket_t
-        creat_socket(Ip_Type ip_type, Socket_Type sock_type, bool no_block = true, bool close_fork = false) {
+        creatSocket(Ip_Type ip_type, Socket_Type sock_type, bool no_block = true, bool close_fork = false) {
             int domain = (ip_type == IP_4) ? PF_INET : PF_INET6;
             int type = (sock_type == S_TCP) ? SOCK_STREAM : SOCK_DGRAM;
             if (no_block) {
@@ -150,7 +153,7 @@ namespace SinBack
          * @return : 成功返回 0 ， 失败返回 -1
          */
         static bool
-        bind_socket(socket_t sock_fd, const sockaddr_in *my_addr, socklen_t addr_len) {
+        bindSocket(socket_t sock_fd, const sockaddr_in *my_addr, socklen_t addr_len) {
             return (::bind(sock_fd, (sockaddr *) (my_addr), addr_len) == 0);
         }
 
@@ -163,7 +166,7 @@ namespace SinBack
          * @return : 是否成功
          */
         static bool
-        bind_socket(socket_t sock_fd, Ip_Type ip_type, const Char *ip_addr, Int port) {
+        bindSocket(socket_t sock_fd, Ip_Type ip_type, const Char *ip_addr, Int port) {
             if (ip_type == IP_4) {
                 sockaddr_in addr{};
                 addr.sin_family = AF_INET;
@@ -195,7 +198,7 @@ namespace SinBack
          * @return
          */
         static bool
-        listen_socket(socket_t sock_fd, Int max_listen_cnt = 5) {
+        listenSocket(socket_t sock_fd, Int max_listen_cnt = 5) {
             return (::listen(sock_fd, max_listen_cnt) == 0);
         }
 
@@ -207,12 +210,12 @@ namespace SinBack
          * @return
          */
         static Int
-        accept_socket(socket_t listen_fd, sockaddr_in *addr, socklen_t *adddr_len) {
+        acceptSocket(socket_t listen_fd, sockaddr_in *addr, socklen_t *adddr_len) {
             return ::accept(listen_fd, (sockaddr *) addr, adddr_len);
         }
 
         static Int
-        accept_socket(socket_t listen_fd, sockaddr_in6 *addr, socklen_t *adddr_len) {
+        acceptSocket(socket_t listen_fd, sockaddr_in6 *addr, socklen_t *adddr_len) {
             return ::accept(listen_fd, (sockaddr *) addr, adddr_len);
         }
 
@@ -225,7 +228,7 @@ namespace SinBack
          * @return
          */
         static Long
-        recv_socket(socket_t sock_fd, void *buf, Size_t len, Int flag = 0) {
+        readSocket(socket_t sock_fd, void *buf, Size_t len, Int flag = 0) {
             return ::recv(sock_fd, buf, len, flag);
         }
 
@@ -239,12 +242,12 @@ namespace SinBack
          * @return
          */
         static Long
-        send_socket(socket_t sock_fd, const void *buf, Size_t len, Int flag = 0) {
+        writeSocket(socket_t sock_fd, const void *buf, Size_t len, Int flag = 0) {
             return ::send(sock_fd, buf, len, flag);
         }
 
         static void
-        close_socket(socket_t sock_fd, Int opt = 0) {
+        closeSocket(socket_t sock_fd, Int opt = 0) {
             if (opt & SHUT_RD || opt & SHUT_WR || opt & SHUT_RDWR) {
                 ::shutdown(sock_fd, opt);
                 return;

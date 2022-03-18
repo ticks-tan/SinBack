@@ -35,7 +35,7 @@ namespace SinBack {
             File(const String& name, OpenFileMode mode);
             ~File();
             // 重新打开一个文件
-            bool reopen(const String& name, OpenFileMode mode);
+            bool reOpen(const String& name, OpenFileMode mode);
             // 读取数据
             Long read(void* buf, Size_t len);
             String read(Size_t len);
@@ -56,7 +56,7 @@ namespace SinBack {
                 return this->name_;
             }
             bool exist() const{
-                return (this->file_ != nullptr);
+                return ( !this->name_.empty() && (::access(this->name_.c_str(), F_OK | R_OK) == 0));
             }
 
             String suffix(){

@@ -31,7 +31,7 @@ SinBack::Core::EventLoopThread::start(const SinBack::Core::EventLoopThread::Func
     if (this->running_){
         return false;
     }
-    this->th_.reset(new std::thread(std::bind(&EventLoopThread::thread_func, this, begin_func, end_func)));
+    this->th_.reset(new std::thread(std::bind(&EventLoopThread::threadFunc, this, begin_func, end_func)));
     return true;
 }
 
@@ -75,13 +75,13 @@ SinBack::Core::EventLoopThread::join()
 }
 
 void
-SinBack::Core::EventLoopThread::thread_func(const Func& begin_func, const Func& end_func)
+SinBack::Core::EventLoopThread::threadFunc(const Func& begin_func, const Func& end_func)
 {
     this->stop_ = false;
     this->running_ = true;
     if (begin_func){
-        this->loop_->add_custom([&begin_func](const std::weak_ptr<Core::Event>& ev){
-            if (begin_func){
+        this->loop_->addCustom([&begin_func](const std::weak_ptr<Core::Event> &ev) {
+            if (begin_func) {
                 begin_func();
             }
         });

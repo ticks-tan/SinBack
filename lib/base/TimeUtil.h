@@ -47,46 +47,46 @@ namespace SinBack
         };
 
         // 获取时间
-        void gettimeofday(timeval* tv);
+        void getTimeOfDay(timeval* tv);
         // 获取距离1900过去多少毫秒
-        SSize_t gettimeofday_ms();
+        SSize_t getTimeOfDayMs();
         // 获取距离1900过去多少微妙
-        SSize_t gettimeofday_us();
+        SSize_t getTimeOfDayUs();
         // 获取当前日期时间
-        bool getdatetimenow(DateTime* dt);
+        bool getDateTimeNow(DateTime* dt);
         // 获取当前时间并格式化为指定格式
-        std::string getdatetimenow(const std::string& format = "%Y-%m-%d %H:%M:%S");
+        std::string getDateTimeNow(const std::string& format = "%Y-%m-%d %H:%M:%S");
 
         // 获取时间点后多少时间对应 time_t
-        template <TimeType Type> static Long gettimeafter(Long time, Long after){
+        template <TimeType Type> static Long getTimeAfter(Long time, Long after){
             return 0;
         }
-        template <> Long gettimeafter<MSecond>(Long time, Long after){
+        template <> Long getTimeAfter<MSecond>(Long time, Long after){
             return std::chrono::system_clock::to_time_t(std::chrono::system_clock::from_time_t(time) + std::chrono::microseconds(after));
         }
-        template <> Long gettimeafter<Second>(Long time, Long after){
+        template <> Long getTimeAfter<Second>(Long time, Long after){
             return std::chrono::system_clock::to_time_t(std::chrono::system_clock::from_time_t(time) + std::chrono::seconds(after));
         }
-        template <> Long gettimeafter<Minute>(Long time, Long after){
+        template <> Long getTimeAfter<Minute>(Long time, Long after){
             return std::chrono::system_clock::to_time_t(std::chrono::system_clock::from_time_t(time) + std::chrono::minutes(after));
         }
-        template <> Long gettimeafter<Hour>(Long time, Long after){
+        template <> Long getTimeAfter<Hour>(Long time, Long after){
             return std::chrono::system_clock::to_time_t(std::chrono::system_clock::from_time_t(time) + std::chrono::hours(after));
         }
-        template <> Long gettimeafter<Day>(Long time, Long after){
+        template <> Long getTimeAfter<Day>(Long time, Long after){
             return std::chrono::system_clock::to_time_t(std::chrono::system_clock::from_time_t(time) + std::chrono::hours(24 * after));
         }
-        template <> Long gettimeafter<Week>(Long time, Long after){
+        template <> Long getTimeAfter<Week>(Long time, Long after){
             return std::chrono::system_clock::to_time_t(std::chrono::system_clock::from_time_t(time) + std::chrono::hours( 24 * 7 * after));
         }
 
         // time_t转换为 DateTime
-        DateTime todatetime(Long time);
+        DateTime toDateTime(Long time);
         // DateTime转换为 time_t
-        Long datetimeto(DateTime date);
+        Long dateTimeTo(DateTime date);
         // 线程休眠
-        void sleep_ms(Int time);
-        void sleep_us(Int time);
+        void sleepMs(Int time);
+        void sleepUs(Int time);
 
     }
 }

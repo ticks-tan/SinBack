@@ -27,10 +27,10 @@ Core::Selector::~Selector()
     ::close(this->fd_);
 }
 
-bool Core::Selector::add_event(Base::socket_t fd, Int events)
+bool Core::Selector::addEvent(Base::socket_t fd, Int events)
 {
     epoll_event ev{};
-    std::shared_ptr<Core::IOEvent> io = this->loop_->get_io_event(fd);
+    std::shared_ptr<Core::IOEvent> io = this->loop_->getIoEvent(fd);
     ev.data.fd = fd;
     if (io->evs_ & Core::IO_READ){
         ev.events |= EPOLLIN;
@@ -55,11 +55,11 @@ bool Core::Selector::add_event(Base::socket_t fd, Int events)
     return (opt != -1);
 }
 
-bool Core::Selector::del_event(Base::socket_t fd, Int events)
+bool Core::Selector::delEvent(Base::socket_t fd, Int events)
 {
     epoll_event ev{};
     ev.data.fd = fd;
-    std::shared_ptr<Core::IOEvent> io = this->loop_->get_io_event(fd);
+    std::shared_ptr<Core::IOEvent> io = this->loop_->getIoEvent(fd);
     if (io->evs_ & Core::IO_READ){
         ev.events |= EPOLLIN;
     }
@@ -83,7 +83,7 @@ bool Core::Selector::del_event(Base::socket_t fd, Int events)
     return (opt != -1);
 }
 
-Int Core::Selector::poll_event(Int timeout)
+Int Core::Selector::pollEvent(Int timeout)
 {
     Int ep_cnt = ::epoll_wait(this->fd_, this->events_.data(), (Int)this->events_.size(), timeout);
     if (ep_cnt < 0){
@@ -91,7 +91,7 @@ Int Core::Selector::poll_event(Int timeout)
         if (errno == EINTR){
             return 0;
         }
-        this->loop_->logger().error("epoll_wait error, return code is {}", ep_cnt);
+        Log::loge("epoll_wait error, return code is {}", ep_cnt);
         return ep_cnt;
     }
     if (ep_cnt == 0){
@@ -107,7 +107,7 @@ Int Core::Selector::poll_event(Int timeout)
         if (events){
             ++ev_cnt;
             // 获取对于套接字，并设置套接字活动事件
-            std::shared_ptr<Core::IOEvent> io = this->loop_->get_io_event(fd);
+            std::shared_ptr<Core::IOEvent> io = this->loop_->getIoEvent(fd);
             if (io){
                 if (events & (EPOLLIN | EPOLLERR | EPOLLHUP)){
                     io->active_evs_ |= Core::IO_READ;

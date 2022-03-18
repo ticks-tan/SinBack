@@ -25,17 +25,17 @@ int main()
     HttpService service;
     // http服务器配置
     // 设置日志目录
-    server.setting().log_dir = SIN_STR("./LogDir");
+    server.setting().logDir = SIN_STR("./LogDir");
     // Http 静态服务根目录，不设置则不开启静态文件服务 -- 支持异步读取文件
-    server.setting().static_file_dir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
-    server.setting().work_thread_num = 4;
-    server.setting().keep_alive = true;
+    server.setting().staticFileDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
+    server.setting().workThreadNum = 4;
+    server.setting().keepAlive = true;
     // 拦截 /api/test GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
-        return context.sen_text("我是测试接口 !");
+        return context.senText("我是测试接口 !");
     });
     service.GET("/api/getTime", [](HttpContext& context) -> Int{
-        return context.sen_text(Base::getdatetimenow());
+        return context.senText(Base::getDateTimeNow());
     });
     // 拦截 /api/ 下所有 GET 请求
     service.GET("/api/.*", [](HttpContext& context) -> Int{
@@ -44,7 +44,7 @@ int main()
         return NEXT;
     });
     // 添加到 Test 服务模块
-    server.add_service("Test", &service);
+    server.addService("Test", &service);
     // 开始监听2021端口
     server.listen(2022, [](const SinBack::String& err){
         fmt::print("listen error: {}\n", err);
@@ -68,8 +68,8 @@ int main()
     TcpServer server;
 
     // 有新客户端连接会调用该函数
-    server.on_new_client = [](const TcpServer::ChannelPtr& io) {
-        fmt::print("有新客户端连接, fd = {}\n", io->get_fd());
+    server.onNewClient = [](const TcpServer::ChannelPtr& io) {
+        fmt::print("有新客户端连接, fd = {}\n", io->getFd());
     };
     // 有新数据读取后会调用该函数
     server.on_message = [](const TcpServer::ChannelPtr& io, const String& read_msg) {
@@ -82,7 +82,7 @@ int main()
         // 这里不用调用 io->close ，读取错误会自动关闭
     };
     // 数据成功写入会调用该函数
-    server.on_write = [](const TcpServer::ChannelPtr& io, Size_t len) {
+    server.onWrite = [](const TcpServer::ChannelPtr& io, Size_t len) {
         // len 为写入数据大小
         fmt::print("成功写入{}字节数据\n", len);
     };
@@ -92,9 +92,9 @@ int main()
         // 读取和写入错误时，IO句柄对应 loop 的日志记录器都会记录该错误
     };
     // IO关闭后调用该函数
-    server.on_close = [](const TcpServer::ChannelPtr& io) {
+    server.onClose = [](const TcpServer::ChannelPtr& io) {
         // 这里不应该再调用 read 和 write，因为此时 IO 已经关闭，不会处理读取和写入事件
-        fmt::print("IO关闭，fd = {}\n", io->get_fd());
+        fmt::print("IO关闭，fd = {}\n", io->getFd());
     };
 
     // 开始运行，并监听 2022 端口

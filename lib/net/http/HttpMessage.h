@@ -24,19 +24,19 @@ namespace SinBack
             using Map = std::unordered_map<String, String>;
             using Iterator = Map::iterator;
         public:
-            void set_head(const String& key, const String& value){
+            void setHead(const String& key, const String& value){
                 if (!key.empty() && !value.empty()) {
                     this->data_[key] = value;
                 }
             }
-            String get_head(const String& key) const{
+            String getHead(const String& key) const{
                 auto it = this->data_.find(key);
                 if (it != this->data_.end()){
                     return it->second;
                 }
                 return "";
             }
-            String to_string() const{
+            String toString() const{
                 String str;
                 for (auto& it : this->data_){
                     str += it.first;
@@ -49,7 +49,7 @@ namespace SinBack
             }
 
             String operator [](const String& key) const{
-                return get_head(key);
+                return getHead(key);
             }
             String& operator [](const String& key){
                 return this->data_[key];
@@ -293,7 +293,7 @@ namespace SinBack
             // 内容
             HttpContent content;
             // 解析为字符串格式
-            String to_string() const;
+            String toString() const;
             // 清空内容
             void clear();
         };
@@ -311,7 +311,7 @@ namespace SinBack
             HttpContent content;
 
             // 解析为字符串格式
-            String to_string();
+            String toString();
             // 清空内容
             void clear();
         };

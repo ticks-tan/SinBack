@@ -34,7 +34,7 @@ namespace SinBack
             FILE*& file_fp(){
                 return this->fp_;
             }
-            bool& is_close(){
+            bool& isClose(){
                 return this->close_;
             }
 
@@ -66,9 +66,9 @@ namespace SinBack
 
         private:
             // 新文件命名
-            void roll_file();
+            void rollFile();
             // 刷新文件大小
-            void refresh_file_size();
+            void refreshFileSize();
         private:
             // 基础文件名
             string_type base_name_;

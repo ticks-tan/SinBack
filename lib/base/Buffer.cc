@@ -56,7 +56,7 @@ void SinBack::Base::Buffer::clear() {
     this->data_.clear();
 }
 
-SSize_t Base::Buffer::out(void *buf, Size_t len)
+SSize_t Base::Buffer::get(void *buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
@@ -73,7 +73,7 @@ SSize_t Base::Buffer::out(void *buf, Size_t len)
     return read_len;
 }
 
-SSize_t Base::Buffer::out(std::string &buf, Size_t len)
+SSize_t Base::Buffer::get(std::string &buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
@@ -88,7 +88,7 @@ SSize_t Base::Buffer::out(std::string &buf, Size_t len)
     return read_len;
 }
 
-SSize_t Base::Buffer::out(Base::Buffer &buf, Size_t len)
+SSize_t Base::Buffer::get(Base::Buffer &buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
@@ -160,7 +160,7 @@ SSize_t Base::Buffer::in(const Base::Buffer &buf, Size_t len)
     return write_len;
 }
 
-SSize_t Base::Buffer::outall(std::string &buf)
+SSize_t Base::Buffer::getAll(std::string &buf)
 {
     SSize_t read_len = 0;
     Size_t i = this->begin_;
@@ -172,7 +172,7 @@ SSize_t Base::Buffer::outall(std::string &buf)
     return read_len;
 }
 
-SSize_t Base::Buffer::outall(Base::Buffer &buf)
+SSize_t Base::Buffer::getAll(Base::Buffer &buf)
 {
     buf.scan();
 
@@ -191,23 +191,23 @@ SSize_t Base::Buffer::outall(Base::Buffer &buf)
     return read_len;
 }
 
-SSize_t Base::Buffer::inall(const std::string &buf)
+SSize_t Base::Buffer::inAll(const std::string &buf)
 {
     return this->in(buf, buf.size());
 }
 
-SSize_t Base::Buffer::inall(const Base::Buffer &buf) {
+SSize_t Base::Buffer::inAll(const Base::Buffer &buf) {
     return this->in(buf, buf.size());
 }
 
 SSize_t Base::Buffer::append(const std::string &buf)
 {
-    return this->inall(buf);
+    return this->inAll(buf);
 }
 
 SSize_t Base::Buffer::append(const Base::Buffer &buf)
 {
-    return this->inall(buf);
+    return this->inAll(buf);
 }
 
 bool Base::Buffer::remove(Size_t len)
@@ -273,7 +273,7 @@ Base::Buffer &Base::Buffer::operator<<(const Base::Buffer &buf)
     return this->operator=(buf);
 }
 
-Base::Buffer Base::operator+(const Base::Buffer &buf1, const Base::Buffer &buf2)
+Base::Buffer operator+(const Base::Buffer &buf1, const Base::Buffer &buf2)
 {
     Base::Buffer buf;
     buf.append(buf1);

@@ -21,13 +21,13 @@ namespace SinBack {
             explicit Channel(const std::weak_ptr<Core::IOEvent>& io);
             ~Channel();
         public:
-            UInt get_id() const{
+            UInt getId() const{
                 return this->io_->id_;
             }
-            Base::socket_t get_fd() const{
+            Base::socket_t getFd() const{
                 return this->fd_;
             }
-            std::shared_ptr<Core::IOEvent>& get_io(){
+            std::shared_ptr<Core::IOEvent>& getIo(){
                 return this->io_;
             }
             Int read();
@@ -36,27 +36,27 @@ namespace SinBack {
             Int write(const String & buf);
             Int close();
 
-            void set_read_cb(const std::function<void(const String&)>& func){
+            void setReadCb(const std::function<void(const String&)>& func){
                 this->read_cb_ = func;
             }
-            void set_read_err_cb(const std::function<void(const String&)>& func){
+            void setReadErrCb(const std::function<void(const String&)>& func){
                 this->read_err_cb_ = func;
             }
-            void set_write_cb(const std::function<void(Size_t)>& func){
+            void setWriteCb(const std::function<void(Size_t)>& func){
                 this->write_cb_ = func;
             }
-            void set_write_err_cb(const std::function<void(const String&)>& func){
+            void setWriteErrCb(const std::function<void(const String&)>& func){
                 this->write_err_cb_ = func;
             }
-            void set_close_cb(const std::function<void()>& func){
+            void setCloseCb(const std::function<void()>& func){
                 this->close_cb_ = func;
             }
         private:
-            static void on_read(const std::weak_ptr<IOEvent>& ev, const String & buf);
-            static void on_read_error(const std::weak_ptr<IOEvent>& ev, const String & buf);
-            static void on_write(const std::weak_ptr<IOEvent>& ev, Size_t write_len);
-            static void on_write_error(const std::weak_ptr<IOEvent>& ev, const String & buf);
-            static void on_close(const std::weak_ptr<IOEvent>& ev);
+            static void onRead(const std::weak_ptr<IOEvent>& ev, const String & buf);
+            static void onReadError(const std::weak_ptr<IOEvent>& ev, const String & buf);
+            static void onWrite(const std::weak_ptr<IOEvent>& ev, Size_t write_len);
+            static void onWriteError(const std::weak_ptr<IOEvent>& ev, const String & buf);
+            static void onClose(const std::weak_ptr<IOEvent>& ev);
         private:
             std::shared_ptr<Core::IOEvent> io_;
             Base::socket_t fd_;

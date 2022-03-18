@@ -134,16 +134,16 @@ Size_t Base::RollLogFile::write(const string_type& buf)
     Size_t write_len = LogFile::write(buf);
     // 真正执行写入操作才更新文件大小，并判断是否需要滚动
     if (write_len > 0){
-        refresh_file_size();
+        refreshFileSize();
         if (this->file_size_ > this->max_len_){
-            this->roll_file();
+            this->rollFile();
         }
     }
     return write_len;
 }
 
 // 滚动日志
-void Base::RollLogFile::roll_file()
+void Base::RollLogFile::rollFile()
 {
     ++this->roll_count_;
     auto it = this->base_name_.find_last_of('.');
@@ -157,7 +157,7 @@ void Base::RollLogFile::roll_file()
 }
 
 // 刷新文件大小
-void Base::RollLogFile::refresh_file_size()
+void Base::RollLogFile::refreshFileSize()
 {
     FILE* fp = this->file_fp();
     Size_t cur_seek = ::ftell(fp);

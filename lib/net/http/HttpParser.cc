@@ -48,7 +48,7 @@ Int on_header_field(llhttp_t* parser, const Char* data, Size_t len)
     if (hp){
         hp->header_field.append(data, len);
         if (!hp->header_field.empty() && !hp->header_value.empty()){
-            hp->request_->header.set_head(hp->header_field, hp->header_value);
+            hp->request_->header.setHead(hp->header_field, hp->header_value);
             hp->header_field.clear();
             hp->header_value.clear();
         }
@@ -63,7 +63,7 @@ Int on_header_value(llhttp_t* parser, const Char* data, Size_t len)
     if (hp){
         hp->header_value.append(data, len);
         if (!hp->header_field.empty() && !hp->header_value.empty()){
-            hp->request_->header.set_head(hp->header_field, hp->header_value);
+            hp->request_->header.setHead(hp->header_field, hp->header_value);
             hp->header_field.clear();
             hp->header_value.clear();
         }
@@ -160,36 +160,36 @@ Http::Http1Parse::~Http1Parse()
     this->header_field.clear();
 }
 
-Int Http::Http1Parse::parse_data(const Char* data, Size_t len)
+Int Http::Http1Parse::parseData(const Char* data, Size_t len)
 {
     return llhttp_execute(&this->parser_, data, len);
 }
 
-Int Http::Http1Parse::get_status()
+Int Http::Http1Parse::getStatus()
 {
     return this->status_;
 }
 
-bool Http::Http1Parse::need_receive()
+bool Http::Http1Parse::needReceive()
 {
     return (this->status_ != HP_PARSE_END);
 }
 
-bool Http::Http1Parse::need_send()
+bool Http::Http1Parse::needSend()
 {
     return (this->status_ == HP_PARSE_END);
 }
 
-Int Http::Http1Parse::init_request()
+Int Http::Http1Parse::initRequest()
 {
     return 0;
 }
 
-Int Http::Http1Parse::init_response() {
+Int Http::Http1Parse::initResponse() {
     return 0;
 }
 
-void Http::Http1Parse::reset_parser()
+void Http::Http1Parse::resetParser()
 {
     llhttp_reset(&this->parser_);
 }

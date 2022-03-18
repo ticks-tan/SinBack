@@ -7,7 +7,36 @@
 */
 #include "FileUtil.h"
 
+#ifdef OS_WINDOWS
+#else
+#include <sys/stat.h>
+#endif
+
 using namespace SinBack;
+
+
+bool Base::isDir(const Char* path)
+{
+    struct stat s_buf{};
+
+    stat(path, &s_buf);
+    if (S_ISDIR(s_buf.st_mode)){
+        return true;
+    }
+    return false;
+}
+
+bool Base::isFile(const Char* path)
+{
+    struct stat s_buf{};
+
+    stat(path, &s_buf);
+    if (S_ISREG(s_buf.st_mode)){
+        return true;
+    }
+    return false;
+}
+
 
 Base::Path::Path() noexcept
     : path_()
@@ -149,7 +178,7 @@ Base::Path &Base::Path::operator/=(const Base::Path::string_type &path)
     return *this;
 }
 
-Base::Path Base::operator/(const Base::Path &lhs, const Base::Path &rhs) {
+Base::Path operator/(const Base::Path &lhs, const Base::Path &rhs) {
     Base::Path p;
     p /= lhs;
     p /= rhs;
@@ -162,42 +191,42 @@ void Base::Path::clear()
     this->tmp_.clear();
 }
 
-Base::Path &Base::Path::remove_filename()
+Base::Path &Base::Path::removeFileName()
 {
-    if (!has_filename()){
+    if (!hasFilename()){
         return *this;
     }
     // 移除扩展名
-    if (this->has_extension()){
+    if (this->hasExtension()){
         this->path_.pop_back();
     }
     // 移除文件名
-    if (this->has_stem()){
+    if (this->hasStem()){
         this->path_.pop_back();
     }
     return *this;
 }
 
-Base::Path &Base::Path::replace_filename(const Base::Path &filename)
+Base::Path &Base::Path::replaceFileName(const Base::Path &filename)
 {
     if (this == &filename){
         return *this;
     }
-    if (!this->has_filename() || !filename.has_filename()){
+    if (!this->hasFilename() || !filename.hasFilename()){
         return *this;
     }
-    if (this->has_filename()){
-        this->path_.back() = filename.filename();
+    if (this->hasFilename()){
+        this->path_.back() = filename.fileName();
     }
     return *this;
 }
 
-Base::Path &Base::Path::replace_extension(const Base::Path &extension)
+Base::Path &Base::Path::replaceExtension(const Base::Path &extension)
 {
     if (this == &extension){
         return *this;
     }
-    if (this->has_extension() && extension.has_extension()){
+    if (this->hasExtension() && extension.hasExtension()){
         auto it = this->path_.back().find_last_of('.');
         if (it != string_type::npos){
             string_type str = extension.extension();
@@ -244,7 +273,7 @@ Base::Path::operator string_type() const
     return str;
 }
 
-Base::Path Base::Path::root_name() const
+Base::Path Base::Path::rootName() const
 {
     Base::Path p;
     if (!this->absolute_){
@@ -258,7 +287,7 @@ Base::Path Base::Path::root_name() const
     return std::move(p);
 }
 
-Base::Path Base::Path::root_directory() const
+Base::Path Base::Path::rootDirectory() const
 {
     Base::Path p;
     if (!this->absolute_){
@@ -272,17 +301,18 @@ Base::Path Base::Path::root_directory() const
     return std::move(p);
 }
 
-Base::Path Base::Path::root_path() const
+Base::Path Base::Path::rootPath() const
 {
     Base::Path p;
     if (!this->absolute_){
         return std::move(p);
     }
-    p = this->root_name() / this->root_directory();
+    p /= this->rootName();
+    p /= this->rootDirectory();
     return std::move(p);
 }
 
-Base::Path Base::Path::relative_path() const
+Base::Path Base::Path::relativePath() const
 {
     Base::Path p;
     if (!this->absolute_){
@@ -301,7 +331,7 @@ Base::Path Base::Path::relative_path() const
     return std::move(p);
 }
 
-Base::Path Base::Path::parent_path() const
+Base::Path Base::Path::parentPath() const
 {
     Base::Path p;
     p.absolute_ = this->absolute_;
@@ -318,10 +348,10 @@ Base::Path Base::Path::parent_path() const
     return std::move(p);
 }
 
-Base::Path Base::Path::filename() const
+Base::Path Base::Path::fileName() const
 {
     Base::Path p;
-    if (this->empty() || !this->has_filename()){
+    if (this->empty() || !this->hasFilename()){
         return std::move(p);
     }
     p = this->path_[this->path_.size() - 1];
@@ -333,7 +363,7 @@ Base::Path Base::Path::stem() const {
     if (this->empty()){
         return std::move(p);
     }
-    string_type tmp = this->filename();
+    string_type tmp = this->fileName();
     if (!tmp.empty()){
         auto it = tmp.find_last_of('.');
         if (it != string_type::npos){
@@ -354,7 +384,7 @@ Base::Path Base::Path::extension() const {
     if (this->empty()){
         return std::move(p);
     }
-    string_type tmp = this->filename();
+    string_type tmp = this->fileName();
     if (!tmp.empty()){
         auto it = tmp.find_last_of('.');
         if (it != string_type::npos && it != 0){
@@ -368,17 +398,17 @@ bool Base::Path::empty() const {
     return this->path_.empty();
 }
 
-bool Base::Path::has_root_name() const
+bool Base::Path::hasRootName() const
 {
-    return this->has_root_path();
+    return this->hasRootPath();
 }
 
-bool Base::Path::has_root_directory() const
+bool Base::Path::hasRootDirectory() const
 {
-    return this->has_root_path();
+    return this->hasRootPath();
 }
 
-bool Base::Path::has_root_path() const
+bool Base::Path::hasRootPath() const
 {
     if (this->tmp_.empty() || !this->absolute_){
         return false;
@@ -394,17 +424,17 @@ bool Base::Path::has_root_path() const
     }
 }
 
-bool Base::Path::has_relative_path() const
+bool Base::Path::hasRelativePath() const
 {
     return (!this->absolute_);
 }
 
-bool Base::Path::has_parent_path() const
+bool Base::Path::hasParentPath() const
 {
-    return (!this->parent_path().empty());
+    return (!this->parentPath().empty());
 }
 
-bool Base::Path::has_filename() const
+bool Base::Path::hasFilename() const
 {
     if (this->tmp_.empty()) return false;
     try{
@@ -418,25 +448,25 @@ bool Base::Path::has_filename() const
     }
 }
 
-bool Base::Path::has_stem() const
+bool Base::Path::hasStem() const
 {
-    string_type str = this->filename();
+    string_type str = this->fileName();
     auto it = str.find_last_of('.');
     return (it == string_type::npos || it == 0);
 }
 
-bool Base::Path::has_extension() const
+bool Base::Path::hasExtension() const
 {
-    string_type str = this->filename();
+    string_type str = this->fileName();
     auto it = str.find_last_of('.');
     return (it != string_type::npos && it != 0);
 }
 
-bool Base::Path::is_absolute() const
+bool Base::Path::isAbsolute() const
 {
     return this->absolute_;
 }
 
-bool Base::Path::is_relative() const {
+bool Base::Path::isRelative() const {
     return (!this->absolute_);
 }

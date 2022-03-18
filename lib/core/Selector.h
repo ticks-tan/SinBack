@@ -39,11 +39,11 @@ namespace SinBack
             explicit Selector(EventLoop* loop);
             ~Selector();
             // 添加事件
-            bool add_event(Base::socket_t fd, Int events);
+            bool addEvent(Base::socket_t fd, Int events);
             // 删除事件
-            bool del_event(Base::socket_t fd, Int events);
+            bool delEvent(Base::socket_t fd, Int events);
             // 处理事件
-            Int poll_event(Int timeout);
+            Int pollEvent(Int timeout);
         private:
             // epoll 套接字
             Int fd_;

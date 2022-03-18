@@ -9,7 +9,6 @@
 #define SIN_BACK_BUFFER_H
 
 #include <vector>
-#include <string>
 #include "Base.h"
 
 namespace SinBack
@@ -36,16 +35,16 @@ namespace SinBack
                     this->begin_ = 0;
                 }
             }
-            SSize_t out(void* buf, Size_t len);
-            SSize_t out(std::string& buf, Size_t len);
-            SSize_t out(Buffer& buf, Size_t len);
+            SSize_t get(void* buf, Size_t len);
+            SSize_t get(std::string& buf, Size_t len);
+            SSize_t get(Buffer& buf, Size_t len);
             SSize_t in(const void* buf, Size_t len);
             SSize_t in(const std::string& buf, Size_t len);
             SSize_t in(const Buffer& buf, Size_t len);
-            SSize_t outall(std::string& buf);
-            SSize_t outall(Buffer& buf);
-            SSize_t inall(const std::string& buf);
-            SSize_t inall(const Buffer& buf);
+            SSize_t getAll(std::string& buf);
+            SSize_t getAll(Buffer& buf);
+            SSize_t inAll(const std::string& buf);
+            SSize_t inAll(const Buffer& buf);
 
             SSize_t append(const std::string& buf);
             SSize_t append(const Buffer& buf);

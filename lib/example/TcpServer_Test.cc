@@ -17,7 +17,7 @@ int main()
 
     // 有新客户端连接会调用该函数
     server.on_new_client = [](const TcpServer::ChannelPtr& io) {
-        fmt::print("有新客户端连接, fd = {}\n", io->get_fd());
+        fmt::print("有新客户端连接, fd = {}\n", io->getFd());
     };
     // 有新数据读取后会调用该函数
     server.on_message = [](const TcpServer::ChannelPtr& io, const String& read_msg) {
@@ -42,7 +42,7 @@ int main()
     // IO关闭后调用该函数
     server.on_close = [](const TcpServer::ChannelPtr& io) {
         // 这里不应该再调用 read 和 write，因为此时 IO 已经关闭，不会处理读取和写入事件
-        fmt::print("IO关闭，fd = {}\n", io->get_fd());
+        fmt::print("IO关闭，fd = {}\n", io->getFd());
     };
 
     // 开始运行，并监听 2022 端口

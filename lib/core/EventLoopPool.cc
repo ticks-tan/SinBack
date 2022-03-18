@@ -21,7 +21,7 @@ SinBack::Core::EventLoopPool::~EventLoopPool()
     this->stop(true);
 }
 
-SinBack::Core::EventLoopThread::EventLoopPtr SinBack::Core::EventLoopPool::auto_loop()
+SinBack::Core::EventLoopThread::EventLoopPtr SinBack::Core::EventLoopPool::autoLoop()
 {
     if (this->loop_threads_.empty()){
         return (EventLoopThread::EventLoopPtr)nullptr;
@@ -71,7 +71,7 @@ SinBack::Core::EventLoopThread::EventLoopPtr
 SinBack::Core::EventLoopPool::loop(SinBack::Int index)
 {
     if (index < 0){
-        return this->auto_loop();
+        return this->autoLoop();
     } else{
         return this->loop_threads_[index]->loop();
     }

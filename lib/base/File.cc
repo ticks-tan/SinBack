@@ -7,6 +7,7 @@
 */
 
 #include "File.h"
+#include "base/FileUtil.h"
 
 using namespace SinBack;
 
@@ -45,13 +46,14 @@ Base::File::~File()
 {
     if (this->file_){
         this->close();
-        this->file_ = nullptr;
     }
+    this->file_ = nullptr;
 }
 
-bool Base::File::reopen(const String &name, Base::OpenFileMode mode)
+bool Base::File::reOpen(const String &name, Base::OpenFileMode mode)
 {
-    if (this->name_ == name && this->mode_ == mode) return true;
+    if (name.empty() || this->name_ == name && this->mode_ == mode) return true;
+    if (Base::isDir(name.c_str())) return false;
     this->close();
     this->name_ = name;
     this->mode_ = mode;
@@ -72,7 +74,7 @@ bool Base::File::reopen(const String &name, Base::OpenFileMode mode)
             this->file_ = fopen(name.c_str(), "w+");
             break;
     }
-    return this->file_;
+    return (this->file_ != nullptr);
 }
 
 Long Base::File::read(void *buf, Size_t len)
@@ -91,6 +93,7 @@ Long Base::File::read(void *buf, Size_t len)
                     if (err > 3) break;
                     ::clearerr(this->file_);
                     ++err;
+                    continue;
                 }
                 if (::feof(this->file_)){
                     break;
@@ -116,7 +119,7 @@ String Base::File::read(Size_t len)
 String Base::File::readAll()
 {
     String buffer;
-    if (this->file_){
+    if (this->file_ && !this->name_.empty()){
         std::vector<Char> buf;
         buf.reserve(128);
         Size_t need_read_len = 0;
@@ -180,8 +183,9 @@ void Base::File::close()
 {
     if (this->file_ != nullptr){
         ::fclose(this->file_);
-        this->name_.clear();
     }
+    this->file_ = nullptr;
+    this->name_.clear();
 }
 
 Size_t Base::File::size()

@@ -565,8 +565,8 @@ struct formatter<TupleT, Char, enable_if_t<fmt::is_tuple_like<TupleT>::value>> {
   }
 
   template <typename FormatContext = format_context>
-  auto format(const TupleT& values, FormatContext& ctx) -> decltype(ctx.out()) {
-    auto out = ctx.out();
+  auto format(const TupleT& values, FormatContext& ctx) -> decltype(ctx.get()) {
+    auto out = ctx.get();
     *out++ = '(';
     detail::for_each(values, format_each<FormatContext>{0, out});
     *out++ = ')';
@@ -603,7 +603,7 @@ struct formatter<
       FMT_ENABLE_IF(
           std::is_same<U, conditional_t<detail::has_const_begin_end<T>::value,
                                         const T, T>>::value)>
-  auto format(U& range, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(U& range, FormatContext& ctx) -> decltype(ctx.get()) {
 #ifdef FMT_DEPRECATED_BRACED_RANGES
     Char prefix = '{';
     Char postfix = '}';
@@ -611,7 +611,7 @@ struct formatter<
     Char prefix = detail::is_set<T>::value ? '{' : '[';
     Char postfix = detail::is_set<T>::value ? '}' : ']';
 #endif
-    auto out = ctx.out();
+    auto out = ctx.get();
     *out++ = prefix;
     int i = 0;
     auto it = std::begin(range);
@@ -647,8 +647,8 @@ struct formatter<
       FMT_ENABLE_IF(
           std::is_same<U, conditional_t<detail::has_const_begin_end<T>::value,
                                         const T, T>>::value)>
-  auto format(U& map, FormatContext& ctx) -> decltype(ctx.out()) {
-    auto out = ctx.out();
+  auto format(U& map, FormatContext& ctx) -> decltype(ctx.get()) {
+    auto out = ctx.get();
     *out++ = '{';
     int i = 0;
     for (const auto& item : map) {
@@ -726,7 +726,7 @@ struct formatter<tuple_join_view<Char, T...>, Char> {
   auto do_format(const tuple_join_view<Char, T...>&, FormatContext& ctx,
                  std::integral_constant<size_t, 0>) const ->
       typename FormatContext::iterator {
-    return ctx.out();
+    return ctx.get();
   }
 
   template <typename FormatContext, size_t N>

@@ -130,8 +130,8 @@ template <typename Char> struct formatter<std::error_code, Char> {
 
   template <typename FormatContext>
   FMT_CONSTEXPR auto format(const std::error_code& ec, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
-    auto out = ctx.out();
+      -> decltype(ctx.get()) {
+    auto out = ctx.get();
     out = detail::write_bytes(out, ec.category().name(),
                               basic_format_specs<Char>());
     out = detail::write<Char>(out, Char(':'));
@@ -164,7 +164,7 @@ class utf16_to_utf8 {
   FMT_API int convert(basic_string_view<wchar_t> s);
 };
 
-FMT_API void format_windows_error(buffer<char>& out, int error_code,
+FMT_API void format_windows_error(buffer<char>& get, int error_code,
                                   const char* message) FMT_NOEXCEPT;
 FMT_END_DETAIL_NAMESPACE
 
@@ -192,10 +192,10 @@ FMT_API std::system_error vwindows_error(int error_code, string_view format_str,
    // or similar (system message may vary).
    const char *filename = "madeup";
    LPOFSTRUCT of = LPOFSTRUCT();
-   HFILE file = OpenFile(filename, &of, OF_READ);
+   HFILE file = OpenFile(fileName, &of, OF_READ);
    if (file == HFILE_ERROR) {
      throw fmt::windows_error(GetLastError(),
-                              "cannot open file '{}'", filename);
+                              "cannot open file '{}'", fileName);
    }
  \endrst
 */
@@ -467,8 +467,8 @@ class FMT_API ostream final : private detail::buffer<char> {
 
   **Example**::
 
-    auto out = fmt::output_file("guide.txt");
-    out.print("Don't {}", "Panic");
+    auto get = fmt::output_file("guide.txt");
+    get.print("Don't {}", "Panic");
   \endrst
  */
 template <typename... T>

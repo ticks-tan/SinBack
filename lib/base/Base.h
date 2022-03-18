@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <string>
+#include "noncopyable.h"
 
 // platform
 // Windows平台
@@ -25,29 +26,30 @@
 
 namespace SinBack {
     // 类型定义
-    typedef unsigned long Size_t;
-    typedef long SSize_t;
-    typedef int Int;
-    typedef unsigned int UInt;
-    typedef unsigned long ULong;
-    typedef long int Long;
-    typedef long long int LLong;
-#ifdef OS_WINDOWS
-    typedef char Char;
-#else
-    typedef char Char;
-#endif
+typedef unsigned long Size_t;
+typedef long SSize_t;
+typedef int Int;
+typedef unsigned int UInt;
+typedef long Long;
+typedef long long LLong;
+typedef unsigned long ULong;
+typedef unsigned long long ULLong;
+typedef char Char;
+typedef unsigned char UChar;
+
     using String = std::basic_string<Char>;
     // 字符串结尾
 #define CHAR_END    ('\0')
+// 字符换行
+#define STR_CTL     ('\n')
+
 // 字符串
 #ifdef OS_WINDOWS
 #define SIN_STR(str)    (L##str)
 #else
 #define SIN_STR(str)    (str)
 #endif
-// 字符换行
-#define STR_CTL     ('\n')
+
 }
 
 #endif //SIN_BACK_BASE_H

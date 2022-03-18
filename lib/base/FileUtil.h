@@ -16,6 +16,10 @@ namespace SinBack
 {
     namespace Base
     {
+
+        bool isDir(const Char* path);
+        bool isFile(const Char* path);
+
         // 文件路径
         class Path
         {
@@ -47,28 +51,28 @@ namespace SinBack
             // 清除路径
             void clear();
             // 移除文件名部分
-            Path& remove_filename();
+            Path& removeFileName();
             // 更换文件名
-            Path& replace_filename(const Path& filename);
+            Path& replaceFileName(const Path& filename);
             // 更换文件扩展名
-            Path& replace_extension(const Path& extension);
+            Path& replaceExtension(const Path& extension);
 
             string_type str() const;
             string_type native() const;
             operator string_type() const;
 
             // 返回根
-            Path root_name() const;
+            Path rootName() const;
             // 返回根目录
-            Path root_directory() const;
+            Path rootDirectory() const;
             // 返回根+根目录
-            Path root_path() const;
+            Path rootPath() const;
             // 相对于根目录的路径
-            Path relative_path() const;
+            Path relativePath() const;
             // 返回亲目录(上级目录)
-            Path parent_path() const;
+            Path parentPath() const;
             // 返回文件名
-            Path filename() const;
+            Path fileName() const;
             // 返回主干路径(除去扩展名)
             Path stem() const;
             // 返回扩展名部分
@@ -76,19 +80,19 @@ namespace SinBack
             // 路径是否为空
             bool empty() const;
             // 检查对于路径是否存在
-            bool has_root_name() const;
-            bool has_root_directory() const;
-            bool has_root_path() const;
-            bool has_relative_path() const;
-            bool has_parent_path() const;
-            bool has_filename() const;
-            bool has_stem() const;
-            bool has_extension() const;
+            bool hasRootName() const;
+            bool hasRootDirectory() const;
+            bool hasRootPath() const;
+            bool hasRelativePath() const;
+            bool hasParentPath() const;
+            bool hasFilename() const;
+            bool hasStem() const;
+            bool hasExtension() const;
 
             // 是否为绝对路径
-            bool is_absolute() const;
+            bool isAbsolute() const;
             // 是否为相对路径
-            bool is_relative() const;
+            bool isRelative() const;
 
         private:
             void format(const string_type& path);

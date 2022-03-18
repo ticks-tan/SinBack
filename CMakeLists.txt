@@ -13,13 +13,17 @@ include_directories(${PROJECT_SOURCE_DIR}/lib)
 # http-parse module
 add_subdirectory(${PROJECT_SOURCE_DIR}/lib/llhttp)
 # fmt module
-file(GLOB_RECURSE lib_fmt "${PROJECT_SOURCE_DIR}/lib/libfmt/*.h" "${PROJECT_SOURCE_DIR}/lib/libfmt/*.cc")
-# llhttp
-file(GLOB_RECURSE lib_llhttp, "${PROJECT_SOURCE_DIR}/lib/llhttp/*.h")
+file(GLOB_RECURSE lib_fmt
+        "${PROJECT_SOURCE_DIR}/lib/libfmt/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/libfmt/*.cc")
 # base module
-file(GLOB_RECURSE SinBack_Base "${PROJECT_SOURCE_DIR}/lib/base/*.h" "${PROJECT_SOURCE_DIR}/lib/base/*.cc")
+file(GLOB_RECURSE SinBack_Base
+        "${PROJECT_SOURCE_DIR}/lib/base/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/base/*.cc")
 # core module
-file(GLOB_RECURSE SinBack_Core "${PROJECT_SOURCE_DIR}/lib/core/*.h" "${PROJECT_SOURCE_DIR}/lib/core/*.cc")
+file(GLOB_RECURSE SinBack_Core
+        "${PROJECT_SOURCE_DIR}/lib/core/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/core/*.cc")
 # net module
 file(GLOB_RECURSE SinBack_Net
         "${PROJECT_SOURCE_DIR}/lib/net/*.h"
@@ -27,19 +31,25 @@ file(GLOB_RECURSE SinBack_Net
         "${PROJECT_SOURCE_DIR}/lib/net/http/*.h"
         "${PROJECT_SOURCE_DIR}/lib/net/http/*.cc")
 
-add_executable(SinBack
+# tool module
+file(GLOB_RECURSE SinBack_Tools
+        "${PROJECT_SOURCE_DIR}/lib/tools/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/tools/*.cc")
+
+add_library(sinback SHARED STATIC
         ${lib_fmt}
-        ${lib_llhttp}
         ${SinBack_Base}
         ${SinBack_Core}
         ${SinBack_Net}
-        lib/main.cc)
+        ${SinBack_Tools})
 
-add_library(sinback SHARED STATIC ${lib_fmt}
-        ${lib_llhttp}
+add_executable(SinBack
+        ${lib_fmt}
         ${SinBack_Base}
         ${SinBack_Core}
-        ${SinBack_Net})
+        ${SinBack_Net}
+        ${SinBack_Tools}
+        lib/main.cc)
 
 # link [ pthread ]
 link_libraries(pthread.a)

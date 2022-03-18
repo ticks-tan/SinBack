@@ -37,18 +37,18 @@ namespace SinBack
 
             virtual ~HttpParser() = default;
             // 解析数据
-            virtual Int parse_data(const Char* data, Size_t len) = 0;
+            virtual Int parseData(const Char* data, Size_t len) = 0;
             // 重置解析器
-            virtual void reset_parser() = 0;
+            virtual void resetParser() = 0;
             // 获取状态
-            virtual Int get_status() = 0;
+            virtual Int getStatus() = 0;
             // 是否需要获取数据
-            virtual bool need_receive() = 0;
+            virtual bool needReceive() = 0;
             // 是否需要发送数据
-            virtual bool need_send() = 0;
+            virtual bool needSend() = 0;
 
-            virtual Int init_request() = 0;
-            virtual Int init_response() = 0;
+            virtual Int initRequest() = 0;
+            virtual Int initResponse() = 0;
 
         };
 
@@ -60,14 +60,14 @@ namespace SinBack
             Http1Parse() = delete;
             ~Http1Parse() override;
 
-            Int parse_data(const Char* data, Size_t len) override;
-            void reset_parser() override;
-            Int get_status() override;
-            bool need_receive() override;
-            bool need_send() override;
+            Int parseData(const Char* data, Size_t len) override;
+            void resetParser() override;
+            Int getStatus() override;
+            bool needReceive() override;
+            bool needSend() override;
 
-            Int init_request() override;
-            Int init_response() override;
+            Int initRequest() override;
+            Int initResponse() override;
 
             void set_status(HttpParserStatus status){
                 this->status_ = status;

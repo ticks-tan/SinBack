@@ -499,7 +499,7 @@ FMT_CONSTEXPR inline auto utf8_decode(const char* s, uint32_t* c, int* e)
   const char* next = s + len;
 
   // Assume a four-byte character and load four bytes. Unused bits are
-  // shifted out.
+  // shifted get.
   *c = uint32_t(s[0] & masks[len]) << 18;
   *c |= uint32_t(s[1] & 0x3f) << 12;
   *c |= uint32_t(s[2] & 0x3f) << 6;
@@ -510,7 +510,7 @@ FMT_CONSTEXPR inline auto utf8_decode(const char* s, uint32_t* c, int* e)
   using uchar = unsigned char;
   *e = (*c < mins[len]) << 6;       // non-canonical encoding
   *e |= ((*c >> 11) == 0x1b) << 7;  // surrogate half?
-  *e |= (*c > 0x10FFFF) << 8;       // out of range?
+  *e |= (*c > 0x10FFFF) << 8;       // get of range?
   *e |= (uchar(s[1]) & 0xc0) >> 2;
   *e |= (uchar(s[2]) & 0xc0) >> 4;
   *e |= uchar(s[3]) >> 6;
@@ -660,16 +660,16 @@ enum { inline_buffer_size = 500 };
 
   **Example**::
 
-     auto out = fmt::memory_buffer();
-     format_to(std::back_inserter(out), "The answer is {}.", 42);
+     auto get = fmt::memory_buffer();
+     format_to(std::back_inserter(get), "The answer is {}.", 42);
 
-  This will append the following output to the ``out`` object:
+  This will append the following output to the ``get`` object:
 
   .. code-block:: none
 
      The answer is 42.
 
-  The output can be converted to an ``std::string`` with ``to_string(out)``.
+  The output can be converted to an ``std::string`` with ``toString(get)``.
   \endrst
  */
 template <typename T, size_t SIZE = inline_buffer_size,
@@ -1099,7 +1099,7 @@ template <typename Iterator> struct format_decimal_result {
   Iterator end;
 };
 
-// Formats a decimal unsigned integer value writing into out pointing to a
+// Formats a decimal unsigned integer value writing into get pointing to a
 // buffer of specified size. The caller must ensure that the buffer is large
 // enough.
 template <typename Char, typename UInt>
@@ -1275,7 +1275,7 @@ constexpr auto exponent_mask() ->
 // Writes the exponent exp in the form "[+-]d{2,3}" to buffer.
 template <typename Char, typename It>
 FMT_CONSTEXPR auto write_exponent(int exp, It it) -> It {
-  FMT_ASSERT(-10000 < exp && exp < 10000, "exponent out of range");
+  FMT_ASSERT(-10000 < exp && exp < 10000, "exponent get of range");
   if (exp < 0) {
     *it++ = static_cast<Char>('-');
     exp = -exp;
@@ -1484,7 +1484,7 @@ template <typename Char> class digit_grouping {
     return count;
   }
 
-  // Applies grouping to digits and write the output to out.
+  // Applies grouping to digits and write the output to get.
   template <typename Out, typename C>
   Out apply(Out out, basic_string_view<C> digits) const {
     auto num_digits = static_cast<int>(digits.size());
@@ -2461,10 +2461,10 @@ FMT_API auto vsystem_error(int error_code, string_view format_str,
    // This throws std::system_error with the description
    //   cannot open file 'madeup': No such file or directory
    // or similar (system message may vary).
-   const char* filename = "madeup";
-   std::FILE* file = std::fopen(filename, "r");
+   const char* fileName = "madeup";
+   std::FILE* file = std::fopen(fileName, "r");
    if (!file)
-     throw fmt::system_error(errno, "cannot open file '{}'", filename);
+     throw fmt::system_error(errno, "cannot open file '{}'", fileName);
  \endrst
 */
 template <typename... T>
@@ -2476,7 +2476,7 @@ auto system_error(int error_code, format_string<T...> fmt, T&&... args)
 /**
   \rst
   Formats an error message for an error returned by an operating system or a
-  language runtime, for example a file opening error, and writes it to *out*.
+  language runtime, for example a file opening error, and writes it to *get*.
   The format is the same as the one used by ``std::system_error(ec, message)``
   where ``ec`` is ``std::error_code(error_code, std::generic_category()})``.
   It is implementation-defined but normally looks like:
@@ -2564,7 +2564,7 @@ formatter<T, Char,
           enable_if_t<detail::type_constant<T, Char>::value !=
                       detail::type::custom_type>>::format(const T& val,
                                                           FormatContext& ctx)
-    const -> decltype(ctx.out()) {
+    const -> decltype(ctx.get()) {
   if (specs_.width_ref.kind != detail::arg_id_kind::none ||
       specs_.precision_ref.kind != detail::arg_id_kind::none) {
     auto specs = specs_;
@@ -2572,9 +2572,9 @@ formatter<T, Char,
                                                        specs.width_ref, ctx);
     detail::handle_dynamic_spec<detail::precision_checker>(
         specs.precision, specs.precision_ref, ctx);
-    return detail::write<Char>(ctx.out(), val, specs, ctx.locale());
+    return detail::write<Char>(ctx.get(), val, specs, ctx.locale());
   }
-  return detail::write<Char>(ctx.out(), val, specs_, ctx.locale());
+  return detail::write<Char>(ctx.get(), val, specs_, ctx.locale());
 }
 
 #define FMT_FORMAT_AS(Type, Base)                                        \
@@ -2587,22 +2587,32 @@ formatter<T, Char,
     }                                                                    \
   }
 
-FMT_FORMAT_AS(signed char, int);
-FMT_FORMAT_AS(unsigned char, unsigned);
-FMT_FORMAT_AS(short, int);
-FMT_FORMAT_AS(unsigned short, unsigned);
-FMT_FORMAT_AS(long, long long);
-FMT_FORMAT_AS(unsigned long, unsigned long long);
-FMT_FORMAT_AS(Char*, const Char*);
-FMT_FORMAT_AS(std::basic_string<Char>, basic_string_view<Char>);
-FMT_FORMAT_AS(std::nullptr_t, const void*);
-FMT_FORMAT_AS(detail::byte, unsigned char);
-FMT_FORMAT_AS(detail::std_string_view<Char>, basic_string_view<Char>);
+        FMT_FORMAT_AS(signed char, int);
+
+        FMT_FORMAT_AS(unsigned char, unsigned);
+
+        FMT_FORMAT_AS(short, int);
+
+        FMT_FORMAT_AS(unsigned short, unsigned);
+
+        FMT_FORMAT_AS(long, long long);
+
+        FMT_FORMAT_AS(unsigned long, unsigned long long);
+
+        FMT_FORMAT_AS(Char *, const Char*);
+
+        FMT_FORMAT_AS(std::basic_string<Char>, basic_string_view<Char>);
+
+        FMT_FORMAT_AS(std::nullptr_t, const void*);
+
+        FMT_FORMAT_AS(detail::byte, unsigned char);
+
+        FMT_FORMAT_AS(detail::std_string_view<Char>, basic_string_view<Char>);
 
 template <typename Char>
 struct formatter<void*, Char> : formatter<const void*, Char> {
   template <typename FormatContext>
-  auto format(void* val, FormatContext& ctx) const -> decltype(ctx.out()) {
+  auto format(void* val, FormatContext& ctx) const -> decltype(ctx.get()) {
     return formatter<const void*, Char>::format(val, ctx);
   }
 };
@@ -2611,7 +2621,7 @@ template <typename Char, size_t N>
 struct formatter<Char[N], Char> : formatter<basic_string_view<Char>, Char> {
   template <typename FormatContext>
   FMT_CONSTEXPR auto format(const Char* val, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
+      -> decltype(ctx.get()) {
     return formatter<basic_string_view<Char>, Char>::format(val, ctx);
   }
 };
@@ -2656,7 +2666,7 @@ template <typename Char = char> class dynamic_formatter {
   }
 
   template <typename T, typename FormatContext>
-  auto format(const T& val, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(const T& val, FormatContext& ctx) -> decltype(ctx.get()) {
     handle_specs(ctx);
     detail::specs_checker<null_handler> checker(
         null_handler(), detail::mapped_type_constant<T, FormatContext>::value);
@@ -2664,7 +2674,7 @@ template <typename Char = char> class dynamic_formatter {
     if (specs_.sign != sign::none) checker.on_sign(specs_.sign);
     if (specs_.alt) checker.on_hash();
     if (specs_.precision >= 0) checker.end_precision();
-    return detail::write<Char>(ctx.out(), val, specs_, ctx.locale());
+    return detail::write<Char>(ctx.get(), val, specs_, ctx.locale());
   }
 };
 
@@ -2713,12 +2723,12 @@ template <> struct formatter<bytes> {
   }
 
   template <typename FormatContext>
-  auto format(bytes b, FormatContext& ctx) -> decltype(ctx.out()) {
+  auto format(bytes b, FormatContext& ctx) -> decltype(ctx.get()) {
     detail::handle_dynamic_spec<detail::width_checker>(specs_.width,
                                                        specs_.width_ref, ctx);
     detail::handle_dynamic_spec<detail::precision_checker>(
         specs_.precision, specs_.precision_ref, ctx);
-    return detail::write_bytes(ctx.out(), b.data_, specs_);
+    return detail::write_bytes(ctx.get(), b.data_, specs_);
   }
 };
 
@@ -2757,14 +2767,14 @@ template <typename T> struct formatter<group_digits_view<T>> : formatter<T> {
 
   template <typename FormatContext>
   auto format(group_digits_view<T> t, FormatContext& ctx)
-      -> decltype(ctx.out()) {
+      -> decltype(ctx.get()) {
     detail::handle_dynamic_spec<detail::width_checker>(specs_.width,
                                                        specs_.width_ref, ctx);
     detail::handle_dynamic_spec<detail::precision_checker>(
         specs_.precision, specs_.precision_ref, ctx);
     return detail::write_int_localized(
-        ctx.out(), static_cast<detail::uint64_or_128_t<T>>(t.value), 0, specs_,
-        detail::digit_grouping<char>({"\3", ','}));
+            ctx.get(), static_cast<detail::uint64_or_128_t<T>>(t.value), 0, specs_,
+            detail::digit_grouping<char>({"\3", ','}));
   }
 };
 
@@ -2819,9 +2829,9 @@ struct formatter<join_view<It, Sentinel, Char>, Char> {
 
   template <typename FormatContext>
   auto format(const join_view<It, Sentinel, Char>& value, FormatContext& ctx)
-      -> decltype(ctx.out()) {
+      -> decltype(ctx.get()) {
     auto it = value.begin;
-    auto out = ctx.out();
+    auto out = ctx.get();
     if (it != value.end) {
       out = value_formatter_.format(map(*it), ctx);
       ++it;
@@ -2875,7 +2885,7 @@ auto join(Range&& range, string_view sep)
 
     #include <fmt/format.h>
 
-    std::string answer = fmt::to_string(42);
+    std::string answer = fmt::toString(42);
   \endrst
  */
 template <typename T, FMT_ENABLE_IF(!std::is_integral<T>::value)>

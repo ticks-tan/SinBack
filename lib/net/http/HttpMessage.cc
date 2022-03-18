@@ -11,7 +11,7 @@
 using namespace SinBack;
 
 SinBack::String
-Http::HttpRequest::to_string() const
+Http::HttpRequest::toString() const
 {
     String request;
     request += Http::get_http_method_name(this->method) + SIN_STR(" ");
@@ -24,7 +24,7 @@ Http::HttpRequest::to_string() const
             request += SIN_STR("HTTP/1.1\r\n");
             break;
     }
-    request += this->header.to_string();
+    request += this->header.toString();
     return request;
 }
 
@@ -35,7 +35,7 @@ void Http::HttpRequest::clear()
 }
 
 SinBack::String
-Http::HttpResponse::to_string() {
+Http::HttpResponse::toString() {
     String response;
     switch (this->http_version) {
         case HTTP_1_0:
@@ -47,10 +47,10 @@ Http::HttpResponse::to_string() {
     }
     response += std::to_string(this->status_code) + SIN_STR(" ");
     response += Http::get_http_status_code_name(this->status_code) + SIN_STR("\r\n");
-    if (this->header.get_head(SIN_STR("Content-Length")).empty()){
-        this->header.set_head(SIN_STR("Content-Length"), std::to_string(this->content.data().length()));
+    if (this->header.getHead(SIN_STR("Content-Length")).empty()){
+        this->header.setHead(SIN_STR("Content-Length"), std::to_string(this->content.data().length()));
     }
-    response += this->header.to_string();
+    response += this->header.toString();
     return response;
 }
 

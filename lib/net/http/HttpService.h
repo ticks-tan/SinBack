@@ -54,17 +54,16 @@ namespace SinBack {
             // 拦截其他请求
             void On(Int method, const String& path, const HttpServiceCall::Call& call);
             // 匹配服务
-            std::vector<std::shared_ptr<HttpServiceCall>> match_service(const String& path, Int method);
+            std::vector<std::shared_ptr<HttpServiceCall>> matchService(const String& path, Int method);
             // 清空服务
-            void clear_service();
+            void clearService();
         private:
             // 添加服务
-            void add_service(const String& path, Int method, const HttpServiceCall::Call& call);
+            void addService(const String& path, Int method, const HttpServiceCall::Call& call);
             // 删除服务
-            void remove_service(const String& path, Int method);
+            void removeService(const String& path, Int method);
 
         private:
-            std::vector<std::shared_ptr<HttpServiceCall>> calls_;
             std::unordered_map<String, std::shared_ptr<HttpServiceCall>> services_;
         };
     }

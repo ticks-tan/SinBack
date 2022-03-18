@@ -12,7 +12,7 @@
 
 using namespace SinBack;
 
-void Http::HttpService::add_service(const String &path, Int method, const Http::HttpServiceCall::Call &call)
+void Http::HttpService::addService(const String &path, Int method, const Http::HttpServiceCall::Call &call)
 {
     auto it = this->services_.find(path);
     if (it == this->services_.end()){
@@ -24,7 +24,7 @@ void Http::HttpService::add_service(const String &path, Int method, const Http::
     it->second->callback = call;
 }
 
-void Http::HttpService::remove_service(const String &path, Int method)
+void Http::HttpService::removeService(const String &path, Int method)
 {
     auto it = this->services_.find(path);
     if (it == this->services_.end()){
@@ -39,7 +39,7 @@ void Http::HttpService::remove_service(const String &path, Int method)
 }
 
 std::vector<std::shared_ptr<Http::HttpServiceCall>>
-Http::HttpService::match_service(const String &path, Int method)
+Http::HttpService::matchService(const String &path, Int method)
 {
     std::vector<std::shared_ptr<Http::HttpServiceCall>> calls;
     for (auto& item : this->services_){
@@ -50,38 +50,37 @@ Http::HttpService::match_service(const String &path, Int method)
     return calls;
 }
 
-void Http::HttpService::clear_service()
+void Http::HttpService::clearService()
 {
     this->services_.clear();
-    this->calls_.clear();
 }
 
 void Http::HttpService::GET(const String &path, const Http::HttpServiceCall::Call &call)
 {
-    this->add_service(path, Http::HTTP_GET, call);
+    this->addService(path, Http::HTTP_GET, call);
 }
 
 void Http::HttpService::POST(const String &path, const Http::HttpServiceCall::Call &call)
 {
-    this->add_service(path, Http::HTTP_POST, call);
+    this->addService(path, Http::HTTP_POST, call);
 }
 
 void Http::HttpService::DELETE(const String &path, const Http::HttpServiceCall::Call &call)
 {
-    this->add_service(path, Http::HTTP_DELETE, call);
+    this->addService(path, Http::HTTP_DELETE, call);
 }
 
 void Http::HttpService::HEAD(const String &path, const Http::HttpServiceCall::Call &call)
 {
-    this->add_service(path, Http::HTTP_HEAD, call);
+    this->addService(path, Http::HTTP_HEAD, call);
 }
 
 void Http::HttpService::PUT(const String &path, const Http::HttpServiceCall::Call &call)
 {
-    this->add_service(path, Http::HTTP_PUT, call);
+    this->addService(path, Http::HTTP_PUT, call);
 }
 
 void Http::HttpService::On(Int method, const String &path, const Http::HttpServiceCall::Call &call)
 {
-    this->add_service(path, method, call);
+    this->addService(path, method, call);
 }

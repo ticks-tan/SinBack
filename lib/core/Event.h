@@ -61,8 +61,6 @@ namespace SinBack
         struct IOEvent;
         // 定时事件
         struct TimerEvent;
-        // 超时事件
-        struct TimeOutEvent;
         // 空闲事件
         struct IdleEvent;
 
@@ -154,7 +152,6 @@ namespace SinBack
             string_type read_buf_;
             // 读取长度
             Size_t read_len_ = 0;
-            std::mutex read_mutex;
             // 写入缓冲队列
             std::deque<string_type> write_queue_;
             // 写入锁
@@ -185,7 +182,7 @@ namespace SinBack
             // 关闭连接
             Int close(bool timer = true);
             // 设置keep-alive时间
-            bool set_keepalive(Size_t timout_ms);
+            bool setKeepalive(Size_t timout_ms);
         };
 
         struct TimerEvent : public Event

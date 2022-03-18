@@ -28,15 +28,11 @@ namespace SinBack
             void pause();
             void resume();
             void join();
-            // 设置日志文件目录
-            void set_logger_dir(const String& log_dir){
-                this->loop_->set_logger_path(log_dir);
-            }
 
             EventLoopPtr& loop();
 
         private:
-            void thread_func(const Func& begin_func, const Func& end_func);
+            void threadFunc(const Func& begin_func, const Func& end_func);
         private:
             // 线程
             std::shared_ptr<std::thread> th_;
