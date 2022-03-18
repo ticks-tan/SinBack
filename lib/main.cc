@@ -26,6 +26,7 @@ int main()
     server.setting().keepAlive = true;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
+        Log::logi("我是测试接口 , request url = {} .", context.request().url);
         return context.senText("我是测试接口 !");
     });
     service.GET("/api/getTime", [](HttpContext& context) -> Int{

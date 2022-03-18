@@ -93,14 +93,18 @@ namespace SinBack
                 }
                 timeval tv{};
                 Base::getTimeOfDay(&tv);
-                if (this->sec_ / 60 == tv.tv_sec / 60) {
-                    this->sec_ = (tv.tv_sec) % 60;
-                    if (this->datetime_.min != this->sec_ / 60) {
-                        Base::getDateTimeNow(&this->datetime_);
-                        formatTime();
-                        this->sec_ = datetime_.sec;
-                    } else {
-                        formatTimeSec();
+                {
+                    std::unique_lock<std::mutex> lock(this->format_mutex_);
+                    if (this->sec_  != tv.tv_sec % 60) {
+                        this->sec_ = Int(tv.tv_sec) % 60;
+                        if (this->datetime_.min != this->min_) {
+                            Base::getDateTimeNow(&this->datetime_);
+                            formatTime();
+                            this->sec_ = datetime_.sec;
+                            this->min_ = this->datetime_.min;
+                        } else {
+                            formatTimeSec();
+                        }
                     }
                 }
                 msg += this->time_str_;
@@ -135,12 +139,15 @@ namespace SinBack
             std::mutex front_mutex_;
             // 后端锁
             std::mutex back_mutex_;
+            // 格式化时间锁
+            std::mutex format_mutex_;
             // 条件变量
             std::condition_variable cv_;
             Base::DateTime datetime_;
             // 缓存时间字符串
             Char time_str_[20];
             Int sec_;
+            Int min_;
             // 停止标志
             bool stop_;
         };

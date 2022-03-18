@@ -50,18 +50,24 @@ void Log::Logger::thread_run_func()
             {
                 std::unique_lock<std::mutex> lock(this->back_mutex_);
                 // 如果后端缓冲区为空，则休眠超时 3s
+                if (this->stop_){
+                    goto WRITE;
+                }
                 if (this->back_buf_->empty()) {
                     this->cv_.wait_for(lock, std::chrono::seconds(3), [this] {
                         return (this->stop_) || (!this->back_buf_->empty());
                     });
                 }
                 // 如果为超时唤醒，则交换缓冲区
-                if (!this->stop_ && this->back_buf_->empty()) {
+                {
                     std::unique_lock<std::mutex> lock1(this->front_mutex_);
-                    this->back_buf_.swap(this->front_buf_);
+                    if (this->back_buf_->empty()) {
+                        this->back_buf_.swap(this->front_buf_);
+                    }
                 }
+                WRITE:
                 // 全部数据都处理完成，则退出
-                if (this->stop_ && this->back_buf_->empty() && this->front_buf_->empty()) {
+                if (this->stop_ && this->back_buf_->empty()) {
                     break;
                 }
                 // 写入文件
@@ -75,19 +81,7 @@ void Log::Logger::thread_run_func()
                     }
                 }
             }
-            // 写入前端缓冲区内容
-            {
-                std::unique_lock<std::mutex> lock(this->front_mutex_);
-                if (this->stop_ && !this->front_buf_->empty()) {
-                    buf = std::move(this->front_buf_->front());
-                    this->front_buf_->pop();
-                    if (this->type_ == Normal) {
-                        this->log_->write(buf);
-                    } else if (this->type_ == Rolling) {
-                        std::dynamic_pointer_cast<Base::RollLogFile>(this->log_)->write(buf);
-                    }
-                }
-            }
+            this->cv_.notify_one();
         }
     }
 }
@@ -104,7 +98,11 @@ void Log::Logger::formatTimeSec()
 }
 
 Log::Logger::~Logger(){
-    this->stop_ = true;
+    {
+        std::unique_lock<std::mutex> lock(this->back_mutex_);
+        this->stop_ = true;
+    }
+    this->cv_.notify_all();
     for (auto& it : this->ths_){
         if (it.joinable()){
             it.join();

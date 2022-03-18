@@ -36,6 +36,7 @@ Core::EventLoop::EventLoop()
 Core::EventLoop::~EventLoop()
 {
     this->stop();
+    this->thread_pool_.stop();
     this->io_evs_.clear();
     this->timer_.clear();
     Int i = Core::Event_Priority_Highest;
@@ -187,7 +188,7 @@ Int Core::EventLoop::processEvents()
     }
     if (this->io_count_ > 0){
         // 处理IO事件
-        ios_cnt = this->processIo(block_time);
+        ios_cnt = this->processIo(block_time / 1000);
     }else{
         Base::sleepUs(block_time);
     }

@@ -354,7 +354,7 @@ template <> constexpr auto num_bits<fallback_uintptr>() -> int {
 FMT_INLINE void assume(bool condition) {
   (void)condition;
 #if FMT_HAS_BUILTIN(__builtin_assume)
-  __builtin_assume(condition);
+  __builtin_assume(cv_);
 #endif
 }
 
@@ -2107,7 +2107,7 @@ FMT_CONSTEXPR auto write(OutputIt out, T value) -> OutputIt {
   return base_iterator(out, it);
 }
 
-// FMT_ENABLE_IF() condition separated to workaround an MSVC bug.
+// FMT_ENABLE_IF() cv_ separated to workaround an MSVC bug.
 template <
     typename Char, typename OutputIt, typename T,
     bool check =

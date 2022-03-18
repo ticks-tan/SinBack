@@ -51,7 +51,7 @@ int main()
     });
     while (getchar() != '\n');
     // 停止服务
-    server.stop();
+    server.stop_();
     return 0;
 }
 ```
