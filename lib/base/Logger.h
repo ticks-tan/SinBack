@@ -83,13 +83,13 @@ namespace SinBack
                 // 前端日志时间尽量少，避免阻塞
                 std::string msg = SIN_STR("[");
                 if (msg_level == Debug) {
-                    msg += SIN_STR(" debug ");
+                    msg += SIN_STR("debug ");
                 } else if (msg_level == Info) {
-                    msg += SIN_STR(" info ");
+                    msg += SIN_STR("info ");
                 } else if (msg_level == Warn) {
-                    msg += SIN_STR(" warn ");
+                    msg += SIN_STR("warn ");
                 } else if (msg_level == Error) {
-                    msg += SIN_STR(" error ");
+                    msg += SIN_STR("error ");
                 }
                 timeval tv{};
                 Base::getTimeOfDay(&tv);

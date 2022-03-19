@@ -45,10 +45,33 @@ typedef unsigned char UChar;
 
 // 字符串
 #ifdef OS_WINDOWS
-#define SIN_STR(str)    (L##str)
+#define SIN_STR(str)    (_T##str)
 #else
 #define SIN_STR(str)    (str)
 #endif
+
+// str2 是否以 str1 开头
+static bool start_with(const String& str1, const String& str2){
+    if (str1.length() > str2.length()) return false;
+    Size_t pos = 0, len1 = str1.length();
+    for (; pos < len1; ++pos){
+        if (str1[pos] != str2[pos]){
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool end_with(const String& str1, const String& str2){
+    if (str1.length() > str2.length()) return false;
+    Size_t pos = 0, len1 = str1.length(), len2 = str2.length();
+    for (; pos < len1; ++pos){
+        if (str1[len1 - pos - 1] != str2[len2 - pos - 1]){
+            return false;
+        }
+    }
+    return true;
+}
 
 }
 

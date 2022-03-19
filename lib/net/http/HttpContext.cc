@@ -6,7 +6,9 @@
 * Des:         
 */
 
+#include <regex>
 #include "HttpContext.h"
+#include "tools/Url.h"
 
 using namespace SinBack;
 
@@ -33,6 +35,7 @@ const String Http::HttpContext::notfound_str = "   _____  _______      _____    
 Http::HttpContext::HttpContext(Http::HttpServer* server)
     : parser_()
     , server_(server)
+    , url_params_(nullptr)
 {
     this->parser_.reset(new Http::Http1Parse(&request_, &response_));
     this->cache_file_ = std::make_shared<Base::File>();
@@ -42,9 +45,13 @@ Http::HttpContext::~HttpContext()
 {
     this->request_.clear();
     this->response_.clear();
+    if (this->url_params_ != nullptr){
+        delete url_params_;
+    }
+    this->url_params_ = nullptr;
 }
 
-Int Http::HttpContext::senText(const String &text)
+Int Http::HttpContext::sendText(const String &text)
 {
     this->response_.status_code = 200;
     this->response_.header.setHead(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
@@ -60,7 +67,14 @@ Int Http::HttpContext::notFound()
     return 1;
 }
 
-Int Http::HttpContext::senFile(const String &file_name)
+Int Http::HttpContext::error() {
+    this->response_.status_code = 405;
+    this->response_.header.setHead(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+    this->response_.content.data() += error_str;
+    return 1;
+}
+
+Int Http::HttpContext::sendFile(const String &file_name)
 {
     if (!this->cache_file_->reOpen(file_name, Base::ReadOnly)){
         goto NotFound;
@@ -79,6 +93,48 @@ Int Http::HttpContext::senFile(const String &file_name)
 
 bool Http::HttpContext::parseUrl()
 {
+    String& url = this->request_.url;
+    std::basic_regex<Char> reg(SIN_STR("/([0-9a-zA-Z-_]{1,}[/]?)*\\?([^?=&.]{1,}=[^?=&.]{1,}[&]?)*"));
+    if (std::regex_match(url, reg)){
+        // 请求格式正确格式
+        Size_t pos, start, end;
+        String key, value;
+        url = Tools::url_decode(url);
+        pos = url.find_first_of('?');
+        if (pos != String::npos){
+            start = pos + 1;
+            // 循环查找
+            while ((pos = url.find_first_of('&', pos + 1)) != String::npos){
+                end = url.find_first_of('=', start);
+                if (end != String::npos && end < pos){
+                    // 添加到 url_params
+                    key = url.substr(start, end - start);
+                    start = end + 1;
+                    end = pos;
+                    value = url.substr(start, end - start);
+                    this->urlParams()[key] = value;
+                    start = end + 1;
+                } else{
+                    this->urlParams().clear();
+                    return false;
+                }
+            }
+            if (start < url.length()){
+                end = url.length();
+                pos = url.find_first_of('=', start);
+                if (pos != String::npos && pos < end){
+                    key = url.substr(start, pos - start);
+                    start = pos + 1;
+                    value = url.substr(start, end - start);
+                    this->urlParams()[key] = value;
+                } else{
+                    this->urlParams().clear();
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
     return false;
 }
 

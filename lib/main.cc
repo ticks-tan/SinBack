@@ -27,10 +27,17 @@ int main()
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
         Log::logi("我是测试接口 , request url = {} .", context.request().url);
-        return context.senText("我是测试接口 !");
+        return context.sendText("我是测试接口 !");
     });
     service.GET("/api/getTime", [](HttpContext& context) -> Int{
-        return context.senText(Base::getDateTimeNow());
+        if (context.parseUrl()){
+            auto& params = context.urlParams();
+            if (params.find(SIN_STR("format")) != params.end()){
+                return context.sendText(Base::getDateTimeNow(params[SIN_STR("format")]));
+            }
+            return context.sendText(SIN_STR("请求参数错误"));
+        }
+        return context.error();
     });
     // 添加到 Test 服务模块
     server.addService("Test", &service);

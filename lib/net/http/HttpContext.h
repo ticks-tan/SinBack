@@ -26,11 +26,13 @@ namespace SinBack
             ~HttpContext();
 
             // 发送文本数据
-            Int senText(const SinBack::String& text);
+            Int sendText(const SinBack::String& text);
             // 发送文件
-            Int senFile(const SinBack::String& file_name);
+            Int sendFile(const SinBack::String& file_name);
             // 回应404
             Int notFound();
+            // 回应错误
+            Int error();
             // 解析Url
             bool parseUrl();
             // 解析请求数据
@@ -71,6 +73,13 @@ namespace SinBack
                 this->response_.clear();
             }
 
+            std::unordered_map<String, String>& urlParams(){
+                if (this->url_params_ == nullptr){
+                    this->url_params_ = new std::unordered_map<String, String>;
+                }
+                return *this->url_params_;
+            }
+
         public:
             // Cache File
             std::shared_ptr<Base::File> cache_file_;
@@ -83,6 +92,8 @@ namespace SinBack
             HttpResponse response_;
             // 对应 HttpServer 指针
             HttpServer* server_;
+            // URL 解析结果
+            std::unordered_map<String, String>* url_params_;
         };
     }
 }

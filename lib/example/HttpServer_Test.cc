@@ -22,10 +22,10 @@ int main()
     server.setting().keepAlive = true;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
-        return context.senText("我是测试接口 !");
+        return context.sendText("我是测试接口 !");
     });
     service.GET("/api/getTime", [](HttpContext& context) -> Int{
-        return context.senText(Base::getDateTimeNow());
+        return context.sendText(Base::getDateTimeNow());
     });
     service.GET("/api/.*", [](HttpContext& context) -> Int{
         fmt::print("api拦截成功!\n");

@@ -189,8 +189,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     }
                 }
                 // 没有执行回调 (请求没有被拦截，或者拦截后没有需要返回的数据)
-                if (!is_call && http_context->response().content.empty() &&
-                    http_context->response().status_code == 0){
+                if (!is_call && http_context->response().content.empty()){
                     // 如果启用了静态文件服务，则返回对应文件
                     if (!this->setting_.staticFileDir.empty()){
                         sendStaticFile(io, http_context, url);
@@ -331,10 +330,6 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
 {
     path.insert(0, this->setting_.staticFileDir);
     if (!context->cache_file_->reOpen(path, Base::ReadOnly)){
-        goto NotFound;
-    }
-    if (!context->cache_file_->exist()){
-        NotFound:
         // 文件不存在
         context->notFound();
         path = context->response().toString();
@@ -342,7 +337,17 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         io->write(path.c_str(), path.length());
         // 发生完成，清空解析数据
         context->clear();
-    } else{
+    } else {
+        context->response().status_code = 200;
+        context->response().header.setHead(SIN_STR("Content-Type"),
+                                           Http::get_http_content_type(context->cache_file_->suffix()));
+        context->response().content.data() = std::move(context->cache_file_->readAll());
+        String buf = context->response().toString();
+        buf += context->response().content.data();
+        io->write(buf.c_str(), buf.length());
+        // 清空数据
+        context->clear();
+        /*
         // 文件操作。放到线程池中执行
         io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, HttpContext *context, const String &path) {
             context->response().status_code = 200;
@@ -355,6 +360,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
             // 清空数据
             context->clear();
         }, io, context, path);
+         */
     }
 }
 

@@ -11,7 +11,7 @@ using namespace SinBack;
 
 constexpr static const UChar url_enc_code[] = "0123456789ABCDEF";
 
-static inline unsigned char hex2i(char hex) {
+static inline unsigned char hex2i(Char hex) {
     return hex <= '9' ? hex - '0' :
            hex <= 'F' ? hex - 'A' + 10 : hex - 'a' + 10;
 }
@@ -23,16 +23,16 @@ static inline bool is_hex(char ch){
 
 std::string SinBack::Tools::url_encode(const std::string& url){
     auto len = url.length();
-    std::string str;
-    char tmp[4] = "%00";
-    char ch;
+    String str;
+    Char tmp[4] = "%00";
+    Char ch;
 
-    int i;
+    Int i;
     for (i = 0; i < len; ++i) {
         ch = url[i];
-        if (!std::isalnum(ch) && (ch != '.' && ch != '-' && ch != '_')){
-            tmp[1] = url_enc_code[(UChar)ch >> 4];
-            tmp[2] = url_enc_code[(UChar)ch & 0X0F];
+        if (!std::isalnum(ch) && (ch != '.' && ch != '-' && ch != '_' && ch != '~')){
+            tmp[1] = (Char)url_enc_code[(UChar)ch >> 4];
+            tmp[2] = (Char)url_enc_code[(UChar)ch & 0X0F];
             str += tmp;
         }else{
             str += url[i];
@@ -43,14 +43,14 @@ std::string SinBack::Tools::url_encode(const std::string& url){
 
 std::string SinBack::Tools::url_decode(const std::string& url) {
     auto len = url.length();
-    std::string str;
-    char ch;
-    int i = 0;
+    String str;
+    Char ch;
+    Int i = 0;
 
     for (; i < len;) {
         ch = url[i];
-        if (ch == '%' && is_hex(url[i + 1] && is_hex(url[i + 2]))){
-            str += ((hex2i(str[i + 1] << 4)) | hex2i(url[i + 2]));
+        if (ch == '%' && is_hex(url[i + 1]) && is_hex(url[i + 2])){
+            str += ((hex2i(url[i + 1]) << 4) | hex2i(url[i + 2]));
             i += 3;
         }else{
             str.push_back(ch);
