@@ -4,7 +4,7 @@
 
 ---
 
-### 外部依赖库：
+### 外部依赖库(已添加至项目)：
  - [libfmt]() : 一个方便而高效的C++字符串解析库，类似于C++20 format 。
  - [llhttp]() : nodejs 官方 http1 请求响应解析库 。
 
@@ -37,12 +37,6 @@ int main()
     service.GET("/api/getTime", [](HttpContext& context) -> Int{
         return context.sendText(Base::getDateTimeNow());
     });
-    // 拦截 /api/ 下所有 GET 请求
-    service.GET("/api/.*", [](HttpContext& context) -> Int{
-        fmt::print("api拦截成功!\n");
-        // 继续下一个 Service
-        return NEXT;
-    });
     // 添加到 Test 服务模块
     server.addService("Test", &service);
     // 开始监听2021端口
@@ -72,12 +66,12 @@ int main()
         fmt::print("有新客户端连接, fd = {}\n", io->getFd());
     };
     // 有新数据读取后会调用该函数
-    server.on_message = [](const TcpServer::ChannelPtr& io, const String& read_msg) {
+    server.onMessage = [](const TcpServer::ChannelPtr& io, const String& read_msg) {
         // 像客户端写入发来的数据
         io->write(read_msg);
     };
     // 服务端读取数据错误会调用该函数
-    server.on_error_message = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
+    server.onErrorMessage = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
         fmt::print("读取错误，错误信息: {}\n", err_msg);
         // 这里不用调用 io->close ，读取错误会自动关闭
     };
@@ -87,7 +81,7 @@ int main()
         fmt::print("成功写入{}字节数据\n", len);
     };
     // 服务端写入时错误会调用该函数
-    server.on_error_write = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
+    server.onErrorWrite = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
         fmt::print("写入错误，错误信息: {}\n", err_msg);
         // 读取和写入错误时，IO句柄对应 loop 的日志记录器都会记录该错误
     };

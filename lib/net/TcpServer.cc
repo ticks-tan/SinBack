@@ -26,8 +26,8 @@ SinBack::Net::TcpServer::~TcpServer()
 }
 
 SinBack::Net::TcpServer::ChannelPtr
-SinBack::Net::TcpServer::add_channel(const std::weak_ptr<Core::IOEvent>& ev) {
-    std::shared_ptr<Core::IOEvent> io = ev.lock();
+SinBack::Net::TcpServer::addChannel(const std::weak_ptr<Core::IOEvent>& io) {
+    std::shared_ptr<Core::IOEvent> io = io.lock();
     UInt id = io->id_;
     auto channel = std::make_shared<Core::Channel>(io);
     std::unique_lock<std::mutex> lock(mutex);
@@ -36,7 +36,7 @@ SinBack::Net::TcpServer::add_channel(const std::weak_ptr<Core::IOEvent>& ev) {
 }
 
 void
-SinBack::Net::TcpServer::remove_channel(const SinBack::Net::TcpServer::ChannelPtr &channel)
+SinBack::Net::TcpServer::removeChannel(const SinBack::Net::TcpServer::ChannelPtr &channel)
 {
     auto id = channel->getId();
     std::unique_lock<std::mutex> lock(this->mutex);
@@ -44,7 +44,7 @@ SinBack::Net::TcpServer::remove_channel(const SinBack::Net::TcpServer::ChannelPt
 }
 
 SinBack::Net::TcpServer::ChannelPtr
-SinBack::Net::TcpServer::get_channel(SinBack::Base::socket_t id) {
+SinBack::Net::TcpServer::getChannel(SinBack::Base::socket_t id) {
     auto it = this->channels_.find(id);
     std::unique_lock<std::mutex> lock(this->mutex);
     return (it != this->channels_.end()) ? it->second : nullptr;
@@ -53,7 +53,7 @@ SinBack::Net::TcpServer::get_channel(SinBack::Base::socket_t id) {
 bool
 SinBack::Net::TcpServer::run(UInt port)
 {
-    this->listen_fd_ = create_listen_fd(port);
+    this->listen_fd_ = createListenFd(port);
     if (this->listen_fd_ == -1){
         fmt::print("Run tcp_server error !\n");
         return false;
@@ -62,7 +62,7 @@ SinBack::Net::TcpServer::run(UInt port)
     if (this->work_thread_cnt > 0){
         this->work_loops_.start();
     }
-    this->accept_loop_.start(std::bind(&TcpServer::start_accept, this), nullptr);
+    this->accept_loop_.start(std::bind(&TcpServer::startAccept, this), nullptr);
     return true;
 }
 
@@ -72,20 +72,20 @@ SinBack::Net::TcpServer::loop(Int index) {
 }
 
 void
-SinBack::Net::TcpServer::start_accept()
+SinBack::Net::TcpServer::startAccept()
 {
-    auto acceptor = this->accept_loop_.loop()->acceptIo(this->listen_fd_, new_client);
+    auto acceptor = this->accept_loop_.loop()->acceptIo(this->listen_fd_, newClient);
     acceptor->context_ = this;
 }
 
 void
-SinBack::Net::TcpServer::new_client(const std::weak_ptr<Core::IOEvent>& ev)
+SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& io)
 {
-    auto io = ev.lock();
+    auto io = io.lock();
     if (io){
         auto* server = (TcpServer*)io->context_;
         if (server) {
-            if (server->accept_count() > default_max_accept_count) {
+            if (server->acceptCount() > default_max_accept_count) {
                 Log::logw("accept count over max !");
                 io->loop_->closeIo(io->fd_);
                 return;
@@ -93,49 +93,49 @@ SinBack::Net::TcpServer::new_client(const std::weak_ptr<Core::IOEvent>& ev)
             EventLoopPtr work_loop = server->loop();
             // 由于work loop与 accept loop不同，需要对 io事件设置新的 loop
             Core::EventLoop::changeIoLoop(io, work_loop.get());
-            const ChannelPtr channel = server->add_channel(io);
+            const ChannelPtr channel = server->addChannel(io);
             Base::setSocketNonblock(channel->getFd());
             // 设置读取回调
             channel->setReadCb([server, &channel](const String &buf) {
-                if (server->on_message) {
-                    server->on_message(channel, buf);
+                if (server->onMessage) {
+                    server->onMessage(channel, buf);
                 }
             });
             // 设置读取错误回调
             channel->setReadErrCb([server, &channel](const String &err) {
-                if (server->on_error_message) {
-                    server->on_error_message(channel, err);
+                if (server->onErrorMessage) {
+                    server->onErrorMessage(channel, err);
                 }
             });
             // 设置写入回调
             channel->setWriteCb([server, &channel](Size_t len) {
-                if (server->on_write) {
-                    server->on_write(channel, len);
+                if (server->onWrite) {
+                    server->onWrite(channel, len);
                 }
             });
             // 设置写入错误回调
             channel->setWriteErrCb([server, &channel](const String &err) {
-                if (server->on_error_write) {
-                    server->on_error_write(channel, err);
+                if (server->onErrorWrite) {
+                    server->onErrorWrite(channel, err);
                 }
             });
             // 设置关闭回调
             channel->setCloseCb([server, &channel]() {
-                if (server->on_close) {
-                    server->on_close(channel);
+                if (server->onClose) {
+                    server->onClose(channel);
                 }
-                server->remove_channel(channel);
+                server->removeChannel(channel);
             });
 
-            if (server->on_new_client) {
-                server->on_new_client(channel);
+            if (server->onNewClient) {
+                server->onNewClient(channel);
             }
             channel->read();
         }
     }
 }
 
-Base::socket_t Net::TcpServer::create_listen_fd(UInt port)
+Base::socket_t Net::TcpServer::createListenFd(UInt port)
 {
     this->port_ = port;
     Base::socket_t sock = Base::creatSocket(Base::IP_4, Base::S_TCP, true);

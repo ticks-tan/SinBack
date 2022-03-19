@@ -23,41 +23,41 @@ namespace SinBack
             static const UInt default_max_accept_count = 4096;
 
             // 新客户端连接
-            std::function<void(const ChannelPtr&)> on_new_client;
+            std::function<void(const ChannelPtr&)> onNewClient;
             // 有新消息
-            std::function<void(const ChannelPtr&, const String&)> on_message;
+            std::function<void(const ChannelPtr&, const String&)> onMessage;
             // 读取消息错误
-            std::function<void(const ChannelPtr&, const String&)> on_error_message;
+            std::function<void(const ChannelPtr&, const String&)> onErrorMessage;
             // 写入消息完成
-            std::function<void(const ChannelPtr&, Size_t)> on_write;
+            std::function<void(const ChannelPtr&, Size_t)> onWrite;
             // 写入消息错误
-            std::function<void(const ChannelPtr&, const String&)> on_error_write;
+            std::function<void(const ChannelPtr&, const String&)> onErrorWrite;
             // 关闭
-            std::function<void(const ChannelPtr&)> on_close;
+            std::function<void(const ChannelPtr&)> onClose;
         public:
             TcpServer();
             ~TcpServer();
             // 添加channel
-            ChannelPtr add_channel(const std::weak_ptr<Core::IOEvent>& io);
+            ChannelPtr addChannel(const std::weak_ptr<Core::IOEvent>& io);
             // 移除channel
-            void remove_channel(const ChannelPtr& channel);
+            void removeChannel(const ChannelPtr& channel);
             // 获取channel
-            ChannelPtr get_channel(Base::socket_t id);
+            ChannelPtr getChannel(Base::socket_t id);
 
             // 开始运行
             bool run(UInt port);
             // 获取事件循环
             EventLoopPtr loop(Int index = -1);
 
-            Size_t accept_count() const{
+            Size_t acceptCount() const{
                 return this->channels_.size();
             }
         private:
-            Base::socket_t create_listen_fd(UInt port);
+            Base::socket_t createListenFd(UInt port);
             // 开始接受连接
-            void start_accept();
+            void startAccept();
             // 新客户端连接
-            static void new_client(const std::weak_ptr<Core::IOEvent>& io);
+            static void newClient(const std::weak_ptr<Core::IOEvent>& io);
         private:
             // 用于接受新连接
             Core::EventLoopThread accept_loop_;
