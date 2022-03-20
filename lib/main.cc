@@ -19,7 +19,7 @@ int main()
     HttpServer server;
     HttpService service;
     // 设置http服务器配置
-    server.setting().logDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/cmake-build-debug");
+    server.setting().logPath = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/SinBack");
     // 静态文件根目录
     server.setting().staticFileDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack");
     server.setting().workThreadNum = 8;

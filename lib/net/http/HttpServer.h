@@ -27,7 +27,7 @@ namespace SinBack {
                 // 工作线程数量，默认为 核心数 * 2
                 Size_t workThreadNum;
                 // 日志文件存放目录，默认执行文件所在目录
-                String logDir;
+                String logPath;
                 // 最大连接客户端数量， 默认4096
                 Size_t maxAcceptCnt;
                 // 是否启用 keep-alive，默认关闭
@@ -110,7 +110,7 @@ namespace SinBack {
             void sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, Int call_ret);
 
             // 静态文件
-            void sendStaticFile(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, String& path);
+            void sendStaticFile(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, String& path) const;
         private:
             // 设置
             Setting setting_;

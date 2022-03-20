@@ -74,6 +74,9 @@ namespace SinBack
             bool empty() const {
                 return this->data_.empty();
             }
+            void clear(){
+                this->data_.clear();
+            }
         private:
             String data_;
         };

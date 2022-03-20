@@ -30,7 +30,7 @@ void Http::HttpServer::init()
 {
     // 默认设置
     this->setting_.keepAlive = false;
-    this->setting_.logDir = "./";
+    this->setting_.logPath = "./";
     // 静态文件默认开启，手动指定静态文件根目录才会开启
     this->setting_.staticFileDir = "";
     this->setting_.maxAcceptCnt = 4096;
@@ -285,6 +285,8 @@ bool Http::HttpServer::createListenSocketV4(UInt port)
 
 void Http::HttpServer::start()
 {
+    // 设置日志目录
+    Log::set_default_logger_path(this->setting_.logPath);
     // 开始事件循环
     this->accept_th_.reset(new Core::EventLoopThread);
     this->work_th_.reset(new Core::EventLoopPool(setting_.workThreadNum));
@@ -340,7 +342,7 @@ void Http::HttpServer::sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io
     io->write(buf.c_str(), buf.length());
 }
 
-void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, Http::HttpContext *context, String& path)
+void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, Http::HttpContext *context, String& path) const
 {
     path.insert(0, this->setting_.staticFileDir);
     if (!context->cache_file_->reOpen(path, Base::ReadOnly)){

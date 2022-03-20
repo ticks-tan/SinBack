@@ -71,6 +71,9 @@ namespace SinBack
             void clear() {
                 this->request_.clear();
                 this->response_.clear();
+                if (this->url_params_) {
+                    this->url_params_->clear();
+                }
             }
 
             std::unordered_map<String, String>& urlParams(){

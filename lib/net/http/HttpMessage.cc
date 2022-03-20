@@ -31,7 +31,9 @@ Http::HttpRequest::toString() const
 void Http::HttpRequest::clear()
 {
     this->header.clear();
-    this->content.data().clear();
+    this->content.clear();
+    this->url.clear();
+    this->method = HTTP_GET;
 }
 
 SinBack::String
@@ -57,7 +59,8 @@ Http::HttpResponse::toString() {
 void Http::HttpResponse::clear()
 {
     this->header.clear();
-    this->content.data().clear();
+    this->content.clear();
+    this->status_code = 0;
 }
 
 SinBack::String
