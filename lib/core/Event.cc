@@ -3,7 +3,7 @@
 * CreateDate: 2022-03-09 21:38:11
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:         
+* Des:        Event function
 */
 #include "core/EventLoop.h"
 #include "Event.h"
@@ -44,7 +44,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
 // 边缘触发 write 封装
 void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
-void handle_keepalive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
+void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
 
 
 Int io_read_et(Core::IOEvent* io)
@@ -254,25 +254,22 @@ void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev)
 }
 
 // keepalive回调
-void handle_keepalive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev)
+void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev)
 {
     auto timer = ev.lock();
     if (timer){
         if (io){
             if (io->closed || io->destroy_) return;
-            /*
             auto loop = (Core::EventLoopPtr)(io->loop_);
             if (loop) {
                 ULong last_rw_time = std::max(io->last_read_time_, io->last_write_time_);
                 ULong time_ms = (loop->getCurrentTime() - last_rw_time) / 1000;
                 if (time_ms + 100 < io->keep_alive_ms_) {
-                    loop->addTimer(std::bind(&handle_keepalive, io, std::placeholders::_1), io->keep_alive_ms_, 1);
+                    loop->addTimer(std::bind(&handle_keep_alive, io, std::placeholders::_1), io->keep_alive_ms_, 1);
                 } else {
-                    io->close(false);
+                    io->close();
                 }
             }
-            */
-            io->close();
         }
     }
 }
@@ -651,7 +648,7 @@ bool Core::IOEvent::setKeepalive(Size_t timeout_ms)
     if (this->loop_) {
         this->last_read_time_ = this->last_write_time_ = this->loop_->getCurrentTime();
         this->keep_alive_ms_ = timeout_ms;
-        this->loop_->addTimer(std::bind(&handle_keepalive, shared_from_this(), std::placeholders::_1), timeout_ms, 1);
+        this->loop_->addTimer(std::bind(&handle_keep_alive, shared_from_this(), std::placeholders::_1), timeout_ms, 1);
     }
     return true;
 }

@@ -35,6 +35,7 @@ namespace SinBack {
                 // 静态文件路径, 不指定即为当前工作目录
                 String staticFileDir;
             };
+            static const UInt default_keep_alive = 60000;
         public:
             HttpServer();
             ~HttpServer();
@@ -87,6 +88,9 @@ namespace SinBack {
 
             // 开始运行
             void start();
+
+            // 设置keepAlive
+            static void setIOKeepAlive(const std::weak_ptr<Core::IOEvent>& ev);
 
             // 开始 accept
             void startAccept();

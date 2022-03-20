@@ -216,7 +216,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     io->close();
                 } else {
                     // 保持连接 1 min
-                    io->setKeepalive(60000);
+                    this->setIOKeepAlive(io);
                 }
                 return;
             }
@@ -306,6 +306,20 @@ void Http::HttpServer::startAccept()
                                                                  std::placeholders::_1));
 }
 
+void Http::HttpServer::setIOKeepAlive(const std::weak_ptr<Core::IOEvent> &ev)
+{
+    auto io = ev.lock();
+    if (io){
+        if (io->loop_){
+            io->loop_->addTimer([io](const std::weak_ptr<Core::TimerEvent>& ev){
+                if (io){
+                    io->close(false);
+                }
+            }, HttpServer::default_keep_alive, 1);
+        }
+    }
+}
+
 /**
  * 发送 Http 响应
  * @param io
@@ -363,5 +377,6 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
          */
     }
 }
+
 
 

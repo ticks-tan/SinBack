@@ -26,8 +26,8 @@ SinBack::Net::TcpServer::~TcpServer()
 }
 
 SinBack::Net::TcpServer::ChannelPtr
-SinBack::Net::TcpServer::addChannel(const std::weak_ptr<Core::IOEvent>& io) {
-    std::shared_ptr<Core::IOEvent> io = io.lock();
+SinBack::Net::TcpServer::addChannel(const std::weak_ptr<Core::IOEvent>& ev) {
+    std::shared_ptr<Core::IOEvent> io = ev.lock();
     UInt id = io->id_;
     auto channel = std::make_shared<Core::Channel>(io);
     std::unique_lock<std::mutex> lock(mutex);
@@ -79,9 +79,9 @@ SinBack::Net::TcpServer::startAccept()
 }
 
 void
-SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& io)
+SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& ev)
 {
-    auto io = io.lock();
+    auto io = ev.lock();
     if (io){
         auto* server = (TcpServer*)io->context_;
         if (server) {
