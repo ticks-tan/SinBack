@@ -637,12 +637,14 @@ Core::EventLoop::changeIoLoop(const std::weak_ptr<Core::IOEvent> &ev, Core::Even
     auto io = ev.lock();
     if (io) {
         Base::socket_t fd = io->fd_;
+        /*
         Core::EventLoopPtr old_loop = io->loop_;
         // 判断新loop里面是否有重复io
         auto it = old_loop->io_evs_.find(fd);
         if (it != old_loop->io_evs_.end()) {
             old_loop->io_evs_.erase(it);
         }
+        */
         io->loop_ = loop;
         loop->io_evs_[fd] = io;
     }

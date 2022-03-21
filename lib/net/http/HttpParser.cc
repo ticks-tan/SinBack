@@ -27,6 +27,7 @@ Int on_url(llhttp_t* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
+        hp->request_->url.clear();
         hp->request_->url.append(data, len);
         hp->set_status(Http::HP_PARSE_URL);
         return 0;
@@ -47,11 +48,13 @@ Int on_header_field(llhttp_t* parser, const Char* data, Size_t len)
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
         hp->header_field.append(data, len);
+        /*
         if (!hp->header_field.empty() && !hp->header_value.empty()){
             hp->request_->header.setHead(hp->header_field, hp->header_value);
             hp->header_field.clear();
             hp->header_value.clear();
         }
+         */
         hp->set_status(Http::HP_PARSE_HEADER_FIELD);
         return 0;
     }

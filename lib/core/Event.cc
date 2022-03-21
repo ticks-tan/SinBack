@@ -642,7 +642,7 @@ Int Core::IOEvent::close(bool timer)
     return 0;
 }
 
-bool Core::IOEvent::setKeepalive(Size_t timeout_ms)
+bool Core::IOEvent::setKeepAlive(Size_t timeout_ms)
 {
     if (this->closed || !this->active_ || !this->loop_) return false;
     if (this->loop_) {

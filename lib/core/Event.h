@@ -182,7 +182,7 @@ namespace SinBack
             // 关闭连接
             Int close(bool timer = true);
             // 设置keep-alive时间
-            bool setKeepalive(Size_t timout_ms);
+            bool setKeepAlive(Size_t timout_ms);
         };
 
         struct TimerEvent : public Event

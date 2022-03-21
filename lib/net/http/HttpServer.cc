@@ -112,9 +112,11 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
         io->write_cb_ = std::bind(&HttpServer::onSend, this, std::placeholders::_1, std::placeholders::_2);
         io->write_err_cb_ = std::bind(&HttpServer::onSendError, this, std::placeholders::_1, std::placeholders::_2);
         io->close_cb_ = std::bind(&HttpServer::onDisconnect, this, std::placeholders::_1);
-        auto* http_context = new Http::HttpContext(this);
-        // 将 HttpContext与IO事件关联
-        io->context_ = http_context;
+        if (io->context_ == nullptr) {
+            auto *http_context = new Http::HttpContext(this);
+            // 将 HttpContext与IO事件关联
+            io->context_ = http_context;
+        }
         // 当前连接客户端 +1
         this->incConnectCount();
         // 读取数据 (主要作用是将可读事件注册到 Loop)
@@ -163,6 +165,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                 bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
 
                 if (!this->setting_.keepAlive){
+                    keep_alive = false;
                     // 服务器配置为不开启保持连接，指定消息头通知客户端主动关闭连接
                     http_context->response().header.setHead(SIN_STR("Connection"), SIN_STR("close"));
                 }
@@ -193,7 +196,10 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     // 如果启用了静态文件服务，则返回对应文件
                     if (!this->setting_.staticFileDir.empty()){
                         sendStaticFile(io, http_context, url);
-                        goto END;
+                        if (keep_alive){
+                            HttpServer::setIOKeepAlive(io);
+                        }
+                        return;
                     }
                     // 没有启用，返回 405 请求不支持
                     http_context->setStatusCode(405);
@@ -216,7 +222,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     io->close();
                 } else {
                     // 保持连接 1 min
-                    this->setIOKeepAlive(io);
+                    SinBack::Http::HttpServer::setIOKeepAlive(io);
                 }
                 return;
             }
@@ -252,8 +258,8 @@ void Http::HttpServer::onDisconnect(const std::weak_ptr<Core::IOEvent> &ev)
     auto io = ev.lock();
     if (io){
         auto http_context = (Http::HttpContext*)(io->context_);
-        delete http_context;
         io->context_ = nullptr;
+        delete http_context;
     }
 }
 
@@ -354,6 +360,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         // 发生完成，清空解析数据
         context->clear();
     } else {
+        /*
         context->response().status_code = 200;
         context->response().header.setHead(SIN_STR("Content-Type"),
                                            Http::get_http_content_type(context->cache_file_->suffix()));
@@ -363,7 +370,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         io->write(buf.c_str(), buf.length());
         // 清空数据
         context->clear();
-        /*
+         */
         // 文件操作。放到线程池中执行
         io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, HttpContext *context, const String &path) {
             context->response().status_code = 200;
@@ -375,8 +382,8 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
             io->write(buf.c_str(), buf.length());
             // 清空数据
             context->clear();
+            io->close();
         }, io, context, path);
-         */
     }
 }
 
