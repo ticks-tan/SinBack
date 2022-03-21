@@ -76,6 +76,7 @@ SinBack::Net::TcpServer::startAccept()
 {
     auto acceptor = this->accept_loop_.loop()->acceptIo(this->listen_fd_, newClient);
     acceptor->context_ = this;
+
 }
 
 void
@@ -90,9 +91,12 @@ SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& ev)
                 io->loop_->closeIo(io->fd_);
                 return;
             }
+            Core::EventLoop::removeIO(io);
             EventLoopPtr work_loop = server->loop();
-            // 由于work loop与 accept loop不同，需要对 io事件设置新的 loop
-            Core::EventLoop::changeIoLoop(io, work_loop.get());
+            if (work_loop) {
+                // 由于work loop与 accept loop不同，需要对 io事件设置新的 loop
+                Core::EventLoop::changeIoLoop(io, work_loop.get());
+            }
             const ChannelPtr channel = server->addChannel(io);
             Base::setSocketNonblock(channel->getFd());
             // 设置读取回调

@@ -9,9 +9,7 @@
 #define SINBACK_FILE_H
 
 #include <cstdio>
-#include <vector>
 #include <unistd.h>
-#include "base/noncopyable.h"
 #include "base/Base.h"
 
 namespace SinBack {

@@ -9,11 +9,10 @@
 #define SINBACK_EVENT_H
 
 #include <functional>
-#include <memory>
-#include <string>
 #include <deque>
 #include <atomic>
 #include <mutex>
+#include <memory>
 #include "base/SocketUtil.h"
 
 namespace SinBack
@@ -172,7 +171,10 @@ namespace SinBack
                 last_write_time_ = 0;
                 keep_alive_ms_ = 0;
             }
-
+            // 开始准备
+            void ready();
+            // 准备关闭
+            void clean();
             // 接收连接
             Int accept();
             // 读取数据

@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #endif
 
-#include "base/noncopyable.h"
 #include "core/Event.h"
 
 namespace SinBack

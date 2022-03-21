@@ -6,7 +6,7 @@
 * Des:         
 */
 #include "Logger.h"
-#include <memory>
+
 using namespace SinBack;
 
 Log::Logger::Logger(Log::LoggerType type, const Log::Logger::string_type &file_name, Size_t thread_num)

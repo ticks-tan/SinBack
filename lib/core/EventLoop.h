@@ -63,6 +63,7 @@ namespace SinBack
             static Int addIoEvent(const std::weak_ptr<Core::IOEvent>& ev, const IOEventCB& cb, Int events);
             static Int removeIoEvent(const std::weak_ptr<Core::IOEvent>& ev, Int events);
             static void changeIoLoop(const std::weak_ptr<Core::IOEvent>& ev, EventLoopPtr loop);
+            static void removeIO(const std::weak_ptr<Core::IOEvent>& ev);
 
             // 运行
             bool run();

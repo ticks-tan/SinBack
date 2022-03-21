@@ -8,7 +8,6 @@
 #ifndef SINBACK_HTTPMESSAGE_H
 #define SINBACK_HTTPMESSAGE_H
 
-#include <string>
 #include <unordered_map>
 #include "base/Base.h"
 

@@ -6,6 +6,7 @@
 * Des:         
 */
 
+#include <vector>
 #include "File.h"
 #include "base/FileUtil.h"
 

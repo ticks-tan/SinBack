@@ -8,9 +8,7 @@
 #ifndef SINBACK_CHANNEL_H
 #define SINBACK_CHANNEL_H
 
-#include "base/Buffer.h"
 #include "core/Event.h"
-#include "base/noncopyable.h"
 
 namespace SinBack {
     namespace Core {

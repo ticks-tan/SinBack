@@ -149,6 +149,8 @@ bool Http::HttpContext::init()
     this->response_.header.setHead(SIN_STR("Server"), SIN_STR("SinBack"));
     if (!this->request_.header.getHead(SIN_STR("Connection")).empty()){
         this->response_.header[SIN_STR("Connection")] = this->request_.header[SIN_STR("Connection")];
+    } else{
+        this->response_.header[SIN_STR("Connection")] = SIN_STR("close");
     }
     return true;
 }

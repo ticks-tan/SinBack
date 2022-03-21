@@ -30,6 +30,7 @@ Core::EventLoop::EventLoop()
     , pending_count_(0), io_count_(0), custom_count_(0), idle_count_(0), timer_count_(0)
     , thread_pool_(default_thread_pool_count)
 {
+    //  初始化 Loop
     initLoop();
 }
 
@@ -66,6 +67,7 @@ void Core::EventLoop::initLoop()
  */
 bool Core::EventLoop::run()
 {
+    // EventLoop 正在运行
     if (this->status_ == Running){
         return false;
     }
@@ -74,6 +76,7 @@ bool Core::EventLoop::run()
     this->start_time_ = Base::getTimeOfDayMs();
 
     while (this->status_ != Stop){
+        // 暂停
         if (this->status_ == Pause){
             // 休眠一段时间
             Base::sleepMs(default_event_loop_pause_timeout);
@@ -127,7 +130,7 @@ bool Core::EventLoop::pause()
 bool Core::EventLoop::resume()
 {
     if (this->status_ == Pause){
-        this->status_ == Running;
+        this->status_ = Running;
         return true;
     }
     return false;
@@ -135,31 +138,28 @@ bool Core::EventLoop::resume()
 
 /**
  * 根据套接字获取 IO 事件，没有则创建
- * @param fd
+ * @param fd : 套接字
  * @return
  */
 std::shared_ptr<Core::IOEvent> Core::EventLoop::getIoEvent(Base::socket_t fd)
 {
     std::shared_ptr<IOEvent> ptr;
     auto it = this->io_evs_.find(fd);
-    if (it != this->io_evs_.end()){
-        if (it->second->destroy_ || !it->second->active_){
-            ptr = std::make_shared<IOEvent>();
-            ptr->init();
-            ptr->loop_ = this;
-            ptr->fd_ = fd;
-            ptr->type_ = Event_Type_IO;
-            this->io_evs_[fd] = ptr;
-        } else{
-            ptr = it->second;
-        }
-    }else{
+    // 有套接字记录
+    if (it == this->io_evs_.end()){
+        // 没有则新建
         ptr = std::make_shared<IOEvent>();
+        // 初始化 IOEvent
         ptr->init();
         ptr->loop_ = this;
         ptr->fd_ = fd;
         ptr->type_ = Event_Type_IO;
         this->io_evs_[fd] = ptr;
+    } else {
+        ptr = it->second;
+    }
+    if (!ptr->ready_){
+        ptr->ready();
     }
     return ptr;
 }
@@ -227,10 +227,11 @@ Int Core::EventLoop::processIdle()
         if (item->repeat_ != Core::IdleEvent::infinity){
             --item->repeat_;
         }
+
         EventLoop::loop_event_pending(item);
         ++idle_cnt;
 
-        if (item->repeat_ == 0){
+        if (item->repeat_ <= 0){
             item->destroy_ = true;
             item->loop_->idle_count_--;
             it = this->idle_evs_.erase(it);
@@ -254,43 +255,56 @@ Int Core::EventLoop::processPending()
     // 遍历优先级数组 (高 -> 低)
     Int pending_cnt = 0, i = Core::EventPriority::Event_Priority_Highest;
     for (; i >= 0; --i){
-        if (this->status_ == Stop) return pending_cnt;
         auto& list = this->pending_evs_[i];
         for (auto& it : list){
+            if (this->status_ == Stop) return pending_cnt;
+
             item = it;
             // 根据事件类型转换后调用对应回调函数
             if (item){
                 if (item->pending_){
                     // 执行回调函数
                     if (item->active_){
-                        if (item->type_ == Core::Event_Type_Custom) {
-                            if (item->cb_) {
-                                item->cb_(item);
-                            }
-                        }else if (item->type_ == Core::Event_Type_IO){
+                        if (item->type_ == Core::Event_Type_IO){
                             auto io = std::dynamic_pointer_cast<Core::IOEvent>(item);
                             if (io->cb_) {
                                 io->cb_(io);
+                            }
+                            // 判断事件是否已销毁
+                            if (io->destroy_){
+                                loop_event_inactive(io);
+                                io->cb_ = nullptr;
                             }
                         }else if (item->type_ == Core::Event_Type_Idle){
                             auto idle = std::dynamic_pointer_cast<Core::IdleEvent>(item);
                             if (idle->cb_) {
                                 idle->cb_(idle);
                             }
+                            if (idle->destroy_){
+                                loop_event_inactive(idle);
+                                idle->cb_ = nullptr;
+                            }
                         }else if (item->type_ == Core::Event_Type_Timer){
-                            // this->logger_->debug("Timer Event {} .", item->id_);
                             auto timer = std::dynamic_pointer_cast<Core::TimerEvent>(item);
                             if (timer->cb_) {
                                 timer->cb_(timer);
+                            }
+                            if (timer->destroy_){
+                                loop_event_inactive(timer);
+                                timer->cb_ = nullptr;
+                            }
+                        } else {
+                            if (item->cb_) {
+                                item->cb_(item);
+                            }
+                            if (item->destroy_){
+                                loop_event_inactive(item);
+                                item->cb_ = nullptr;
                             }
                         }
                         ++pending_cnt;
                     }
                     item->pending_ = false;
-                    if (item->destroy_){
-                        loop_event_inactive(item);
-                        item->cb_ = nullptr;
-                    }
                 }
             }else{
                 Log::logd("event pending error!");
@@ -318,6 +332,7 @@ Int Core::EventLoop::processTimer()
         for (; it != this->timer_.end();){
             // 检查 EventLoop 是否停止
             if (this->status_ == Stop) return timer_cnt;
+
             item = it->second;
             if (item->next_time_ > now_time){
                 break;
@@ -327,6 +342,7 @@ Int Core::EventLoop::processTimer()
             }
             EventLoop::loop_event_pending(item);
             ++timer_cnt;
+
             this->updateTime();
             if (item->repeat_ == 0){
                 // 次数用尽，删除定时器
@@ -361,6 +377,7 @@ Int Core::EventLoop::processIo(Int timeout)
  */
 void Core::EventLoop::updateTime()
 {
+    // 微妙级别时间更新
     this->cur_time_ = Base::getTimeOfDayUs();
 }
 
@@ -381,7 +398,7 @@ Int Core::EventLoop::addIoEvent(const std::weak_ptr<Core::IOEvent> &ev, const Co
             ++io->loop_->io_count_;
         }
         if (!io->ready_){
-            io->ready_ = true;
+            io->read();
         }
         if (cb){
             io->cb_ = cb;
@@ -521,9 +538,14 @@ Core::EventLoop::closeIo(Base::socket_t fd)
 std::shared_ptr<Core::TimerEvent>
 Core::EventLoop::addTimer(const Core::TimerEventCB &cb, UInt timeout, Int repeat)
 {
+    // 防止用户乱输入
+    if (repeat < 0){
+        repeat = TimerEvent::infinity;
+    }
     std::shared_ptr<Core::TimerEvent> timer(new TimerEvent);
     timer->init();
     timer->type_ = Core::Event_Type_Timer;
+    // 优先级最高
     timer->priority_ = Core::Event_Priority_Highest;
     timer->timeout_ = timeout;
     timer->repeat_ = repeat;
@@ -556,7 +578,7 @@ Core::EventLoop::removeTimer(const std::weak_ptr<Core::TimerEvent>& ev)
             this->timer_count_--;
             timer->destroy_ = true;
             EventLoop::loop_event_inactive(it->second);
-            it = this->timer_.erase(it);
+            this->timer_.erase(it);
         }
     }
 }
@@ -570,6 +592,9 @@ Core::EventLoop::removeTimer(const std::weak_ptr<Core::TimerEvent>& ev)
 std::shared_ptr<Core::IdleEvent>
 Core::EventLoop::addIdle(const Core::IdleEventCB &cb, Int repeat)
 {
+    if (repeat < 0){
+        repeat = IdleEvent::infinity;
+    }
     std::shared_ptr<Core::IdleEvent> idle(new Core::IdleEvent);
     // 初始化事件
     idle->init();
@@ -603,7 +628,7 @@ Core::EventLoop::removeIdle(const std::weak_ptr<Core::IdleEvent>& ev)
         if (it != this->idle_evs_.end()){
             this->idle_count_--;
             EventLoop::loop_event_inactive(idle);
-            it = this->idle_evs_.erase(it);
+            this->idle_evs_.erase(it);
         }
     }
 }
@@ -622,7 +647,7 @@ Core::EventLoop::addCustom(const Core::EventCB &cb) {
     ++this->custom_count_;
     custom->loop_ = this;
     custom->cb_ = cb;
-    this->thread_pool_.enqueue([&custom](){
+    this->thread_pool_.enqueue([custom](){
         if (custom->cb_){
             custom->cb_(custom);
         }
@@ -637,16 +662,25 @@ Core::EventLoop::changeIoLoop(const std::weak_ptr<Core::IOEvent> &ev, Core::Even
     auto io = ev.lock();
     if (io) {
         Base::socket_t fd = io->fd_;
-        /*
-        Core::EventLoopPtr old_loop = io->loop_;
-        // 判断新loop里面是否有重复io
-        auto it = old_loop->io_evs_.find(fd);
-        if (it != old_loop->io_evs_.end()) {
-            old_loop->io_evs_.erase(it);
-        }
-        */
         io->loop_ = loop;
         loop->io_evs_[fd] = io;
+    }
+}
+
+/**
+ * 从IO所属Loop中移除IO,应该在IO所属Loop线程运行
+ * @param ev
+ */
+void Core::EventLoop::removeIO(const std::weak_ptr<Core::IOEvent> &ev)
+{
+    auto io = ev.lock();
+    if (io){
+        Base::socket_t fd = io->fd_;
+        Core::EventLoopPtr loop = io->loop_;
+        auto it = loop->io_evs_.find(fd);
+        if (it != loop->io_evs_.end()) {
+            loop->io_evs_.erase(it);
+        }
     }
 }
 

@@ -100,6 +100,7 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
             io->close(false);
             return;
         }
+        Core::EventLoop::removeIO(io);
         // 获取一个工作线程来管理该 IO 句柄
         Core::EventLoopPtr new_loop = this->loop();
         if (new_loop) {
@@ -121,6 +122,7 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
         this->incConnectCount();
         // 读取数据 (主要作用是将可读事件注册到 Loop)
         io->read();
+        Log::logi("new client, fd = {}", io->fd_);
     }
 }
 
@@ -162,9 +164,9 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
 
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
-                bool keep_alive = http_context->request().header[SIN_STR("Connection")] == SIN_STR("keep-alive");
+                bool keep_alive = http_context->request().header.getHead(SIN_STR("Connection")) == SIN_STR("keep-alive");
 
-                if (!this->setting_.keepAlive){
+                if (!this->setting_.keepAlive && keep_alive){
                     keep_alive = false;
                     // 服务器配置为不开启保持连接，指定消息头通知客户端主动关闭连接
                     http_context->response().header.setHead(SIN_STR("Connection"), SIN_STR("close"));
@@ -257,6 +259,7 @@ void Http::HttpServer::onDisconnect(const std::weak_ptr<Core::IOEvent> &ev)
     this->decConnectCount();
     auto io = ev.lock();
     if (io){
+        Log::logi("close client, fd = {}", io->fd_);
         auto http_context = (Http::HttpContext*)(io->context_);
         io->context_ = nullptr;
         delete http_context;
@@ -275,7 +278,7 @@ bool Http::HttpServer::createListenSocketV4(UInt port)
     Base::socketReuseAddress(this->listen_fd_);
 
     // 绑定
-    if (!Base::bindSocket(this->listen_fd_, Base::IP_4, nullptr, port)){
+    if (!Base::bindSocket(this->listen_fd_, Base::IP_4, nullptr, Int(port))){
         goto ERR;
     }
     // 监听
@@ -318,10 +321,12 @@ void Http::HttpServer::setIOKeepAlive(const std::weak_ptr<Core::IOEvent> &ev)
 {
     auto io = ev.lock();
     if (io){
+        Log::logi("Start KeepAlive!");
         if (io->loop_){
             io->loop_->addTimer([io](const std::weak_ptr<Core::TimerEvent>& ev){
+                Log::logi("IO KeepAlive Close!");
                 if (io){
-                    io->close(false);
+                    io->close();
                 }
             }, HttpServer::default_keep_alive, 1);
         }

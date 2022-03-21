@@ -632,9 +632,11 @@ Int Core::IOEvent::close(bool timer)
             return 1;
         }
         this->closed = true;
+        // 清理IO事件
+        this->clean();
         this->destroy_ = true;
-        Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR | Core::IO_TYPE_ET);
         Core::EventLoop::loop_event_inactive(shared_from_this());
+        // 关闭套接字
         Base::closeSocket(this->fd_);
     }
     // 关闭回调
@@ -651,4 +653,42 @@ bool Core::IOEvent::setKeepAlive(Size_t timeout_ms)
         this->loop_->addTimer(std::bind(&handle_keep_alive, shared_from_this(), std::placeholders::_1), timeout_ms, 1);
     }
     return true;
+}
+
+/**
+ * 准备IO事件
+ */
+void Core::IOEvent::ready()
+{
+    this->ready_ = true;
+    this->closed = false;
+    this->last_read_time_ = this->last_write_time_ = Base::getTimeOfDayUs();
+    this->read_buf_.clear();
+    this->write_queue_.clear();
+    this->pending_ = false;
+    this->error = 0;
+    this->evs_ = this->active_evs_ = 0;
+    this->accept_ = false;
+    this->read_len_ = 0;
+    this->read_cb_ = this->read_err_cb_ = nullptr;
+    this->write_cb_ = nullptr;
+    this->write_err_cb_ = nullptr;
+    this->accept_cb_ = this->close_cb_ = nullptr;
+}
+
+/**
+ * 清理IO事件
+ */
+void Core::IOEvent::clean()
+{
+    if (!this->ready_) return;
+    this->ready_ = false;
+    if (this->evs_ & Core::IO_TYPE_ET){
+        Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR | Core::IO_TYPE_ET);
+    } else {
+        Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR);
+    }
+    this->read_buf_.clear();
+    this->read_len_ = 0;
+    this->write_queue_.clear();
 }

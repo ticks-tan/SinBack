@@ -8,7 +8,6 @@
 #ifndef SINBACK_HTTPSERVER_H
 #define SINBACK_HTTPSERVER_H
 
-#include "base/noncopyable.h"
 #include "core/EventLoopPool.h"
 #include "HttpService.h"
 #include "HttpContext.h"
@@ -107,7 +106,7 @@ namespace SinBack {
             // 客户端关闭
             void onDisconnect(const std::weak_ptr<Core::IOEvent>& ev);
             // 发送http回应数据
-            void sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, Int call_ret);
+            static void sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, Int call_ret);
 
             // 静态文件
             void sendStaticFile(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, String& path) const;
