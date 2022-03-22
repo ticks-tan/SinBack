@@ -122,7 +122,6 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
         this->incConnectCount();
         // 读取数据 (主要作用是将可读事件注册到 Loop)
         io->read();
-        Log::logi("new client, fd = {}", io->fd_);
     }
 }
 
@@ -324,7 +323,6 @@ void Http::HttpServer::setIOKeepAlive(const std::weak_ptr<Core::IOEvent> &ev)
         Log::logi("Start KeepAlive!");
         if (io->loop_){
             io->loop_->addTimer([io](const std::weak_ptr<Core::TimerEvent>& ev){
-                Log::logi("IO KeepAlive Close!");
                 if (io){
                     io->close();
                 }
@@ -356,6 +354,10 @@ void Http::HttpServer::sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io
 void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, Http::HttpContext *context, String& path) const
 {
     path.insert(0, this->setting_.staticFileDir);
+    if (context->request().url == SIN_STR("/")){
+        // 添加index.html
+        path += SIN_STR("index.html");
+    }
     if (!context->cache_file_->reOpen(path, Base::ReadOnly)){
         // 文件不存在
         context->notFound();

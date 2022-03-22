@@ -97,11 +97,10 @@ namespace SinBack
                     std::unique_lock<std::mutex> lock(this->format_mutex_);
                     if (this->sec_  != tv.tv_sec % 60) {
                         this->sec_ = Int(tv.tv_sec) % 60;
-                        if ((this->sec_ / 60) % 60 != this->min_) {
+                        if ((this->sec_ / 60) - this->min_ >= 1) {
                             Base::getDateTimeNow(&this->datetime_);
                             formatTime();
-                            this->sec_ = datetime_.sec;
-                            this->min_ = this->datetime_.min;
+                            this->min_ = (this->sec_ / 60);
                         } else {
                             formatTimeSec();
                         }

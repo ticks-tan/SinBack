@@ -8,6 +8,22 @@
 #ifndef SINBACK_PROCESS_H
 #define SINBACK_PROCESS_H
 
+#include <cstdlib>
+#include <functional>
 
+#ifdef OS_LINUX
+
+namespace SinBack
+{
+    namespace Base
+    {
+        // 注册终止处理函数，注册一次就会被执行一次，即使函数一样
+        bool register_func_exit(void (*func)()){
+            return (std::atexit(func) == 0);
+        }
+    }
+}
+
+#endif
 
 #endif //SINBACK_PROCESS_H
