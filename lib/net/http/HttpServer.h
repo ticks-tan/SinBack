@@ -25,15 +25,18 @@ namespace SinBack {
             {
                 // 工作线程数量，默认为 核心数 * 2
                 Size_t workThreadNum;
+                // 工作进程数量（线程和进程同时指定会优先选择进程模式）
+                Size_t workProcessNum;
                 // 日志文件存放目录，默认执行文件所在目录
                 String logPath;
-                // 最大连接客户端数量， 默认4096
+                // 最大连接客户端数量， 默认 4096
                 Size_t maxAcceptCnt;
                 // 是否启用 keep-alive，默认关闭
                 bool keepAlive;
                 // 静态文件路径, 不指定即为当前工作目录
                 String staticFileDir;
             };
+            // 默认 keep-alive 超时时间为60s
             static const UInt default_keep_alive = 60000;
         public:
             HttpServer();
@@ -48,7 +51,6 @@ namespace SinBack {
 
             // 开始监听
             bool listen(UInt port, const std::function<void(const String& err)>& err_callback = nullptr);
-
             // 停止 HttpServer
             void stop();
 
@@ -60,14 +62,6 @@ namespace SinBack {
             // 获取 services
             std::unordered_map<SinBack::String, HttpService*>& services(){
                 return this->services_;
-            }
-
-            // 获取一个工作 loop
-            Core::EventLoopPtr loop(Int index = -1){
-                std::unique_lock<std::mutex> lock(this->mutex_);
-                Core::EventLoopPtr ptr = this->work_th_->loop(index).get();
-                lock.unlock();
-                return ptr;
             }
 
             // 当前连接客户端数量 +1
@@ -82,17 +76,19 @@ namespace SinBack {
         private:
             // 初始化 HttpServer
             void init();
+
+#ifdef OS_LINUX
+            // 子进程退出信号处理
+            static void processExitCall(Int sig);
+#endif
             // 创建监听套接字
-            bool createListenSocketV4(UInt port);
-
-            // 开始运行
-            void start();
-
+            static Base::socket_t createListenSocketV4(UInt port);
             // 设置keepAlive
             static void setIOKeepAlive(const std::weak_ptr<Core::IOEvent>& ev);
-
+            // 开始运行
+            void start();
             // 开始 accept
-            void startAccept();
+            void startListenAccept(Core::EventLoopPtr loop);
             // 有新连接回调
             void onNewClient(const std::weak_ptr<Core::IOEvent>& ev);
             // 有新消息回调
@@ -107,10 +103,13 @@ namespace SinBack {
             void onDisconnect(const std::weak_ptr<Core::IOEvent>& ev);
             // 发送http回应数据
             static void sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, Int call_ret);
-
-            // 静态文件
+            // 发送静态文件
             void sendStaticFile(const std::shared_ptr<Core::IOEvent>& io, HttpContext* context, String& path) const;
         private:
+            // 线程执行函数
+            void runThreadFunc();
+            // 进程执行函数
+            void runProcessFunc();
             // 设置
             Setting setting_;
             // 多个服务
@@ -118,14 +117,17 @@ namespace SinBack {
             // accept 线程
             std::shared_ptr<Core::EventLoopThread> accept_th_;
             // 工作线程
-            std::shared_ptr<Core::EventLoopPool> work_th_;
-            // 监听套接字
-            Base::socket_t listen_fd_;
+            std::vector<std::shared_ptr<Core::EventLoopThread>> work_th_;
+            // 监听端口
+            Size_t listen_port_;
             // 是否运行
             bool running_;
             // 记录当前连接客户端数量
             std::atomic<Size_t> connect_cnt_{};
+            // 互斥锁
             std::mutex mutex_;
+            // 与子进程通信管道
+            std::vector<Base::socket_t> pipes_;
         };
     }
 }

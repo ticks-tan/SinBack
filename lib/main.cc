@@ -9,7 +9,7 @@ Des:
 #include "net/http/HttpServer.h"
 #include "tools/Url.h"
 #include <sys/signal.h>
-#include "base/Process.h"
+#include "base/System.h"
 #include "base/Args.h"
 
 using namespace SinBack::Http;
@@ -17,15 +17,6 @@ using namespace SinBack;
 
 int main(int argc, char* argv[])
 {
-    Base::Args args(argc, argv);
-
-    if (args.hasArg(SIN_STR("help"))){
-        fmt::print("help is none!\n");
-    }
-    if (args.hasArg("--worknum")){
-        fmt::print("worknums = {}\n", args.getArg(SIN_STR("--worknum")));
-    }
-
     signal(SIGPIPE, SIG_IGN);
     HttpServer server;
     HttpService service;
@@ -33,7 +24,8 @@ int main(int argc, char* argv[])
     server.setting().logPath = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/SinBack");
     // 静态文件根目录
     server.setting().staticFileDir = SIN_STR("/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/web");
-    server.setting().workThreadNum = 8;
+    // 设置进程数量
+    server.setting().workProcessNum = 4;
     server.setting().keepAlive = true;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
