@@ -48,7 +48,5 @@ int main(int argc, char* argv[])
     server.listen(2022, [](const SinBack::String& err){
         fmt::print("listen error: {}\n", err);
     });
-    while (getchar() != '\n');
-    server.stop();
-    return 0;
+    while (1);
 }

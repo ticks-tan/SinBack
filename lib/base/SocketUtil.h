@@ -94,6 +94,11 @@ typedef Int socket_t;
             ::fcntl(sock, F_SETFL, flag | O_NONBLOCK);
         }
 
+        static void setSocketReusePort(socket_t sock){
+            Int opt = 1;
+            ::setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof opt);
+        }
+
         // 更新版本，支持 IPV4 与 IPV6
         static Int str_ipaddr(Ip_Type type, const Char *ip_str, void *ip_buf) {
             switch (type) {
