@@ -81,15 +81,15 @@ namespace SinBack
                     return;
                 }
                 // 前端日志时间尽量少，避免阻塞
-                std::string msg = SIN_STR("[");
+                std::string msg = "[";
                 if (msg_level == Debug) {
-                    msg += SIN_STR("debug ");
+                    msg += "debug ";
                 } else if (msg_level == Info) {
-                    msg += SIN_STR("info ");
+                    msg += "info ";
                 } else if (msg_level == Warn) {
-                    msg += SIN_STR("warn ");
+                    msg += "warn ";
                 } else if (msg_level == Error) {
-                    msg += SIN_STR("error ");
+                    msg += "error ";
                 }
                 timeval tv{};
                 Base::getTimeOfDay(&tv);
@@ -107,7 +107,7 @@ namespace SinBack
                     }
                 }
                 msg += this->time_str_;
-                msg += SIN_STR("]: ");
+                msg += "]: ";
                 msg += fmt::format(format, args...);
                 msg.push_back(STR_CTL);
                 std::unique_lock<std::mutex> lock(this->front_mutex_);

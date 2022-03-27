@@ -14,14 +14,14 @@ SinBack::String
 Http::HttpRequest::toString() const
 {
     String request;
-    request += Http::get_http_method_name(this->method) + SIN_STR(" ");
-    request += this->url + SIN_STR(" ");
+    request += Http::get_http_method_name(this->method) + " ";
+    request += this->url + " ";
     switch (this->http_version) {
         case HTTP_1_0:
-            request += SIN_STR("HTTP/1.0\r\n");
+            request += "HTTP/1.0\r\n";
             break;
         default:
-            request += SIN_STR("HTTP/1.1\r\n");
+            request += "HTTP/1.1\r\n";
             break;
     }
     request += this->header.toString();
@@ -41,16 +41,16 @@ Http::HttpResponse::toString() {
     String response;
     switch (this->http_version) {
         case HTTP_1_0:
-            response += SIN_STR("HTTP/1.0\r\n");
+            response += "HTTP/1.0\r\n";
             break;
         default:
-            response += SIN_STR("HTTP/1.1\r\n");
+            response += "HTTP/1.1\r\n";
             break;
     }
-    response += std::to_string(this->status_code) + SIN_STR(" ");
-    response += Http::get_http_status_code_name(this->status_code) + SIN_STR("\r\n");
-    if (this->header.getHead(SIN_STR("Content-Length")).empty()){
-        this->header.setHead(SIN_STR("Content-Length"), std::to_string(this->content.data().length()));
+    response += std::to_string(this->status_code) + " ";
+    response += Http::get_http_status_code_name(this->status_code) + "\r\n";
+    if (this->header.getHead("Content-Length").empty()){
+        this->header.setHead("Content-Length", std::to_string(this->content.data().length()));
     }
     response += this->header.toString();
     return response;

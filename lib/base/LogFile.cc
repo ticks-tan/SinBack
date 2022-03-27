@@ -23,8 +23,8 @@ Base::LogFile::LogFile(const Char *filename)
     : LogFile()
 {
     this->filename_ = filename;
-    this->filename_ += SIN_STR(".log");
-    this->fp_ = ::fopen(this->filename_.c_str(), SIN_STR("w+"));
+    this->filename_ += ".log";
+    this->fp_ = ::fopen(this->filename_.c_str(), "w+");
     this->buffer_.reserve(LOGFILE_MAX_BUFFER_LEN);
 }
 
@@ -152,7 +152,7 @@ void Base::RollLogFile::rollFile()
         name.insert(it, std::to_string(this->roll_count_));
         this->name() = name;
         this->close();
-        this->file_fp() = ::fopen(this->name().c_str(), SIN_STR("w+"));
+        this->file_fp() = ::fopen(this->name().c_str(), "w+");
     }
 }
 

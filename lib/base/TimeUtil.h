@@ -13,13 +13,6 @@
 #include <thread>
 #include "Base.h"
 
-#ifdef OS_WINDOWS
-struct timeval{
-    SinBack::LLong tv_sec;
-    SinBack::LLong tv_usec;
-};
-#endif
-
 namespace SinBack
 {
     namespace Base

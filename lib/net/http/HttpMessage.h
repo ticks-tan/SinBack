@@ -39,11 +39,11 @@ namespace SinBack
                 String str;
                 for (auto& it : this->data_){
                     str += it.first;
-                    str += SIN_STR(": ");
+                    str += ": ";
                     str += it.second;
-                    str += SIN_STR("\r\n");
+                    str += "\r\n";
                 }
-                str += SIN_STR("\r\n");
+                str += "\r\n";
                 return str;
             }
 

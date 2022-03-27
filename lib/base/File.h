@@ -15,7 +15,6 @@
 namespace SinBack {
     namespace Base {
 
-
         // 打开文件模式
         enum OpenFileMode
         {

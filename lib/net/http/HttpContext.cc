@@ -54,7 +54,7 @@ Http::HttpContext::~HttpContext()
 Int Http::HttpContext::sendText(const String &text)
 {
     this->response_.status_code = 200;
-    this->response_.header.setHead(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+    this->response_.header.setHead("Content-Type", "text/plain;charset=UTF-8");
     this->response_.content.data().append(text);
     return 1;
 }
@@ -62,14 +62,14 @@ Int Http::HttpContext::sendText(const String &text)
 Int Http::HttpContext::notFound()
 {
     this->response_.status_code = 404;
-    this->response_.header.setHead(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+    this->response_.header.setHead("Content-Type", "text/plain;charset=UTF-8");
     this->response_.content.data() += notfound_str;
     return 1;
 }
 
 Int Http::HttpContext::error() {
     this->response_.status_code = 405;
-    this->response_.header.setHead(SIN_STR("Content-Type"), SIN_STR("text/plain;charset=UTF-8"));
+    this->response_.header.setHead("Content-Type", "text/plain;charset=UTF-8");
     this->response_.content.data() += error_str;
     return 1;
 }
@@ -81,7 +81,7 @@ Int Http::HttpContext::sendFile(const String &file_name)
     }
     if (this->cache_file_->exist()) {
         this->response_.status_code = 200;
-        this->response_.header.setHead(SIN_STR("Content-Type"),
+        this->response_.header.setHead("Content-Type",
                                        Http::get_http_content_type(this->cache_file_->suffix()));
         this->response_.content.data() = std::move(this->cache_file_->readAll());
     } else{
@@ -94,7 +94,7 @@ Int Http::HttpContext::sendFile(const String &file_name)
 bool Http::HttpContext::parseUrl()
 {
     String& url = this->request_.url;
-    std::basic_regex<Char> reg(SIN_STR("/([0-9a-zA-Z-_]{1,}[/]?)*\\?([^?=&.]{1,}=[^?=&.]{1,}[&]?)*"));
+    std::basic_regex<Char> reg("/([0-9a-zA-Z-_]{1,}[/]?)*\\?([^?=&.]{1,}=[^?=&.]{1,}[&]?)*");
     if (std::regex_match(url, reg)){
         // 请求格式正确格式
         Size_t pos, start, end;
@@ -146,11 +146,11 @@ bool Http::HttpContext::parseBody()
 bool Http::HttpContext::init()
 {
     this->response_.http_version = this->request_.http_version;
-    this->response_.header.setHead(SIN_STR("Server"), SIN_STR("SinBack"));
-    if (!this->request_.header.getHead(SIN_STR("Connection")).empty()){
-        this->response_.header[SIN_STR("Connection")] = this->request_.header[SIN_STR("Connection")];
+    this->response_.header.setHead("Server", "SinBack");
+    if (!this->request_.header.getHead("Connection").empty()){
+        this->response_.header["Connection"] = this->request_.header["Connection"];
     } else{
-        this->response_.header[SIN_STR("Connection")] = SIN_STR("close");
+        this->response_.header["Connection"] = "close";
     }
     return true;
 }

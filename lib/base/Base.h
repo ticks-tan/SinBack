@@ -11,14 +11,8 @@
 #include <algorithm>
 #include <string>
 #include <functional>
+#include <memory>
 #include "noncopyable.h"
-
-// platform
-// Windows平台
-#ifdef _WIN32
-#define OS_WINDOWS
-#include <windows.h>
-#endif
 
 // Linux平台
 #ifdef __linux__
@@ -27,29 +21,30 @@
 
 namespace SinBack {
     // 类型定义
-typedef unsigned long Size_t;
-typedef long SSize_t;
-typedef int Int;
-typedef unsigned int UInt;
-typedef long Long;
-typedef long long LLong;
-typedef unsigned long ULong;
-typedef unsigned long long ULLong;
-typedef char Char;
-typedef unsigned char UChar;
+    typedef unsigned long Size_t;
+    typedef long SSize_t;
+    typedef int Int;
+    typedef unsigned int UInt;
+    typedef long Long;
+    typedef long long LLong;
+    typedef unsigned long ULong;
+    typedef unsigned long long ULLong;
+    typedef char Char;
+    typedef unsigned char UChar;
 
+    // string
     using String = std::basic_string<Char>;
+    // shared_ptr
+    template <typename T> using SharedPtr = std::shared_ptr<T>;
+    // unique_ptr
+    template <typename T> using UniquePtr = std::unique_ptr<T>;
+    // function
+    template <typename T> using Function = std::function<T>;
+
     // 字符串结尾
 #define CHAR_END    ('\0')
-// 字符换行
+    // 字符换行
 #define STR_CTL     ('\n')
-
-// 字符串
-#ifdef OS_WINDOWS
-#define SIN_STR(str)    (_T##str)
-#else
-#define SIN_STR(str)    (str)
-#endif
 
 // str2 是否以 str1 开头
 static bool start_with(const String& str1, const String& str2){
@@ -62,7 +57,7 @@ static bool start_with(const String& str1, const String& str2){
     }
     return true;
 }
-
+// str2 是否以 str1 结尾
 static bool end_with(const String& str1, const String& str2){
     if (str1.length() > str2.length()) return false;
     Size_t pos = 0, len1 = str1.length(), len2 = str2.length();

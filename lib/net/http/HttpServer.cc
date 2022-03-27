@@ -90,7 +90,7 @@ void Http::HttpServer::stop()
         } else{
             // 处理子进程退出
             if (this->accept_th_){
-                const Char* stop_str = SIN_STR("1");
+                const Char* stop_str = "1";
                 for (auto it : this->pipes_){
                     this->accept_th_->loop()->writeIo(it, stop_str, 1, nullptr);
                 }
@@ -173,12 +173,12 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
 
                 Int method = http_context->request().method;
                 SinBack::String url = http_context->request().url;
-                bool keep_alive = http_context->request().header.getHead(SIN_STR("Connection")) == SIN_STR("keep-alive");
+                bool keep_alive = http_context->request().header.getHead("Connection") == "keep-alive";
 
                 if (!this->setting_.keepAlive && keep_alive){
                     keep_alive = false;
                     // 服务器配置为不开启保持连接，指定消息头通知客户端主动关闭连接
-                    http_context->response().header.setHead(SIN_STR("Connection"), SIN_STR("close"));
+                    http_context->response().header.setHead("Connection", "close");
                 }
 
                 Int call_ret = 0;
@@ -214,8 +214,8 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     }
                     // 没有启用，返回 405 请求不支持
                     http_context->setStatusCode(405);
-                    http_context->response().header.setHead(SIN_STR("Content-Type"),
-                                                            SIN_STR("text/plain;charset=UTF-8"));
+                    http_context->response().header.setHead("Content-Type",
+                                                            "text/plain;charset=UTF-8");
                     http_context->response().content.data() = HttpContext::error_str;
                     url = http_context->response().toString();
                     url += http_context->response().content.data();
@@ -371,9 +371,9 @@ void Http::HttpServer::sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io
 void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, Http::HttpContext *context, String& path) const
 {
     path.insert(0, this->setting_.staticFileDir);
-    if (context->request().url == SIN_STR("/")){
+    if (context->request().url == "/"){
         // 添加index.html
-        path += SIN_STR("index.html");
+        path += "index.html";
     }
     if (!context->cache_file_->reOpen(path, Base::ReadOnly)){
         // 文件不存在
@@ -387,7 +387,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         // 文件操作。放到线程池中执行
         io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, HttpContext *context, const String &path) {
             context->response().status_code = 200;
-            context->response().header.setHead(SIN_STR("Content-Type"),
+            context->response().header.setHead("Content-Type",
                                                Http::get_http_content_type(context->cache_file_->suffix()));
             context->response().content.data() = std::move(context->cache_file_->readAll());
             String buf = context->response().toString();
@@ -435,7 +435,7 @@ void Http::HttpServer::runProcessFunc()
                         fds[0], 1,[](const std::weak_ptr<Core::IOEvent>& ev,const String& read_buf){
                             auto io = ev.lock();
                             if (io) {
-                                if (read_buf == SIN_STR("1")) {
+                                if (read_buf == "1") {
                                     // stop
                                     io->loop_->stop();
                                 }

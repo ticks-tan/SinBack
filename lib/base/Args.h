@@ -44,13 +44,13 @@ namespace SinBack
                     if ((pos = tmp.find('=')) != String::npos){
                         // exec --path=./
                         if (!key.empty()){
-                            this->args_[key] = SIN_STR("");
+                            this->args_[key] = "";
                         }
                         this->args_[std::move(tmp.substr(0, pos))] = std::move(tmp.substr(pos + 1));
                     }else{
                         // exec --get
                         if (tmp.size() > 2 && tmp[0] == '-' && tmp[1] == tmp[0]){
-                            this->args_[tmp] = SIN_STR("");
+                            this->args_[tmp] = "";
                             continue;
                         }
                         if (key.empty() && tmp[0] == '-'){
@@ -68,7 +68,7 @@ namespace SinBack
                     }
                 }
                 if (!key.empty()){
-                    this->args_[key] = SIN_STR("");
+                    this->args_[key] = "";
                 }
             }
         }
@@ -82,7 +82,7 @@ namespace SinBack
             if (it != this->args_.end()){
                 return it->second;
             }
-            return SIN_STR("");
+            return "";
         }
 
         bool Args::hasArg(const String &arg) const{
