@@ -34,10 +34,8 @@ namespace SinBack
             Event_Type_IO       = 2,
             // 定时事件
             Event_Type_Timer    = 3,
-            // 超时事件
-            Event_Type_TimeOut  = 4,
             // 空闲事件
-            Event_Type_Idle     = 5
+            Event_Type_Idle     = 4
         };
 
         enum EventPriority : Int
@@ -85,15 +83,13 @@ namespace SinBack
             // 是否初始化
             bool init_ = false;
             // 事件类型
-            EventType type_;
+            EventType type_ = Event_Type_None;
             // 事件优先级
-            EventPriority priority_;
+            EventPriority priority_ = Event_Priority_Lowest;
             // EventLoop
-            EventLoopPtr loop_;
+            EventLoopPtr loop_ = nullptr;
             // 是否活跃
             bool active_ = false;
-            // 是否需要销毁
-            bool destroy_ = false;
             // 是否为待处理状态
             bool pending_ = false;
             // 回调函数
@@ -105,41 +101,48 @@ namespace SinBack
             virtual void init(){
                 pid_ = getpid();
                 id_ = event_next_id();
+                cb_ = nullptr;
                 type_ = EventType::Event_Type_Custom;
-                active_ = destroy_ = pending_ = false;
+                active_ = pending_ = false;
                 priority_ = Event_Priority_Lowest;
                 context_ = nullptr;
                 init_ = true;
+                loop_ = nullptr;
             }
         };
 
         // IO事件
         struct IOEvent : public Event, public std::enable_shared_from_this<IOEvent>
         {
-            using string_type = std::basic_string<Char>;
+            using string_type = String;
             static const Size_t default_keep_alive_timeout = 1000;
             // 监听事件
             Int evs_ = 0;
             // 事件回调
             IOEventCB cb_ = nullptr;
             // 错误
-            Int error;
+            Int error = 0;
             // 活动事件
             Int active_evs_ = 0;
             // socket_t
-            Base::socket_t fd_;
+            Base::socket_t fd_ = -1;
             // 是否就绪
             bool ready_ = false;
             // 是否 accept
             bool accept_ = false;
             // 是否关闭
             bool closed = false;
-            // 各事件回调
+            // accept 回调
             IOAcceptCB accept_cb_ = nullptr;
+            // read 回调
             IOReadCB read_cb_ = nullptr;
+            // read 错误回调
             IOReadErrCB read_err_cb_ = nullptr;
+            // write 回调
             IOWriteCB write_cb_ = nullptr;
+            // write错误回调
             IOWriteErrCB write_err_cb_ = nullptr;
+            // close 回调
             IOCloseCB close_cb_ = nullptr;
             // 上次读取事件
             ULong last_read_time_ = 0;
@@ -160,7 +163,8 @@ namespace SinBack
             void init() override{
                 // 父类初始化
                 Event::init();
-                type_ = EventType::Event_Type_IO;
+                Event::type_ = EventType::Event_Type_IO;
+                Event::priority_ = Event_Priority_Normal;
                 evs_ = active_evs_ = 0;
                 fd_ = Base::socket_t(-1);
                 ready_ = accept_ = false;
@@ -179,6 +183,7 @@ namespace SinBack
             Int accept();
             // 读取数据
             Int read();
+            Int read(Size_t len);
             // 写入数据
             Int write(const void* buf, Size_t len);
             // 关闭连接
@@ -194,7 +199,7 @@ namespace SinBack
             // 定时器执行次数
             Int repeat_ = 0;
             // 超时时间
-            Long timeout_ = 0;
+            ULong timeout_ = 0;
             // 下次超时时间
             ULong next_time_ = 0;
             // 回调事件
@@ -204,6 +209,8 @@ namespace SinBack
             void init() override{
                 Event::init();
                 timeout_ = next_time_ = repeat_ = 0;
+                Event::type_ = Event_Type_Timer;
+                Event::priority_ = Event_Priority_Highest;
             }
         };
 
@@ -215,6 +222,14 @@ namespace SinBack
             IdleEventCB cb_ = nullptr;
             // 执行次数
             Int repeat_ = 0;
+
+            // 初始化
+            void init() override {
+                Event::init();
+                Event::type_ = Event_Type_Idle;
+                repeat_ = 0;
+                cb_ = nullptr;
+            }
         };
     }
 }

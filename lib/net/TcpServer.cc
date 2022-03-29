@@ -6,6 +6,7 @@
 * Des:         
 */
 
+#include <cstring>
 #include "TcpServer.h"
 
 using namespace SinBack;
@@ -55,10 +56,9 @@ SinBack::Net::TcpServer::run(UInt port)
 {
     this->listen_fd_ = createListenFd(port);
     if (this->listen_fd_ == -1){
-        fmt::print("Run tcp_server error !\n");
+        perror("create listen socket");
         return false;
     }
-    Base::setSocketNonblock(this->listen_fd_);
     if (this->work_thread_cnt > 0){
         this->work_loops_.start();
     }
@@ -144,13 +144,16 @@ Base::socket_t Net::TcpServer::createListenFd(UInt port)
     this->port_ = port;
     Base::socket_t sock = Base::creatSocket(Base::IP_4, Base::S_TCP, true);
     if (sock < 0){
-        Log::loge("create socket error -- {}", strerror(errno));
+        Log::loge("create socket error -- %s .", strerror(errno));
         perror("socket()");
         return -1;
     }
-    Base::socketReuseAddress(sock);
+    // 设置套接字非阻塞
+    Base::setSocketNonblock(this->listen_fd_);
+    // 设置套接字复用地址
+    Base::setSocketReuseAddress(this->listen_fd_);
     if (!Base::bindSocket(sock, Base::IP_4, nullptr, (Int) port)){
-        Log::loge("bind socket error -- {}", strerror(errno));
+        Log::loge("bind socket error -- %s .", strerror(errno));
         perror("bind()");
         return -1;
     }

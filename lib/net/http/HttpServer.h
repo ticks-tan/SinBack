@@ -128,6 +128,8 @@ namespace SinBack {
             std::mutex mutex_;
             // 与子进程通信管道
             std::vector<Base::socket_t> pipes_;
+            // 线程tid
+            pid_t tid_;
         };
     }
 }

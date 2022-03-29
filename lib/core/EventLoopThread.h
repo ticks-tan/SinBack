@@ -17,7 +17,6 @@ namespace SinBack
         class EventLoopThread : SinBack::noncopyable
         {
         public:
-            using EventLoopPtr = std::shared_ptr<EventLoop>;
             using Func = std::function<void(void)>;
         public:
             EventLoopThread();
@@ -29,17 +28,16 @@ namespace SinBack
             void resume();
             void join();
 
-            EventLoopPtr& loop();
+            SharedPtr<Core::EventLoop> loop();
 
         private:
             void threadFunc(const Func& begin_func, const Func& end_func);
         private:
             // 线程
-            std::shared_ptr<std::thread> th_;
+            SharedPtr<std::thread> th_;
             // 事件循环
-            std::shared_ptr<EventLoop> loop_;
+            SharedPtr<EventLoop> loop_;
             // 线程运行标识
-            bool stop_;
             bool running_;
         };
     }

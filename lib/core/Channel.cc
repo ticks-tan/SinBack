@@ -59,20 +59,7 @@ SinBack::Int SinBack::Core::Channel::write(const void* buf, Size_t len)
 SinBack::Int SinBack::Core::Channel::read(SinBack::Size_t read_len)
 {
     if (this->io_){
-        if (read_len > 0){
-            this->io_->read_len_ = read_len;
-            this->io_->read_buf_.reserve(this->io_->read_buf_.capacity() + read_len);
-            if (read_len <= this->io_->read_buf_.length()){
-                // 需要读取的数据已经在缓冲区中，直接调用回调
-                if (this->io_->read_cb_){
-                    std::basic_string<Char> buffer(this->io_->read_buf_, read_len);
-                    this->io_->read_cb_(this->io_, buffer);
-                    this->io_->read_buf_.erase(0, read_len);
-                }
-                return 0;
-            }
-            return this->io_->read();
-        }
+        return this->io_->read(read_len);
     }
     return 0;
 }

@@ -83,7 +83,7 @@ typedef Int socket_t;
         }
 
         // 复用端口
-        static void socketReuseAddress(socket_t sock){
+        static void setSocketReuseAddress(socket_t sock){
             Int opt = 1;
             ::setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
         }

@@ -13,7 +13,6 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
-#include "libfmt/format.h"
 #include "base/TimeUtil.h"
 #include "base/LogFile.h"
 
@@ -47,25 +46,25 @@ namespace SinBack
             }
 
             template<typename... Type>
-            Logger &debug(fmt::format_string<Type...> format, Type &&... args) {
+            Logger &debug(const String &format, Type &&... args) {
                 this->log(Debug, format, args...);
                 return *this;
             }
 
             template<typename... Type>
-            Logger &info(fmt::format_string<Type...> format, Type &&... args) {
+            Logger &info(const String &format, Type &&... args) {
                 this->log(Info, format, args...);
                 return *this;
             }
 
             template<typename... Type>
-            Logger &warn(fmt::format_string<Type...> format, Type &&... args) {
+            Logger &warn(const String &format, Type &&... args) {
                 this->log(Warn, format, args...);
                 return *this;
             }
 
             template<typename... Type>
-            Logger &error(fmt::format_string<Type...> format, Type &&... args) {
+            Logger &error(const String &format, Type &&... args) {
                 this->log(Error, format, args...);
                 return *this;
             }
@@ -76,7 +75,7 @@ namespace SinBack
 
         private:
             template<typename... Type>
-            void log(LogLevel msg_level, fmt::format_string<Type...> format, Type &&...args) {
+            void log(LogLevel msg_level, const String &format, Type &&...args) {
                 if (msg_level < this->level_) {
                     return;
                 }
@@ -97,10 +96,10 @@ namespace SinBack
                     std::unique_lock<std::mutex> lock(this->format_mutex_);
                     if (this->sec_  != tv.tv_sec % 60) {
                         this->sec_ = Int(tv.tv_sec) % 60;
-                        if ((this->sec_ / 60) - this->min_ >= 1) {
+                        if ((this->sec_ / 60) % 60 != this->min_) {
                             Base::getDateTimeNow(&this->datetime_);
                             formatTime();
-                            this->min_ = (this->sec_ / 60);
+                            this->min_ = (this->sec_ / 60) % 60;
                         } else {
                             formatTimeSec();
                         }
@@ -108,7 +107,7 @@ namespace SinBack
                 }
                 msg += this->time_str_;
                 msg += "]: ";
-                msg += fmt::format(format, args...);
+                msg += std::move(formatString(format, args...));
                 msg.push_back(STR_CTL);
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
                 this->front_buf_->push(std::move(msg));
@@ -183,7 +182,7 @@ namespace SinBack
         }
 
         template <typename... T>
-        void file_log_print(Logger* logger, LogLevel level, fmt::format_string<T...> format, T&&...args){
+        void file_log_print(Logger* logger, LogLevel level, const String &format, T&&...args){
             if (!logger){
                 return;
             }
@@ -205,19 +204,19 @@ namespace SinBack
             }
         }
         template <typename... T>
-        void logd(fmt::format_string<T...> format, T&&...args){
+        void logd(const String &format, T&&...args){
             file_log_print(default_logger(), LogLevel::Debug, format, args...);
         }
         template <typename... T>
-        void logi(fmt::format_string<T...> format, T&&...args){
+        void logi(const String &format, T&&...args){
             file_log_print(default_logger(), LogLevel::Info, format, args...);
         }
         template <typename... T>
-        void logw(fmt::format_string<T...> format, T&&...args){
+        void logw(const String &format, T&&...args){
             file_log_print(default_logger(), LogLevel::Warn, format, args...);
         }
         template <typename... T>
-        void loge(fmt::format_string<T...> format, T&&...args){
+        void loge(const String &format, T&&...args){
             file_log_print(default_logger(), LogLevel::Error, format, args...);
         }
     }

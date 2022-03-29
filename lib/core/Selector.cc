@@ -10,9 +10,6 @@
 
 using namespace SinBack;
 
-#ifdef OS_WINDOWS
-#else
-
 Core::Selector::Selector(Core::EventLoop* loop)
     : error_(false)
     , events_({})
@@ -27,6 +24,12 @@ Core::Selector::~Selector()
     ::close(this->fd_);
 }
 
+/**
+ * 添加（监听）事件
+ * @param fd : 要监听的套接字
+ * @param events : 需要监听的事件
+ * @return
+ */
 bool Core::Selector::addEvent(Base::socket_t fd, Int events)
 {
     epoll_event ev{};
@@ -55,6 +58,12 @@ bool Core::Selector::addEvent(Base::socket_t fd, Int events)
     return (opt != -1);
 }
 
+/**
+ * 删除（取消监听）事件
+ * @param fd : 套接字
+ * @param events : 事件
+ * @return
+ */
 bool Core::Selector::delEvent(Base::socket_t fd, Int events)
 {
     epoll_event ev{};
@@ -83,23 +92,30 @@ bool Core::Selector::delEvent(Base::socket_t fd, Int events)
     return (opt != -1);
 }
 
+/**
+ * 向 Epoll 询问事件
+ * @param timeout : Epoll 超时时间
+ * @return
+ */
 Int Core::Selector::pollEvent(Int timeout)
 {
     Int ep_cnt = ::epoll_wait(this->fd_, this->events_.data(), (Int)this->events_.size(), timeout);
     if (ep_cnt < 0){
-        // 信号中断
+        // 被信号中断
         if (errno == EINTR){
             return 0;
         }
-        Log::loge("epoll_wait error, return code is {}", ep_cnt);
+        Log::loge("epoll_wait error, return code is %d", ep_cnt);
         return ep_cnt;
     }
     if (ep_cnt == 0){
+        // 超时
         return 0;
     }
     Int ev_cnt = 0, i = 0, fd;
     UInt events;
     epoll_event* ev_ptr;
+
     for (; i < ep_cnt; ++i){
         ev_ptr = &this->events_[i];
         fd = ev_ptr->data.fd;
@@ -122,5 +138,3 @@ Int Core::Selector::pollEvent(Int timeout)
     }
     return ev_cnt;
 }
-
-#endif

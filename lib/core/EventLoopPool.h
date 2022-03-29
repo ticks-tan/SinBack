@@ -29,10 +29,10 @@ namespace SinBack
             void resume();
             void join();
 
-            EventLoopThread::EventLoopPtr loop(Int index = -1);
+            SharedPtr<Core::EventLoop> loop(Int index = -1);
 
         private:
-            EventLoopThread::EventLoopPtr autoLoop();
+            SharedPtr<Core::EventLoop> autoLoop();
         private:
             // 事件循环线程数组
             std::vector<EventLoopThreadPtr> loop_threads_;

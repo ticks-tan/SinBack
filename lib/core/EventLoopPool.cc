@@ -21,11 +21,8 @@ SinBack::Core::EventLoopPool::~EventLoopPool()
     this->stop(true);
 }
 
-SinBack::Core::EventLoopThread::EventLoopPtr SinBack::Core::EventLoopPool::autoLoop()
+SinBack::SharedPtr<SinBack::Core::EventLoop> SinBack::Core::EventLoopPool::autoLoop()
 {
-    if (this->loop_threads_.empty()){
-        return (EventLoopThread::EventLoopPtr)nullptr;
-    }
     return this->loop_threads_[(++this->loop_index_) % this->loop_threads_.size()]->loop();
 }
 
@@ -33,8 +30,11 @@ bool SinBack::Core::EventLoopPool::start(const Func &begin_func, const Func &end
 {
     UInt i = 0;
     for (; i < this->th_count_; ++i){
-        this->loop_threads_.push_back(std::make_shared<Core::EventLoopThread>());
-        this->loop_threads_.back()->start(begin_func, end_func);
+        this->loop_threads_.emplace_back(new Core::EventLoopThread);
+        // this->loop_threads_.push_back(std::make_shared<Core::EventLoopThread>());
+        this->loop_threads_.back()->start(
+                std::forward<const Func&>(begin_func),
+                        std::forward<const Func&>(end_func));
     }
     return true;
 }
@@ -67,7 +67,7 @@ void SinBack::Core::EventLoopPool::join()
     }
 }
 
-SinBack::Core::EventLoopThread::EventLoopPtr
+SinBack::SharedPtr<SinBack::Core::EventLoop>
 SinBack::Core::EventLoopPool::loop(SinBack::Int index)
 {
     if (index < 0){

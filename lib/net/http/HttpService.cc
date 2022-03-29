@@ -45,11 +45,11 @@ Http::HttpService::matchService(const String &path, Int method)
     std::vector<std::shared_ptr<Http::HttpServiceCall>> calls;
     for (auto& item : this->services_){
         if ((pos = path.find_first_of('?')) != String::npos) {
-            if (SinBack::start_with(item.first, path.substr(0, pos))){
+            if (SinBack::startWith(item.first, path.substr(0, pos))){
                 calls.push_back(item.second);
             }
         }else {
-            if (SinBack::start_with(item.first, path)) {
+            if (SinBack::startWith(item.first, path)) {
                 calls.push_back(item.second);
             }
         }

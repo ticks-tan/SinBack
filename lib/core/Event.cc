@@ -7,6 +7,7 @@
 */
 #include "core/EventLoop.h"
 #include "Event.h"
+#include "cstring"
 
 
 using namespace SinBack;
@@ -50,7 +51,7 @@ void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak
 Int io_read_et(Core::IOEvent* io)
 {
     if (io){
-        if (io->closed || io->destroy_) return -1;
+        if (io->closed || !io->ready_) return -1;
 
         std::vector<Char> buf;
         buf.reserve(256);
@@ -72,7 +73,7 @@ Int io_read_et(Core::IOEvent* io)
                     goto READ_END;
                 } else{
                     // 读取错误，处理错误
-                    Log::loge("socket read error, pid = {}, id = {}, error -> {} .",
+                    Log::loge("socket read error, pid = %uld, id = %uld, error -> %s .",
                               io->pid_, io->id_, strerror(io->error));
                     goto READ_ERR;
                 }
@@ -110,7 +111,7 @@ Int io_read_et(Core::IOEvent* io)
 
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 {
-    if (io->closed || io->destroy_) return -1;
+    if (io->closed || !io->ready_) return -1;
     if (buf == nullptr || len == 0) return 0;
 
     Long write_len = 0;
@@ -128,7 +129,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
                 write_len = 0;
                 goto QUEUE_WRITE;
             } else{
-                Log::loge("socket write error, id = {}, pid = {}, error = {}.",
+                Log::loge("socket write error, id = %uld, pid = %uld, error = %s.",
                                             io->id_, io->pid_, strerror(io->error));
                 lock.unlock();
                 goto WRITE_ERROR;
@@ -144,7 +145,6 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
         }
         // 一次性没有写入完成, 添加到事件循环下次可写事件触发时再写
         QUEUE_WRITE:
-        // SinBack::Core::EventLoop::addIoEvent(io->shared_from_this(), handle_event_func, Core::IO_WRITE | Core::IO_TYPE_ET);
         SinBack::Core::EventLoop::addIoEvent(io->shared_from_this(), handle_event_func, Core::IO_WRITE);
     }
 
@@ -152,7 +152,6 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
         std::basic_string<Char> buffer = ((Char*)buf + write_len);
         io->write_queue_.push_back(buffer);
     }
-    io->last_write_time_ = Base::getTimeOfDayUs();
     WRITE_END:
     lock.unlock();
     if (write_len > 0){
@@ -168,7 +167,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 
 Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
 {
-    if (io->closed) return -1;
+    if (io->closed || !io->ready_) return -1;
     if (buf == nullptr || len == 0) return 0;
 
     Long write_len = 0, w_len;
@@ -186,7 +185,7 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     goto WRITE_QUEUE;
                 } else {
-                    Log::loge("socket write error, pid = {}, id = {}, error = {} .",
+                    Log::loge("socket write error, pid = %uld, id = %uld, error = %s .",
                                               io->pid_, io->id_, strerror(io->error));
                     lock.unlock();
                     // 写入出错
@@ -235,31 +234,31 @@ void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev)
                 handle_accept(io);
             } else{
                 io->last_read_time_ = Base::getTimeOfDayUs();
-                if (io->evs_ & Core::IO_TYPE_ET){
-                    handle_read_et(io);
-                }else {
-                    handle_read(io);
-                }
+#ifdef SINBACK_EPOLLET
+                handle_read_et(io);
+#else
+                handle_read(io);
+#endif
             }
         }
         if ((io->active_evs_ & Core::IO_WRITE) && (io->evs_ & Core::IO_WRITE)){
             io->last_write_time_ = Base::getTimeOfDayUs();
-            if (io->evs_ & Core::IO_TYPE_ET){
-                handle_write_et(io);
-            } else {
-                handle_write(io);
-            }
+#ifdef SINBACK_EPOLLET
+            handle_write_et(io);
+#else
+            handle_write(io);
+#endif
         }
     }
 }
 
-// keepalive回调
+// keepalive回调 ?
 void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev)
 {
     auto timer = ev.lock();
     if (timer){
         if (io){
-            if (io->closed || io->destroy_) return;
+            if (io->closed || !io->ready_) return;
             auto loop = (Core::EventLoopPtr)(io->loop_);
             if (loop) {
                 ULong last_rw_time = std::max(io->last_read_time_, io->last_write_time_);
@@ -343,7 +342,10 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
+        if (io->closed || !io->ready_) return;
+        //  新客户端地址信息
         ::sockaddr_in address{};
+        // 地址信息长度（）字节
         ::socklen_t len = sizeof address;
         Base::socket_t client_fd = Base::acceptSocket(io->fd_, &address, &len);
         if (client_fd < 0) {
@@ -351,7 +353,7 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK){
                 return;
             }
-            Log::loge("accept error, pid = {}, id = {}, error = {} .",
+            Log::loge("accept error, pid = %uld, id = %uld, error = %s .",
                                       io->pid_, io->id_, strerror(io->error));
             goto ACCEPT_ERROR;
         }
@@ -372,7 +374,7 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
     // ET模式下必须一次性将数据读取完，不然后续再触发事件就难了
     auto io = ev.lock();
     if (io){
-        if (io->closed || io->destroy_) return;
+        if (io->closed || !io->ready_) return;
 
         std::vector<Char> buf;
         buf.reserve(256);
@@ -394,7 +396,7 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
                     goto READ_END;
                 } else{
                     // 读取错误，处理错误
-                    Log::loge("socket read error, pid = {}, id = {}, error -> {} .",
+                    Log::loge("socket read error, pid = %uld, id = %uld, error -> %s .",
                                               io->pid_, io->id_, strerror(io->error));
                     goto READ_ERR;
                 }
@@ -430,7 +432,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
-        if (io->closed || io->destroy_) return;
+        if (!io->closed || io->ready_) return;
 
         std::vector<Char> buf;
         buf.reserve(256);
@@ -454,7 +456,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                 return;
             }else{
                 // 读取错误
-                Log::loge("socket read error, pid = {}, id = {}, error = {}",
+                Log::loge("socket read error, pid = %uld, id = %uld, error = %s",
                                           io->pid_, io->id_, strerror(io->error));
                 goto READ_ERROR;
             }
@@ -489,7 +491,7 @@ void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
 
         std::unique_lock<std::mutex> lock(io->write_mutex_);
 
-        if (io->closed) return;
+        if (io->closed || !io->ready_) return;
         if (io->write_queue_.empty()) return;
 
         while (!io->write_queue_.empty()){
@@ -508,7 +510,7 @@ void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
                     lock.unlock();
                     goto WRITE_END;
                 } else {
-                    Log::loge("socket write error, pid = {}, id = {}, error = {} .",
+                    Log::loge("socket write error, pid = %uld, id = %uld, error = %s .",
                                               io->pid_, io->id_, strerror(io->error));
                     lock.unlock();
                     goto WRITE_ERR;
@@ -548,7 +550,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
 
         std::unique_lock<std::mutex> lock(io->write_mutex_);
         WRITE_START:
-        if (io->closed) return;
+        if (io->closed || !io->ready_) return;
         if (io->write_queue_.empty()) {
             return;
         }
@@ -567,7 +569,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
                 return;
             } else {
                 // 写入错误
-                Log::loge("socket write error, pid = {}, id = {}, error = {}",
+                Log::loge("socket write error, pid = %uld, id = %uld, error = %s",
                                           io->pid_, io->id_, strerror(io->error));
                 lock.unlock();
                 goto WRITE_ERROR;
@@ -603,19 +605,39 @@ Int Core::IOEvent::accept()
 
 Int Core::IOEvent::read()
 {
-    if (this->closed) return -1;
-    if (this->evs_ & Core::IO_TYPE_ET){
-        return io_read_et(this);
-    }
+    if (this->closed || !this->ready_) return -1;
+#ifdef SINBACK_EPOLLET
+    return io_read_et(this);
+#endif
     return Core::EventLoop::addIoEvent(shared_from_this(), handle_event_func, Core::IO_READ);
+}
+
+Int Core::IOEvent::read(Size_t read_len)
+{
+    if (this->closed || !this->ready_) return -1;
+    if (read_len > 0){
+        if (!this->read_buf_.empty() && this->read_buf_.size() >= read_len){
+            // 有数据
+            handle_read_cb(this->shared_from_this(), (void*)this->read_buf_.data(), read_len);
+            if (this->read_buf_.length() == read_len){
+                this->read_buf_.clear();
+            } else {
+                this->read_buf_.erase(0, read_len);
+            }
+        } else {
+            return this->read();
+        }
+    }
+    return (Int)read_len;
 }
 
 Int Core::IOEvent::write(const void *buf, Size_t len)
 {
-    if (this->evs_ & Core::IO_TYPE_ET){
-        return io_write_et(this, buf, len);
-    }
+#ifdef SINBACK_EPOLLET
+    return io_write_et(this, buf, len);
+#else
     return io_write(this, buf, len);
+#endif
 }
 
 Int Core::IOEvent::close(bool timer)
@@ -625,16 +647,18 @@ Int Core::IOEvent::close(bool timer)
         if (this->closed || !this->ready_) return -1;
 
         // 还有数据没完成，加入定时器
+        ULong id = this->id_;
         if (!this->write_queue_.empty() && this->error == 0 && timer){
-            this->loop_->addTimer([this](const std::weak_ptr<Core::TimerEvent> &ev) {
-                this->close();
+            this->loop_->addTimer([id, this](const std::weak_ptr<Core::TimerEvent> &ev) {
+                if (this->id_ == id) {
+                    this->close();
+                }
             }, 100, 1);
             return 1;
         }
         this->closed = true;
         // 清理IO事件
         this->clean();
-        this->destroy_ = true;
         Core::EventLoop::loop_event_inactive(shared_from_this());
         // 关闭套接字
         Base::closeSocket(this->fd_);
@@ -683,11 +707,11 @@ void Core::IOEvent::clean()
 {
     if (!this->ready_) return;
     this->ready_ = false;
-    if (this->evs_ & Core::IO_TYPE_ET){
-        Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR | Core::IO_TYPE_ET);
-    } else {
-        Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR);
-    }
+#ifdef SINBACK_EPOLLET
+    Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR | Core::IO_TYPE_ET);
+#else
+    Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR);
+#endif
     this->read_buf_.clear();
     this->read_len_ = 0;
     this->write_queue_.clear();

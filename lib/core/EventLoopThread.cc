@@ -8,8 +8,7 @@
 #include "core/EventLoopThread.h"
 
 SinBack::Core::EventLoopThread::EventLoopThread()
-    : stop_(false)
-    , running_(false)
+    : running_(false)
 {
     this->loop_.reset(new EventLoop);
 }
@@ -19,7 +18,7 @@ SinBack::Core::EventLoopThread::~EventLoopThread()
     this->stop(true);
 }
 
-SinBack::Core::EventLoopThread::EventLoopPtr&
+SinBack::SharedPtr<SinBack::Core::EventLoop>
 SinBack::Core::EventLoopThread::loop()
 {
     return this->loop_;
@@ -38,7 +37,7 @@ SinBack::Core::EventLoopThread::start(const SinBack::Core::EventLoopThread::Func
 void
 SinBack::Core::EventLoopThread::stop(bool is_join)
 {
-    if (!this->running_ || this->stop_){
+    if (!this->running_){
         return;
     }
     this->loop_->stop();
@@ -50,7 +49,7 @@ SinBack::Core::EventLoopThread::stop(bool is_join)
 void
 SinBack::Core::EventLoopThread::pause()
 {
-    if (!this->running_ || this->stop_){
+    if (!this->running_){
         return;
     }
     this->loop_->pause();
@@ -59,7 +58,7 @@ SinBack::Core::EventLoopThread::pause()
 void
 SinBack::Core::EventLoopThread::resume()
 {
-    if (!this->running_ || this->stop_){
+    if (!this->running_){
         return;
     }
     this->loop_->resume();
@@ -77,7 +76,6 @@ SinBack::Core::EventLoopThread::join()
 void
 SinBack::Core::EventLoopThread::threadFunc(const Func& begin_func, const Func& end_func)
 {
-    this->stop_ = false;
     this->running_ = true;
     if (begin_func){
         this->loop_->addCustom([&begin_func](const std::weak_ptr<Core::Event> &ev) {
@@ -88,7 +86,6 @@ SinBack::Core::EventLoopThread::threadFunc(const Func& begin_func, const Func& e
     }
     this->loop_->run();
     this->running_ = false;
-    this->stop_ = true;
     if (end_func){
         end_func();
     }

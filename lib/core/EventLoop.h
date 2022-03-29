@@ -26,7 +26,7 @@ namespace SinBack
             ~EventLoop();
 
             static ULong event_loop_next_id();
-            // 处理事件
+            // 将事件添加到待处理链表
             static void loop_event_pending(const std::weak_ptr<Event>& ev){
                 std::shared_ptr<Event> event_ptr = ev.lock();
                 if (event_ptr){
@@ -39,7 +39,7 @@ namespace SinBack
                     }
                 }
             }
-            // 让事件活跃
+            // 事件转换为活跃状态
             static void loop_event_active(const std::weak_ptr<Event>& ev){
                 std::shared_ptr<Event> event_ptr = ev.lock();
                 if (event_ptr){
@@ -59,24 +59,31 @@ namespace SinBack
                     }
                 }
             }
-            // 添加IO事件
+            // 添加IO事件（监听某个事件）
             static Int addIoEvent(const std::weak_ptr<Core::IOEvent>& ev, const IOEventCB& cb, Int events);
+            // 移除IO事件（取消监听某个事件）
             static Int removeIoEvent(const std::weak_ptr<Core::IOEvent>& ev, Int events);
-            static void changeIoLoop(const std::weak_ptr<Core::IOEvent>& ev, EventLoopPtr loop);
+            // 改变IO事件 Loop
+            static bool changeIoLoop(const std::weak_ptr<Core::IOEvent>& ev, EventLoopPtr loop);
+            // 从 EventLoop 中移除IO事件
             static void removeIO(const std::weak_ptr<Core::IOEvent>& ev);
 
-            // 运行
+            // 运行 EventLoop
             bool run();
-            // 停止
+            // 停止 EventLoop
             bool stop();
-            // 暂停
+            // 暂停 EventLoop
             bool pause();
-            // 恢复执行
+            // 恢复执行 EventLoop
             bool resume();
 
             // 获取 pid
             pid_t getPid() const{
                 return this->pid_;
+            }
+            // 获取线程 pid
+            pid_t getTid() const {
+                return this->tid_;
             }
             // 获取 id
             UInt getId() const{
@@ -87,9 +94,8 @@ namespace SinBack
                 return this->cur_time_;
             }
 
-            // 通过套接字找到 IOEvent
+            // 通过套接字获取 IOEvent
             std::shared_ptr<IOEvent> getIoEvent(Base::socket_t fd);
-
             // 添加自定义事件
             std::shared_ptr<Core::Event> addCustom(const Core::EventCB& cb);
 
@@ -163,6 +169,8 @@ namespace SinBack
 
             // 进程pid
             pid_t pid_;
+            // 线程pid
+            pid_t tid_;
             // id
             ULong id_;
             // 当前状态
@@ -206,6 +214,8 @@ namespace SinBack
             Int timer_count_;
             // 线程池
             Base::ThreadPool thread_pool_;
+            // 锁
+            std::mutex mutex_;
         };
     }
 }

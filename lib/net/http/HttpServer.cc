@@ -12,7 +12,6 @@
 #include <sys/wait.h>
 #endif
 
-
 using namespace SinBack;
 
 Http::HttpServer::HttpServer()
@@ -21,6 +20,7 @@ Http::HttpServer::HttpServer()
     , listen_port_(0)
     , accept_th_(nullptr)
     , work_th_()
+    , tid_(0)
 {
     // 初始化工作
     init();
@@ -69,9 +69,9 @@ bool Http::HttpServer::listen(UInt port, const std::function<void(const String &
         }
         return false;
     }
+    this->tid_ = gettid();
     this->running_ = true;
     this->listen_port_ = port;
-
     // 开始运行
     start();
     return true;
@@ -83,6 +83,7 @@ void Http::HttpServer::stop()
     if (this->running_){
         this->running_ = false;
         if (this->setting_.workProcessNum == 0){
+            // 线程模式
             Size_t i = 0;
             for (; i < this->work_th_.size(); ++i){
                 this->work_th_[i]->stop(true);
@@ -106,14 +107,13 @@ void Http::HttpServer::stop()
  */
 void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
 {
-
     auto io = ev.lock();
     if (io){
         // 判断是否超过最大允许的连接数量
         Size_t cnt = this->getConnectCount();
         if (cnt >= this->setting().maxAcceptCnt){
             // 超过最大连接数量
-            Log::loge("over the max connect count -- {} !", cnt);
+            Log::loge("over the max connect count -- %uld !", cnt);
             io->close(false);
             return;
         }
@@ -249,8 +249,8 @@ void Http::HttpServer::onMessageError(const std::weak_ptr<Core::IOEvent> &ev, co
 {
     auto io = ev.lock();
     if (io){
-        Log::loge("HttpServer receive message error, loop_id = {}, id = {}, err_msg = {} .",
-                                  err_msg.c_str(), 0, io->id_);
+        Log::loge("HttpServer receive message error, loop_id = %uld, id = %uld, err_msg = %s .",
+                  io->loop_->getId(), io->id_, err_msg.c_str());
     }
 }
 
@@ -258,8 +258,8 @@ void Http::HttpServer::onSendError(const std::weak_ptr<Core::IOEvent> &ev, const
 {
     auto io = ev.lock();
     if (io){
-        Log::loge("HttpServer send message error, loop_id = {}, id = {}, err_msg = {} .",
-                                  err_msg.c_str(), 0, io->id_);
+        Log::loge("HttpServer send message error, loop_id = %uld, id = %uld, err_msg = %s .",
+                  io->loop_->getId(), io->id_, err_msg.c_str());
     }
 }
 
@@ -284,7 +284,7 @@ Base::socket_t Http::HttpServer::createListenSocketV4(UInt port)
     // 设置非阻塞
     Base::setSocketNonblock(listen_fd_);
     // 设置端口复用
-    Base::socketReuseAddress(listen_fd_);
+    Base::setSocketReuseAddress(listen_fd_);
     // 设置多个进程监听端口
     Base::setSocketReusePort(listen_fd_);
 
@@ -339,8 +339,9 @@ void Http::HttpServer::setIOKeepAlive(const std::weak_ptr<Core::IOEvent> &ev)
     auto io = ev.lock();
     if (io){
         if (io->loop_){
-            io->loop_->addTimer([io](const std::weak_ptr<Core::TimerEvent>& ev){
-                if (io){
+            ULong id = io->id_;
+            io->loop_->addTimer([id, io](const std::weak_ptr<Core::TimerEvent>& ev){
+                if (io && io->id_ == id){
                     io->close();
                 }
             }, HttpServer::default_keep_alive, 1);
@@ -385,7 +386,8 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         context->clear();
     } else {
         // 文件操作。放到线程池中执行
-        io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, HttpContext *context, const String &path) {
+        io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, HttpContext *context, const String &path, ULong id) {
+            if (io->id_ != id) return ;
             context->response().status_code = 200;
             context->response().header.setHead("Content-Type",
                                                Http::get_http_content_type(context->cache_file_->suffix()));
@@ -396,7 +398,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
             // 清空数据
             context->clear();
             io->close();
-        }, io, context, path);
+        }, io, context, path, io->id_);
     }
 }
 
