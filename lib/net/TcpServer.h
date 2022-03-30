@@ -46,6 +46,9 @@ namespace SinBack
 
             // 开始运行
             bool run(UInt port);
+            // 停止
+            void stop(bool join);
+
             // 获取事件循环
             EventLoopPtr loop(Int index = -1);
 
@@ -58,6 +61,8 @@ namespace SinBack
             void startAccept();
             // 新客户端连接
             static void newClient(const std::weak_ptr<Core::IOEvent>& io);
+            // 处理退出信号
+            void sigStop(Int sig);
         private:
             // 用于接受新连接
             Core::EventLoopThread accept_loop_;
@@ -71,8 +76,12 @@ namespace SinBack
             UInt work_thread_cnt;
             // 存储Channel
             std::unordered_map<UInt, ChannelPtr> channels_;
+            // 运行标志
+            bool running_;
             // 互斥锁
             std::mutex mutex;
+            // 条件变量
+            std::condition_variable cv_;
         };
     }
 }

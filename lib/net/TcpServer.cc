@@ -8,23 +8,43 @@
 
 #include <cstring>
 #include "TcpServer.h"
+#include "base/System.h"
 
 using namespace SinBack;
 
 SinBack::Net::TcpServer::TcpServer()
     : work_thread_cnt(std::thread::hardware_concurrency())
     , listen_fd_(-1)
-    , port_(0)
+    , port_(0), running_(false)
 {
 }
 
 SinBack::Net::TcpServer::~TcpServer()
 {
-    this->accept_loop_.stop(true);
-    if (this->work_thread_cnt > 0){
-        this->work_loops_.stop(true);
+    if (this->running_) {
+        this->stop(true);
     }
 }
+
+void Net::TcpServer::stop(bool join)
+{
+    if (this->running_) {
+        this->accept_loop_.stop(join);
+        if (this->work_thread_cnt > 0) {
+            this->work_loops_.stop(join);
+        }
+        this->cv_.notify_all();
+    }
+}
+
+// 处理退出信号
+void Net::TcpServer::sigStop(Int sig)
+{
+    if (this->running_){
+        this->stop(true);
+    }
+}
+
 
 SinBack::Net::TcpServer::ChannelPtr
 SinBack::Net::TcpServer::addChannel(const std::weak_ptr<Core::IOEvent>& ev) {
@@ -54,15 +74,33 @@ SinBack::Net::TcpServer::getChannel(SinBack::Base::socket_t id) {
 bool
 SinBack::Net::TcpServer::run(UInt port)
 {
+    if (this->running_) return false;
+    this->running_ = true;
+
+    // 屏蔽 Ctrl + C 信号
+    Base::system_ignore_sig(SIGINT);
+    // 屏蔽 PIPE 错误
+    Base::system_ignore_sig(SIGPIPE);
+    // 设置 TERM 信号处理， 优雅退出
+    Base::system_signal(SIGTERM, std::bind(&TcpServer::sigStop, this, std::placeholders::_1));
+
     this->listen_fd_ = createListenFd(port);
     if (this->listen_fd_ == -1){
         perror("create listen socket");
         return false;
     }
+
     if (this->work_thread_cnt > 0){
         this->work_loops_.start();
     }
     this->accept_loop_.start(std::bind(&TcpServer::startAccept, this), nullptr);
+
+    // 等待程序退出
+    std::unique_lock<std::mutex> lock(this->mutex);
+    this->cv_.wait(lock, [this](){
+        return !this->running_;
+    });
+
     return true;
 }
 
@@ -76,7 +114,6 @@ SinBack::Net::TcpServer::startAccept()
 {
     auto acceptor = this->accept_loop_.loop()->acceptIo(this->listen_fd_, newClient);
     acceptor->context_ = this;
-
 }
 
 void
@@ -151,6 +188,7 @@ Base::socket_t Net::TcpServer::createListenFd(UInt port)
     Base::setSocketNonblock(this->listen_fd_);
     // 设置套接字复用地址
     Base::setSocketReuseAddress(this->listen_fd_);
+
     if (!Base::bindSocket(sock, Base::IP_4, nullptr, (Int) port)){
         Log::loge("bind socket error -- %s .", strerror(errno));
         perror("bind()");

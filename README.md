@@ -1,12 +1,11 @@
 # SinBack
 
-一个参考[libhv](https://github.com)实现，基于C++11的网络库，事件驱动IO， 欢迎使用。
+一个参考[libhv](https://github.com\/ithewei/libhv)，基于**C++11**的**Linux服务端**网络库，事件驱动IO， 欢迎使用。
 
 ---
 
-### 外部依赖库(已添加至项目)：
- - [libfmt]() : 一个方便而高效的C++字符串解析库，类似于C++20 format 。
- - [llhttp]() : nodejs 官方 http1 请求响应解析库 。
+### 外部依赖库(已添加至项目，无需手动添加)：
+ - [llhttp](https://github.com/nodejs/llhttp) : nodejs 官方 http1 请求响应解析库 。
 
 ---
 
@@ -43,9 +42,6 @@ int main()
     server.listen(2022, [](const SinBack::String& err){
         fmt::print("listen error: {}\n", err);
     });
-    while (getchar() != '\n');
-    // 停止服务
-    server.stop_();
     return 0;
 }
 ```
@@ -93,17 +89,14 @@ int main()
 
     // 开始运行，并监听 2022 端口
     server.run(2022);
-
-    while (getchar() != '\n');
     return 0;
 }
 ```
 
 ---
 
-### 后续功能
+### 后续预计添加功能
 - 详细代码注释
-- Windows平台支持
 - UDP服务
 - epoll支持边缘触发
 - 添加Http2协议
@@ -113,13 +106,6 @@ int main()
 - Mongodb和Mysql连接
 - SSL支持
 - ...
-
----
-
-后期会新建一个分支用于详细代码注释，目前代码也有关键代码注释，
-基于C++11实现，没有使用到C++的很多新特性，方便初学者学习。
-如果这个网络库帮助到你，希望您可以动动小手指点一个star ^_^
-
 ---
 
 ### 代码结构
@@ -129,6 +115,8 @@ int main()
 ----- core : 事件驱动核心代码
 
 ----- net : 顶层网络封装
+
+----- tools : 一些工具函数
 
 ---
 
