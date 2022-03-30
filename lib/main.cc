@@ -26,6 +26,9 @@ int main(int argc, char* argv[])
     // 设置进程数量
     server.setting().workProcessNum = 4;
     server.setting().keepAlive = false;
+
+    Log::logi("The server is start! -- %s", Base::getDateTimeNow().c_str());
+
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
         Log::logi("我是测试接口 , request url = %s .", context.request().url.c_str());

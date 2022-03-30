@@ -8,7 +8,6 @@
 #ifndef SINBACK_HTTPSERVICE_H
 #define SINBACK_HTTPSERVICE_H
 
-#include <functional>
 #include <utility>
 #include <vector>
 #include <unordered_map>

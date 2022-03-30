@@ -16,7 +16,7 @@ Int io_read_et(Core::IOEvent* io);
 
 // 水平触发 write函数
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len);
-// 边缘触发 write 函数
+// 边缘触发 read 函数
 Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len);
 
 // 根据活动事件选择 accept、read和write
@@ -27,9 +27,9 @@ void handle_accept_cb(const std::weak_ptr<Core::IOEvent>& ev);
 void handle_read_cb(const std::weak_ptr<Core::IOEvent>& ev, void* buf, Size_t len);
 // read 错误回调
 void handle_read_err_cb(const std::weak_ptr<Core::IOEvent>& ev, const std::basic_string<Char>& err);
-// write 回调
+// read 回调
 void handle_write_cb(const std::weak_ptr<Core::IOEvent>& ev, Size_t write_len);
-// write 错误回调
+// read 错误回调
 void handle_write_err_cb(const std::weak_ptr<Core::IOEvent>& ev, const std::basic_string<Char>& err);
 // close回调
 void handle_close_cb(const std::weak_ptr<Core::IOEvent>& ev);
@@ -40,9 +40,9 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev);
 void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev);
 // 水平触发 read 封装
 void handle_read(const std::weak_ptr<Core::IOEvent>& ev);
-// 水平触发 write 封装
+// 水平触发 read 封装
 void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
-// 边缘触发 write 封装
+// 边缘触发 read 封装
 void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
 void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
@@ -129,7 +129,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
                 write_len = 0;
                 goto QUEUE_WRITE;
             } else{
-                Log::loge("socket write error, id = %uld, pid = %uld, error = %s.",
+                Log::loge("socket read error, id = %uld, pid = %uld, error = %s.",
                                             io->id_, io->pid_, strerror(io->error));
                 lock.unlock();
                 goto WRITE_ERROR;
@@ -185,7 +185,7 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     goto WRITE_QUEUE;
                 } else {
-                    Log::loge("socket write error, pid = %uld, id = %uld, error = %s .",
+                    Log::loge("socket read error, pid = %uld, id = %uld, error = %s .",
                                               io->pid_, io->id_, strerror(io->error));
                     lock.unlock();
                     // 写入出错
@@ -510,7 +510,7 @@ void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
                     lock.unlock();
                     goto WRITE_END;
                 } else {
-                    Log::loge("socket write error, pid = %uld, id = %uld, error = %s .",
+                    Log::loge("socket read error, pid = %uld, id = %uld, error = %s .",
                                               io->pid_, io->id_, strerror(io->error));
                     lock.unlock();
                     goto WRITE_ERR;
@@ -569,7 +569,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
                 return;
             } else {
                 // 写入错误
-                Log::loge("socket write error, pid = %uld, id = %uld, error = %s",
+                Log::loge("socket read error, pid = %uld, id = %uld, error = %s",
                                           io->pid_, io->id_, strerror(io->error));
                 lock.unlock();
                 goto WRITE_ERROR;

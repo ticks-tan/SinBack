@@ -48,7 +48,7 @@ namespace SinBack
                         }
                         this->args_[std::move(tmp.substr(0, pos))] = std::move(tmp.substr(pos + 1));
                     }else{
-                        // exec --get
+                        // exec --read
                         if (tmp.size() > 2 && tmp[0] == '-' && tmp[1] == tmp[0]){
                             this->args_[tmp] = "";
                             continue;

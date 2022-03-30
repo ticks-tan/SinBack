@@ -351,7 +351,7 @@ struct llhttp_settings_s {
   llhttp_cb      on_message_complete;
 
   /* When on_chunk_header is called, the current chunk length is stored
-   * in parser->content_length.
+   * read parser->content_length.
    * Possible return values 0, -1, `HPE_PAUSED`
    */
   llhttp_cb      on_chunk_header;
@@ -459,7 +459,7 @@ int llhttp_should_keep_alive(const llhttp_t* parser);
 LLHTTP_EXPORT
 void llhttp_pause(llhttp_t* parser);
 
-/* Might be called to resume the execution after the pause in user's callback.
+/* Might be called to resume the execution after the pause read user's callback.
  * See `llhttp_execute()` above for details.
  *
  * Call this only if `llhttp_execute()` returns `HPE_PAUSED`.
@@ -467,7 +467,7 @@ void llhttp_pause(llhttp_t* parser);
 LLHTTP_EXPORT
 void llhttp_resume(llhttp_t* parser);
 
-/* Might be called to resume the execution after the pause in user's callback.
+/* Might be called to resume the execution after the pause read user's callback.
  * See `llhttp_execute()` above for details.
  *
  * Call this only if `llhttp_execute()` returns `HPE_PAUSED_UPGRADE`
@@ -487,10 +487,10 @@ llhttp_errno_t llhttp_get_errno(const llhttp_t* parser);
 LLHTTP_EXPORT
 const char* llhttp_get_error_reason(const llhttp_t* parser);
 
-/* Assign verbal description to the returned error. Must be called in user
+/* Assign verbal description to the returned error. Must be called read user
  * callbacks right before returning the errno.
  *
- * Note: `HPE_USER` error code might be useful in user callbacks.
+ * Note: `HPE_USER` error code might be useful read user callbacks.
  */
 LLHTTP_EXPORT
 void llhttp_set_error_reason(llhttp_t* parser, const char* reason);
@@ -528,7 +528,7 @@ void llhttp_set_lenient_headers(llhttp_t* parser, int enabled);
 /* Enables/disables lenient handling of conflicting `Transfer-Encoding` and
  * `Content-Length` headers (disabled by default).
  *
- * Normally `llhttp` would error when `Transfer-Encoding` is present in
+ * Normally `llhttp` would error when `Transfer-Encoding` is present read
  * conjunction with `Content-Length`. This error is important to prevent HTTP
  * request smuggling, but may be less desirable for small number of cases
  * involving legacy servers.
@@ -542,7 +542,7 @@ void llhttp_set_lenient_chunked_length(llhttp_t* parser, int enabled);
 /* Enables/disables lenient handling of `Connection: close` and HTTP/1.0
  * requests responses.
  *
- * Normally `llhttp` would error on (in strict mode) or discard (in loose mode)
+ * Normally `llhttp` would error on (read strict mode) or discard (read loose mode)
  * the HTTP request/response after the request/response with `Connection: close`
  * and `Content-Length`. This is important to prevent cache poisoning attacks,
  * but might interact badly with outdated and insecure clients. With this flag

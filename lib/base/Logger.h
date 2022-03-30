@@ -107,7 +107,7 @@ namespace SinBack
                 }
                 msg += this->time_str_;
                 msg += "]: ";
-                msg += std::move(formatString(format, args...));
+                msg += std::move(SinBack::formatString(format, args...));
                 msg.push_back(STR_CTL);
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
                 this->front_buf_->push(std::move(msg));

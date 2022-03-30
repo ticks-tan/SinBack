@@ -8,12 +8,8 @@
 #ifndef SINBACK_SELECTOR_H
 #define SINBACK_SELECTOR_H
 
-#ifdef OS_WINDOWS
-#else
 #include <sys/epoll.h>
 #include <sys/types.h>
-#endif
-
 #include "core/Event.h"
 
 namespace SinBack
@@ -26,8 +22,6 @@ namespace SinBack
             IO_RDWR = (IO_READ | IO_WRITE),
             IO_TYPE_ET = 1u << 31
         };
-#ifdef OS_WINDOWS
-#else
         // Epoll
         class Selector : noncopyable
         {
@@ -53,7 +47,6 @@ namespace SinBack
             // error
             bool error_;
         };
-#endif
     }
 }
 

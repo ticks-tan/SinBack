@@ -14,7 +14,31 @@ Base::Buffer::Buffer()
 {
 }
 
-Base::Buffer::Buffer(const std::string &buf)
+Base::Buffer::Buffer(const Char *buf)
+    : Buffer()
+{
+    const char* p = buf;
+    while (p && *p != '\0'){
+        this->data_.push_back(*p);
+        ++p;
+    }
+    this->data_.push_back(CHAR_END);
+    this->end_ = this->data_.size() - 1;
+}
+
+Base::Buffer::Buffer(const std::vector<Char> &buf)
+    : Buffer()
+{
+    this->data_.reserve(buf.capacity());
+    Size_t i = 0, len = buf.size();
+    for (; i < len; ++i){
+        this->data_[this->end_++] = buf[i];
+    }
+    this->data_[this->end_] = CHAR_END;
+}
+
+
+Base::Buffer::Buffer(const String &buf)
     :Buffer()
 {
     this->data_.reserve(buf.capacity());
@@ -51,12 +75,13 @@ Size_t Base::Buffer::capacity() const
     return this->data_.capacity();
 }
 
+
 void SinBack::Base::Buffer::clear() {
     this->begin_ = this->end_ = 0;
     this->data_.clear();
 }
 
-SSize_t Base::Buffer::get(void *buf, Size_t len)
+SSize_t Base::Buffer::read(void *buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
@@ -65,7 +90,7 @@ SSize_t Base::Buffer::get(void *buf, Size_t len)
     Size_t i = this->begin_;
     char* buffer = (char*)buf;
 
-    for (; i < this->end_ && buffer; ++i){
+    for (; i < this->end_ && i < len && buffer; ++i){
         *buffer++ = this->data_[this->begin_++];
         ++read_len;
     }
@@ -73,7 +98,7 @@ SSize_t Base::Buffer::get(void *buf, Size_t len)
     return read_len;
 }
 
-SSize_t Base::Buffer::get(std::string &buf, Size_t len)
+SSize_t Base::Buffer::read(std::string &buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
@@ -81,28 +106,27 @@ SSize_t Base::Buffer::get(std::string &buf, Size_t len)
     SSize_t read_len = 0;
     Size_t i = this->begin_;
 
-    for (; i < this->end_; ++i){
+    for (; i < this->end_ && i < len; ++i){
         buf.push_back(this->data_[this->begin_++]);
         ++read_len;
     }
     return read_len;
 }
 
-SSize_t Base::Buffer::get(Base::Buffer &buf, Size_t len)
+SSize_t Base::Buffer::read(Base::Buffer &buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
     }
     SSize_t read_len = 0;
     Size_t i = this->begin_;
-
     buf.scan();
 
     if (len + buf.size() >= buf.capacity()){
         buf.data_.reserve(buf.capacity() + len);
     }
 
-    for (; i < this->end_; ++i){
+    for (; i < this->end_ && i < len; ++i){
         buf.data_[buf.end_++] = this->data_[this->begin_++];
         ++read_len;
     }
@@ -110,13 +134,13 @@ SSize_t Base::Buffer::get(Base::Buffer &buf, Size_t len)
     return read_len;
 }
 
-SSize_t Base::Buffer::in(const void *buf, Size_t len)
+SSize_t Base::Buffer::write(const void *buf, Size_t len)
 {
     std::string buffer((const char*)buf);
-    return this->in(buffer, len);
+    return this->write(buffer, len);
 }
 
-SSize_t Base::Buffer::in(const std::string &buf, Size_t len)
+SSize_t Base::Buffer::write(const std::string &buf, Size_t len)
 {
     if (len > buf.size()){
         return -1;
@@ -130,7 +154,7 @@ SSize_t Base::Buffer::in(const std::string &buf, Size_t len)
         this->data_.reserve(this->data_.capacity() + len);
     }
 
-    for (; i < len; ++i){
+    for (; i < len ; ++i){
         this->data_[this->end_++] = buf[i];
         ++write_len;
     }
@@ -138,14 +162,13 @@ SSize_t Base::Buffer::in(const std::string &buf, Size_t len)
     return write_len;
 }
 
-SSize_t Base::Buffer::in(const Base::Buffer &buf, Size_t len)
+SSize_t Base::Buffer::write(const Base::Buffer &buf, Size_t len)
 {
     if (len > buf.size()){
         return -1;
     }
     SSize_t write_len = 0;
     SSize_t i = 0;
-
     this->scan();
 
     if (this->size() + len >= this->capacity()){
@@ -160,7 +183,7 @@ SSize_t Base::Buffer::in(const Base::Buffer &buf, Size_t len)
     return write_len;
 }
 
-SSize_t Base::Buffer::getAll(std::string &buf)
+SSize_t Base::Buffer::readAll(std::string &buf)
 {
     SSize_t read_len = 0;
     Size_t i = this->begin_;
@@ -172,7 +195,7 @@ SSize_t Base::Buffer::getAll(std::string &buf)
     return read_len;
 }
 
-SSize_t Base::Buffer::getAll(Base::Buffer &buf)
+SSize_t Base::Buffer::readAll(Base::Buffer &buf)
 {
     buf.scan();
 
@@ -191,23 +214,23 @@ SSize_t Base::Buffer::getAll(Base::Buffer &buf)
     return read_len;
 }
 
-SSize_t Base::Buffer::inAll(const std::string &buf)
+SSize_t Base::Buffer::writeAll(const std::string &buf)
 {
-    return this->in(buf, buf.size());
+    return this->write(buf, buf.size());
 }
 
-SSize_t Base::Buffer::inAll(const Base::Buffer &buf) {
-    return this->in(buf, buf.size());
+SSize_t Base::Buffer::writeAll(const Base::Buffer &buf) {
+    return this->write(buf, buf.size());
 }
 
 SSize_t Base::Buffer::append(const std::string &buf)
 {
-    return this->inAll(buf);
+    return this->writeAll(buf);
 }
 
 SSize_t Base::Buffer::append(const Base::Buffer &buf)
 {
-    return this->inAll(buf);
+    return this->writeAll(buf);
 }
 
 bool Base::Buffer::remove(Size_t len)
@@ -224,7 +247,7 @@ Base::Buffer &Base::Buffer::operator=(const std::string &buf)
 {
     this->begin_ = this->end_ = 0;
     this->data_.reserve(buf.capacity());
-    Size_t i = 0, len = buf.length();
+    Size_t i = 0, len = buf.size();
 
     for (; i < len; ++i){
         this->data_[this->end_++] = buf[i];
@@ -265,12 +288,12 @@ Base::Buffer &Base::Buffer::operator+=(const Base::Buffer &buf)
 
 Base::Buffer &Base::Buffer::operator<<(const std::string &buf)
 {
-    return this->operator=(buf);
+    return this->operator+=(buf);
 }
 
 Base::Buffer &Base::Buffer::operator<<(const Base::Buffer &buf)
 {
-    return this->operator=(buf);
+    return this->operator+=(buf);
 }
 
 Base::Buffer operator+(const Base::Buffer &buf1, const Base::Buffer &buf2)
@@ -281,9 +304,26 @@ Base::Buffer operator+(const Base::Buffer &buf1, const Base::Buffer &buf2)
     return buf;
 }
 
-Base::Buffer::operator std::string() {
-    std::string buf;
-    buf.reserve(this->data_.capacity());
-    buf.append(this->data_.data() + this->begin_, this->size());
-    return buf;
+Base::Buffer &Base::Buffer::operator>>(String &buf) {
+    this->readAll(std::forward<String&>(buf));
+    return *this;
 }
+
+Base::Buffer &Base::Buffer::operator>>(Base::Buffer &buf) {
+    if (&buf == this){
+        return *this;
+    }
+    this->readAll(std::forward<Buffer&>(buf));
+    return *this;
+}
+
+Base::Buffer::operator std::basic_string<Char>() {
+    std::string buf(this->data_.data() + this->begin_, this->size());
+    return std::move(buf);
+}
+
+void Base::Buffer::reserve(Size_t len)
+{
+    this->data_.reserve(len);
+}
+

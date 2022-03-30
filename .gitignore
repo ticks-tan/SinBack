@@ -28,5 +28,5 @@
 
 # Executables
 *.exe
-*.get
+*.read
 *.app

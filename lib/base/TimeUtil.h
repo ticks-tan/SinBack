@@ -9,7 +9,6 @@
 #define SINBACK_TIMEUTIL_H
 
 #include <chrono>
-#include <string>
 #include <thread>
 #include "Base.h"
 
@@ -19,7 +18,6 @@ namespace SinBack
     {
         // 时间类型
         enum TimeType{
-            Month   = 0x01,
             Day     = 0x02,
             Week    = 0x03,
             Hour    = 0x04,

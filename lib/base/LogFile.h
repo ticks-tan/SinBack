@@ -9,7 +9,7 @@
 #define SINBACK_LOGFILE_H
 
 #include <cstdio>
-#include "Base.h"
+#include "base/Base.h"
 
 namespace SinBack
 {

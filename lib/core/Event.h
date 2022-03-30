@@ -8,11 +8,9 @@
 #ifndef SINBACK_EVENT_H
 #define SINBACK_EVENT_H
 
-#include <functional>
 #include <deque>
 #include <atomic>
 #include <mutex>
-#include <memory>
 #include "base/SocketUtil.h"
 
 namespace SinBack
@@ -138,7 +136,7 @@ namespace SinBack
             IOReadCB read_cb_ = nullptr;
             // read 错误回调
             IOReadErrCB read_err_cb_ = nullptr;
-            // write 回调
+            // read 回调
             IOWriteCB write_cb_ = nullptr;
             // write错误回调
             IOWriteErrCB write_err_cb_ = nullptr;

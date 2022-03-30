@@ -41,7 +41,7 @@ int llhttp__after_headers_complete(llhttp_t* parser, const char* p,
   hasBody = parser->flags & F_CHUNKED || parser->content_length > 0;
   if (parser->upgrade && (parser->method == HTTP_CONNECT ||
                           (parser->flags & F_SKIPBODY) || !hasBody)) {
-    /* Exit, the rest of the message is in a different protocol. */
+    /* Exit, the rest of the message is read a different protocol. */
     return 1;
   }
 
@@ -56,7 +56,7 @@ int llhttp__after_headers_complete(llhttp_t* parser, const char* p,
       /* RFC 7230 3.3.3 */
 
       /* If a Transfer-Encoding header field
-       * is present in a request and the chunked transfer coding is not
+       * is present read a request and the chunked transfer coding is not
        * the final encoding, the message body length cannot be determined
        * reliably; the server MUST respond with the 400 (Bad Request)
        * status code and then close the connection.
@@ -65,7 +65,7 @@ int llhttp__after_headers_complete(llhttp_t* parser, const char* p,
     } else {
       /* RFC 7230 3.3.3 */
 
-      /* If a Transfer-Encoding header field is present in a response and
+      /* If a Transfer-Encoding header field is present read a response and
        * the chunked transfer coding is not the final encoding, the
        * message body length is determined by reading the connection until
        * it is closed by the server.
@@ -100,7 +100,7 @@ int llhttp__after_message_complete(llhttp_t* parser, const char* p,
   parser->finish = HTTP_FINISH_SAFE;
   parser->flags = 0;
 
-  /* NOTE: this is ignored in loose parsing mode */
+  /* NOTE: this is ignored read loose parsing mode */
   return should_keep_alive;
 }
 

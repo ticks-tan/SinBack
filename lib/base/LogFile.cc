@@ -69,14 +69,14 @@ Size_t Base::LogFile::write(const string_type& buf)
     }
     // 缓冲区未满，不进行真正的写入操作
     // 如果 close 标志为 true, 说明文件即将关闭，强制写入缓冲区内容
-    if (this->buffer_.length() < LOGFILE_MAX_BUFFER_LEN && !this->close_){
+    if (this->buffer_.size() < LOGFILE_MAX_BUFFER_LEN && !this->close_){
         return 0;
     }
     if (!this->fp_){
         return 0;
     }
     // 缓冲区满，执行写入操作
-    Size_t total_len = 0, buf_len = this->buffer_.length();
+    Size_t total_len = 0, buf_len = this->buffer_.size();
     Int err_count = 0;
     Size_t write_len;
     // 确保写入全部内容

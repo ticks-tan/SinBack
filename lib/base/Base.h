@@ -9,10 +9,11 @@
 #define SIN_BACK_BASE_H
 
 #include <algorithm>
-#include <sstream>
+#include <string>
 #include <functional>
 #include <memory>
-#include "noncopyable.h"
+#include <vector>
+#include "base/noncopyable.h"
 
 // Linux平台
 #ifdef __linux__
@@ -46,10 +47,30 @@ namespace SinBack {
     // 字符换行
 #define STR_CTL     ('\n')
 
-    // str2 是否以 str1 开头
-    bool startWith(const String& str1, const String& str2);
+// str2 是否以 str1 开头
+    static bool startWith(const String& str1, const String& str2)
+    {
+        if (str1.length() > str2.length()) return false;
+        Size_t pos = 0, len1 = str1.length();
+        for (; pos < len1; ++pos){
+            if (str1[pos] != str2[pos]){
+                return false;
+            }
+        }
+        return true;
+    }
     // str2 是否以 str1 结尾
-    bool endWith(const String& str1, const String& str2);
+    static bool endWith(const String& str1, const String& str2)
+    {
+        if (str1.length() > str2.length()) return false;
+        Size_t pos = 0, len1 = str1.length(), len2 = str2.length();
+        for (; pos < len1; ++pos){
+            if (str1[len1 - pos - 1] != str2[len2 - pos - 1]){
+                return false;
+            }
+        }
+        return true;
+    }
 
     // 获取多个类型大小
     template <typename... Types> struct TypeSize;
@@ -68,12 +89,13 @@ namespace SinBack {
     template <typename... Args>
     String formatString(const String& format, Args&&... args)
     {
-        String str;
+        std::vector<Char> str;
         // 根据可变参数大小分配内存
         str.reserve(format.size() + TypeSize<Args...>::value);
-        ::sprintf((Char*)str.data(), format.c_str(), args...);
-        return std::move(str);
+        ::sprintf(str.data(), format.c_str(), args...);
+        return str.data();
     }
+
 }
 
 #endif //SIN_BACK_BASE_H

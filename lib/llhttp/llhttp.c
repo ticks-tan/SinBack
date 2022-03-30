@@ -9547,7 +9547,7 @@ static llparse_state_t llhttp__internal__run(
     case s_n_llhttp__internal__n_error_20:
     s_n_llhttp__internal__n_error_20: {
       state->error = 0xb;
-      state->reason = "Invalid character in Content-Length";
+      state->reason = "Invalid character read Content-Length";
       state->error_pos = (const char*) p;
       state->_current = (void*) (intptr_t) s_error;
       return s_error;
@@ -13242,7 +13242,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_39: {
     state->error = 0x7;
-    state->reason = "Invalid characters in url";
+    state->reason = "Invalid characters read url";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -13458,7 +13458,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_6: {
     state->error = 0x2;
-    state->reason = "Invalid character in chunk parameters";
+    state->reason = "Invalid character read chunk parameters";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -13467,7 +13467,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_7: {
     state->error = 0xc;
-    state->reason = "Invalid character in chunk size";
+    state->reason = "Invalid character read chunk size";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -13486,7 +13486,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_9: {
     state->error = 0xc;
-    state->reason = "Invalid character in chunk size";
+    state->reason = "Invalid character read chunk size";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14579,7 +14579,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_33: {
     state->error = 0x7;
-    state->reason = "Invalid char in url fragment start";
+    state->reason = "Invalid char read url fragment start";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14639,7 +14639,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_34: {
     state->error = 0x7;
-    state->reason = "Invalid char in url query";
+    state->reason = "Invalid char read url query";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14648,7 +14648,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_35: {
     state->error = 0x7;
-    state->reason = "Invalid char in url path";
+    state->reason = "Invalid char read url path";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14759,7 +14759,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_36: {
     state->error = 0x7;
-    state->reason = "Double @ in url";
+    state->reason = "Double @ read url";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14768,7 +14768,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_37: {
     state->error = 0x7;
-    state->reason = "Unexpected char in url server";
+    state->reason = "Unexpected char read url server";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14777,7 +14777,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_38: {
     state->error = 0x7;
-    state->reason = "Unexpected char in url server";
+    state->reason = "Unexpected char read url server";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14786,7 +14786,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_40: {
     state->error = 0x7;
-    state->reason = "Unexpected char in url schema";
+    state->reason = "Unexpected char read url schema";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14795,7 +14795,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_41: {
     state->error = 0x7;
-    state->reason = "Unexpected char in url schema";
+    state->reason = "Unexpected char read url schema";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;
@@ -14804,7 +14804,7 @@ static llparse_state_t llhttp__internal__run(
   }
   s_n_llhttp__internal__n_error_42: {
     state->error = 0x7;
-    state->reason = "Unexpected start char in url";
+    state->reason = "Unexpected start char read url";
     state->error_pos = (const char*) p;
     state->_current = (void*) (intptr_t) s_error;
     return s_error;

@@ -18,33 +18,49 @@ namespace SinBack
         class Buffer{
         public:
             explicit Buffer();
-            explicit Buffer(const std::string& buf);
+            explicit Buffer(const String& buf);
+            explicit Buffer(const Char* buf);
+            explicit Buffer(const std::vector<Char>& buf);
             Buffer(const Buffer& buf);
             ~Buffer();
 
+            // 返回字符串可读取长度
             inline Size_t size() const;
+            // 返回最大可存储字符数量
             inline Size_t capacity() const;
+            // 重新分配大小
+            inline void reserve(Size_t len);
+            // 清空缓存
             void clear();
+            // 字符串开始内存地址
             char* data(){
                 return this->data_.data() + this->begin_;
             }
+            // 是否为空
+            bool empty() const
+            {
+                return (this->size() == 0);
+            }
             void scan(){
                 if (this->begin_ > 0){
-                    auto it = this->data_.begin();
-                    this->data_.erase(it, it + (Int)this->begin_);
+                    Size_t begin = this->begin_;
+                    std::move(this->data_.begin() + (Long)this->begin_,
+                              this->data_.begin() + (Long)this->end_,
+                              this->data_.begin());
                     this->begin_ = 0;
+                    this->end_ -= begin;
                 }
             }
-            SSize_t get(void* buf, Size_t len);
-            SSize_t get(std::string& buf, Size_t len);
-            SSize_t get(Buffer& buf, Size_t len);
-            SSize_t in(const void* buf, Size_t len);
-            SSize_t in(const std::string& buf, Size_t len);
-            SSize_t in(const Buffer& buf, Size_t len);
-            SSize_t getAll(std::string& buf);
-            SSize_t getAll(Buffer& buf);
-            SSize_t inAll(const std::string& buf);
-            SSize_t inAll(const Buffer& buf);
+            SSize_t read(void* buf, Size_t len);
+            SSize_t read(std::string& buf, Size_t len);
+            SSize_t read(Buffer& buf, Size_t len);
+            SSize_t write(const void* buf, Size_t len);
+            SSize_t write(const std::string& buf, Size_t len);
+            SSize_t write(const Buffer& buf, Size_t len);
+            SSize_t readAll(std::string& buf);
+            SSize_t readAll(Buffer& buf);
+            SSize_t writeAll(const std::string& buf);
+            SSize_t writeAll(const Buffer& buf);
 
             SSize_t append(const std::string& buf);
             SSize_t append(const Buffer& buf);
@@ -57,7 +73,9 @@ namespace SinBack
             Buffer& operator += (const Buffer& buf);
             Buffer& operator << (const std::string& buf);
             Buffer& operator << (const Buffer& buf);
-            explicit operator std::string();
+            Buffer& operator >> (String& buf);
+            Buffer& operator >> (Buffer& buf);
+            explicit operator std::basic_string<Char>();
 
         private:
             // 存储实际内容

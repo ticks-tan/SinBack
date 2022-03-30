@@ -41,7 +41,7 @@ int main()
     };
     // IO关闭后调用该函数
     server.onClose = [](const TcpServer::ChannelPtr& io) {
-        // 这里不应该再调用 read 和 write，因为此时 IO 已经关闭，不会处理读取和写入事件
+        // 这里不应该再调用 read 和 read，因为此时 IO 已经关闭，不会处理读取和写入事件
         fmt::print("IO关闭，fd = {}\n", io->getFd());
     };
 

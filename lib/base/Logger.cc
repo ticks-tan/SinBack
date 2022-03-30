@@ -17,12 +17,14 @@ Log::Logger::Logger(Log::LoggerType type, const Log::Logger::string_type &file_n
         , time_str_{0}
         , sec_(0)
         , type_(type)
+        , min_(0)
 {
     this->front_buf_.reset(new queue_type);
     this->back_buf_.reset(new queue_type);
     Base::getDateTimeNow(&this->datetime_);
     formatTime();
     this->sec_ = datetime_.sec;
+
 
     string_type name = file_name;
     if (name.empty()){

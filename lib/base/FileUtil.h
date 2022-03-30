@@ -8,7 +8,6 @@
 #ifndef SINBACK_FILEUTIL_H
 #define SINBACK_FILEUTIL_H
 
-#include <regex>
 #include "Base.h"
 
 namespace SinBack
