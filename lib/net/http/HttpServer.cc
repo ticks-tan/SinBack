@@ -34,6 +34,17 @@ Http::HttpServer::~HttpServer()
 }
 
 /**
+ * 收到进程退出信号
+ * @param sig
+ */
+void Http::HttpServer::sigStop(int sig)
+{
+    if (this->running_) {
+        this->stop();
+    }
+}
+
+/**
  * 初始化 Setting
  */
 void Http::HttpServer::init()
@@ -72,8 +83,19 @@ bool Http::HttpServer::listen(UInt port, const std::function<void(const String &
     this->tid_ = gettid();
     this->running_ = true;
     this->listen_port_ = port;
+
+    // 忽略 Ctrl + C 信号
+    Base::system_ignore_sig(SIGINT);
+    // 忽略 PIPE 错误信号
+    Base::system_ignore_sig(SIGPIPE);
+
     // 开始运行
     start();
+    // 使用条件变量等待程序退出
+    std::unique_lock<std::mutex> lock(this->mutex_);
+    this->wait_cv_.wait(lock, [this](){
+        return !this->running_;
+    });
     return true;
 }
 
@@ -84,20 +106,18 @@ void Http::HttpServer::stop()
         this->running_ = false;
         if (this->setting_.workProcessNum == 0){
             // 线程模式
-            Size_t i = 0;
-            for (; i < this->work_th_.size(); ++i){
-                this->work_th_[i]->stop(true);
+            this->accept_th_->stop(true);
+            this->work_th_->stop(true);
+        }else {
+            // 多进程模式
+            this->accept_th_->stop(true);
+            for (auto pid : this->child_pid_){
+                Base::system_send_sig(pid, SIGTERM);
             }
-        } else{
-            // 处理子进程退出
-            if (this->accept_th_){
-                const Char* stop_str = "1";
-                for (auto it : this->pipes_){
-                    this->accept_th_->loop()->writeIo(it, stop_str, 1, nullptr);
-                }
-                this->accept_th_->stop(true);
-            }
+            this->child_pid_.clear();
         }
+        // 唤醒主线程，取消睡眠
+        this->wait_cv_.notify_all();
     }
 }
 
@@ -116,6 +136,14 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
             Log::loge("over the max connect count -- %uld !", cnt);
             io->close(false);
             return;
+        }
+
+        if (this->setting_.workProcessNum == 0) {
+            // 多线程模式
+            auto loop = this->work_th_->loop();
+            if (loop) {
+                Core::EventLoop::changeIoLoop(io, loop.get());
+            }
         }
         // 设置事件回调
         io->read_cb_ = std::bind(&HttpServer::onNewMessage, this, std::placeholders::_1, std::placeholders::_2);
@@ -274,7 +302,7 @@ void Http::HttpServer::onDisconnect(const std::weak_ptr<Core::IOEvent> &ev)
     }
 }
 
-Base::socket_t Http::HttpServer::createListenSocketV4(UInt port)
+Base::socket_t Http::HttpServer::createListenSocketV4(UInt port, bool reuse_port)
 {
     // 创建套接字
     Base::socket_t listen_fd_ = Base::creatSocket(Base::IP_4, Base::S_TCP, true);
@@ -286,7 +314,9 @@ Base::socket_t Http::HttpServer::createListenSocketV4(UInt port)
     // 设置端口复用
     Base::setSocketReuseAddress(listen_fd_);
     // 设置多个进程监听端口
-    Base::setSocketReusePort(listen_fd_);
+    if (reuse_port) {
+        Base::setSocketReusePort(listen_fd_);
+    }
 
     // 绑定
     if (!Base::bindSocket(listen_fd_, Base::IP_4, nullptr, Int(port))){
@@ -320,10 +350,10 @@ void Http::HttpServer::start()
     }
 }
 
-void Http::HttpServer::startListenAccept(Core::EventLoopPtr loop)
+void Http::HttpServer::startListenAccept(Core::EventLoopPtr loop, bool reuse_port)
 {
     if (loop) {
-        Base::socket_t listen_fd = HttpServer::createListenSocketV4(this->listen_port_);
+        Base::socket_t listen_fd = HttpServer::createListenSocketV4(this->listen_port_, reuse_port);
         // 监听
         if (listen_fd < 0){
             perror("create listen socket");
@@ -386,8 +416,12 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         context->clear();
     } else {
         // 文件操作。放到线程池中执行
-        io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, HttpContext *context, const String &path, ULong id) {
-            if (io->id_ != id) return ;
+        auto result = io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, const String &path, ULong id) {
+            auto* context = (HttpContext*)io->context_;
+            if (io->id_ != id || io->closed || context == nullptr) return ;
+            if (!context->isInit()){
+                context->init();
+            }
             context->response().status_code = 200;
             context->response().header.setHead("Content-Type",
                                                Http::get_http_content_type(context->cache_file_->suffix()));
@@ -398,80 +432,59 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
             // 清空数据
             context->clear();
             io->close();
-        }, io, context, path, io->id_);
+        }, io, path, io->id_);
+        result.get();
     }
 }
 
 void Http::HttpServer::runProcessFunc()
 {
     if (this->setting_.workProcessNum > 0){
-
         Size_t i = 0;
-        Base::socket_t fds[2];
         Int pid = 1;
 
-#ifdef OS_LINUX
-        ::signal(SIGCHLD, HttpServer::processExitCall);
-#endif
+        // 注册子进程退出信号
+        Base::system_signal(SIGCHLD, HttpServer::processExitCall);
+        // 注册 TERM 信号处理函数
+        Base::system_signal(SIGTERM, std::bind(&HttpServer::sigStop, this, std::placeholders::_1));
 
         for (; i < this->setting_.workProcessNum; ++i){
-            // 创建匿名管道
-            if (!Base::system_pipe(fds)){
-                perror("system pipe");
-                return;
-            }
+
             pid = Base::system_fork();
             if (pid < 0){
                 perror("system fork");
             }else if (pid == 0) {
-                // child process
-                // 关闭子进程管道写入端
-                Base::closeSocket(fds[1]);
-
+                // 清空子进程pid
+                this->child_pid_.clear();
                 // 开始运行 EventLoop
                 this->accept_th_.reset(new Core::EventLoopThread);
                 this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
-                                                  this, this->accept_th_->loop().get()), nullptr);
-                // 监听 pipe
-                this->accept_th_->loop()->readIo(
-                        fds[0], 1,[](const std::weak_ptr<Core::IOEvent>& ev,const String& read_buf){
-                            auto io = ev.lock();
-                            if (io) {
-                                if (read_buf == "1") {
-                                    // stop
-                                    io->loop_->stop();
-                                }
-                            }
-                });
+                                                  this, this->accept_th_->loop().get(), true), nullptr);
                 return;
             }else {
-                // 关闭父进程读取管道
-                Base::closeSocket(fds[0]);
-                // 存储管道，以便停止子进程
-                this->pipes_.push_back(fds[1]);
+                // 存储子进程id，以便停止子进程
+                this->child_pid_.push_back(pid);
             }
         }
         // 开始运行 EventLoop
         this->accept_th_.reset(new Core::EventLoopThread);
         this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
-                                          this, this->accept_th_->loop().get()), nullptr);
+                                          this, this->accept_th_->loop().get(), true), nullptr);
     }
 }
 
 void Http::HttpServer::runThreadFunc()
 {
+    // 注册 TERM 信号处理函数
+    Base::system_signal(SIGTERM, std::bind(&HttpServer::sigStop, this, std::placeholders::_1));
+
     if (this->setting_.workThreadNum > 0){
+        this->work_th_.reset(new Core::EventLoopPool(this->setting_.workThreadNum));
+        this->work_th_->start();
+
         this->accept_th_.reset(new Core::EventLoopThread);
         this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
-                                          this, this->accept_th_->loop().get()), nullptr);
-
-        Size_t i = 0;
-        for (; i < this->setting_.workThreadNum; ++i){
-            this->work_th_.emplace_back(new Core::EventLoopThread);
-            auto& loop = this->work_th_.back();
-            loop->start(std::bind(&HttpServer::startListenAccept,
-                                  this, loop->loop().get()), nullptr);
-        }
+                                          this, this->accept_th_->loop().get(), false), nullptr);
     }
 }
 

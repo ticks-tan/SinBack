@@ -111,8 +111,9 @@ namespace SinBack
             }
             // 添加事件到线程池
             template<typename Func, typename... Args>
-            void queueFunc(Func&& f, Args&&... args){
-                this->thread_pool_.enqueue(std::forward<Func>(f), std::forward<Args>(args)...);
+            auto queueFunc(Func&& f, Args&&... args)
+            -> std::future<typename std::result_of<Func(Args...)>::type>{
+                return this->thread_pool_.enqueue(std::forward<Func>(f), std::forward<Args>(args)...);
             }
 
             // 添加 idle事件
@@ -155,7 +156,7 @@ namespace SinBack
             // 默认等待时间 (ms)
             static const Int default_event_loop_wait_timeout = 1000;
             // 默认暂停等待时间 (ms)
-            static const Int default_event_loop_pause_timeout = 100;
+            static const Int default_event_loop_pause_timeout = 1000;
             // 默认线程池大小
             static const Int default_thread_pool_count = 2;
             enum LoopStatus : Int {

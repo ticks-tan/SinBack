@@ -162,7 +162,6 @@ std::shared_ptr<Core::IOEvent> Core::EventLoop::getIoEvent(Base::socket_t fd)
         ptr = it->second;
     }
     if (!ptr->ready_){
-        ptr->init();
         ptr->ready();
     }
     return ptr;
@@ -200,7 +199,7 @@ Int Core::EventLoop::processEvents()
         Base::sleepUs(block_time);
     }
     this->updateTime();
-    if (this->status_ == Stop){
+    if (this->status_ != Running){
         return 0;
     }
     PROCESS_TIMER:

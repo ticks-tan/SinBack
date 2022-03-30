@@ -61,6 +61,8 @@ namespace SinBack {
     struct TypeSize<First, Other...> :
             std::integral_constant<Size_t, TypeSize<First>::value + TypeSize<Other...>::value>
     {};
+    template<> struct TypeSize<> : std::integral_constant<Size_t, 0>
+    {};
 
     // 格式化字符串
     template <typename... Args>
@@ -71,11 +73,6 @@ namespace SinBack {
         str.reserve(format.size() + TypeSize<Args...>::value);
         ::sprintf((Char*)str.data(), format.c_str(), args...);
         return std::move(str);
-    }
-
-    String formatString(const String& format)
-    {
-        return format;
     }
 }
 

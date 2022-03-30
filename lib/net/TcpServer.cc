@@ -91,7 +91,6 @@ SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& ev)
                 io->loop_->closeIo(io->fd_);
                 return;
             }
-            Core::EventLoop::removeIO(io);
             EventLoopPtr work_loop = server->loop();
             if (work_loop) {
                 // 由于work loop与 accept loop不同，需要对 io事件设置新的 loop

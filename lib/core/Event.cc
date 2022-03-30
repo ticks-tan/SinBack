@@ -432,7 +432,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
-        if (!io->closed || io->ready_) return;
+        if (io->closed || !io->ready_) return;
 
         std::vector<Char> buf;
         buf.reserve(256);
@@ -605,7 +605,6 @@ Int Core::IOEvent::accept()
 
 Int Core::IOEvent::read()
 {
-    if (this->closed || !this->ready_) return -1;
 #ifdef SINBACK_EPOLLET
     return io_read_et(this);
 #endif
@@ -614,7 +613,6 @@ Int Core::IOEvent::read()
 
 Int Core::IOEvent::read(Size_t read_len)
 {
-    if (this->closed || !this->ready_) return -1;
     if (read_len > 0){
         if (!this->read_buf_.empty() && this->read_buf_.size() >= read_len){
             // 有数据
@@ -698,6 +696,8 @@ void Core::IOEvent::ready()
     this->write_cb_ = nullptr;
     this->write_err_cb_ = nullptr;
     this->accept_cb_ = this->close_cb_ = nullptr;
+    this->id_ = Core::event_next_id();
+    this->pid_ = ::getpid();
 }
 
 /**

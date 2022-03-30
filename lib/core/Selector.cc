@@ -17,6 +17,9 @@ Core::Selector::Selector(Core::EventLoop* loop)
 {
     this->fd_ = epoll_create(Selector::default_selector_size);
     error_ = (this->fd_ == -1);
+    if (error_){
+        Log::loge("epoll create error!");
+    }
 }
 
 Core::Selector::~Selector()

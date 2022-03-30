@@ -36,6 +36,7 @@ Http::HttpContext::HttpContext(Http::HttpServer* server)
     : parser_()
     , server_(server)
     , url_params_(nullptr)
+    , init_(false)
 {
     this->parser_.reset(new Http::Http1Parse(&request_, &response_));
     this->cache_file_ = std::make_shared<Base::File>();
@@ -145,6 +146,7 @@ bool Http::HttpContext::parseBody()
 
 bool Http::HttpContext::init()
 {
+    this->init_ = true;
     this->response_.http_version = this->request_.http_version;
     this->response_.header.setHead("Server", "SinBack");
     if (!this->request_.header.getHead("Connection").empty()){

@@ -8,7 +8,6 @@ Des:
 
 #include "net/http/HttpServer.h"
 #include "tools/Url.h"
-#include <sys/signal.h>
 #include "base/System.h"
 #include "base/Args.h"
 
@@ -26,7 +25,7 @@ int main(int argc, char* argv[])
     server.setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/web";
     // 设置进程数量
     server.setting().workProcessNum = 4;
-    server.setting().keepAlive = true;
+    server.setting().keepAlive = false;
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
         Log::logi("我是测试接口 , request url = %s .", context.request().url.c_str());
@@ -48,5 +47,4 @@ int main(int argc, char* argv[])
     server.listen(2022, [](const SinBack::String& err){
         printf("listen error: %s\n", err.c_str());
     });
-    while (1);
 }

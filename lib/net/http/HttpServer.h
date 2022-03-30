@@ -77,18 +77,16 @@ namespace SinBack {
             // 初始化 HttpServer
             void init();
 
-#ifdef OS_LINUX
             // 子进程退出信号处理
             static void processExitCall(Int sig);
-#endif
             // 创建监听套接字
-            static Base::socket_t createListenSocketV4(UInt port);
+            static Base::socket_t createListenSocketV4(UInt port, bool reuse_port = false);
             // 设置keepAlive
             static void setIOKeepAlive(const std::weak_ptr<Core::IOEvent>& ev);
             // 开始运行
             void start();
             // 开始 accept
-            void startListenAccept(Core::EventLoopPtr loop);
+            void startListenAccept(Core::EventLoopPtr loop, bool reuse_port = false);
             // 有新连接回调
             void onNewClient(const std::weak_ptr<Core::IOEvent>& ev);
             // 有新消息回调
@@ -110,6 +108,8 @@ namespace SinBack {
             void runThreadFunc();
             // 进程执行函数
             void runProcessFunc();
+            // 收到进程退出信号
+            void sigStop(int sig);
             // 设置
             Setting setting_;
             // 多个服务
@@ -117,7 +117,7 @@ namespace SinBack {
             // accept 线程
             std::shared_ptr<Core::EventLoopThread> accept_th_;
             // 工作线程
-            std::vector<std::shared_ptr<Core::EventLoopThread>> work_th_;
+            std::shared_ptr<Core::EventLoopPool> work_th_;
             // 监听端口
             Size_t listen_port_;
             // 是否运行
@@ -127,9 +127,11 @@ namespace SinBack {
             // 互斥锁
             std::mutex mutex_;
             // 与子进程通信管道
-            std::vector<Base::socket_t> pipes_;
+            std::vector<pid_t> child_pid_;
             // 线程tid
             pid_t tid_;
+            // 条件变量，用于阻塞进程
+            std::condition_variable wait_cv_;
         };
     }
 }

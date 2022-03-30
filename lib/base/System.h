@@ -10,26 +10,19 @@
 
 #include <cstdlib>
 #include <functional>
-
-#ifdef OS_LINUX
 #include <sys/resource.h>
-#include <unistd.h>
-#endif
+#include <csignal>
 
 namespace SinBack
 {
-    namespace Base
-    {
+    namespace Base {
         // 注册终止处理函数，注册一次就会被执行一次，即使函数一样
-        static bool register_func_exit(void (*func)()){
+        static bool register_func_exit(void (*func)()) {
             return (std::atexit(func) == 0);
         }
 
-#ifdef OS_LINUX
-// 仅限 Linux 系统使用
-
         // 系统进程资源限制类型
-        enum ResourceLimitType{
+        enum ResourceLimitType {
             Limit_All_Size = RLIMIT_AS,
             Limit_Cpu_Time = RLIMIT_CPU,
             Limit_Data_Size = RLIMIT_DATA,
@@ -49,6 +42,7 @@ namespace SinBack
             limit.rlim_max = limit_;
             return (::setrlimit(type, &limit) == 0);
         }
+
         // 设置进程资源限制值
         static bool set_resource_limit64(ResourceLimitType type, Size_t limit_) {
             rlimit64 limit{};
@@ -58,21 +52,38 @@ namespace SinBack
         }
 
         // fork 子进程
-        static Int system_fork(){
+        static Int system_fork() {
             return ::fork();
         }
 
         // vfork 子进程
-        static Int system_vfork(){
+        static Int system_vfork() {
             return ::vfork();
         }
 
         // 创建匿名管道
-        static bool system_pipe(Base::socket_t fds[2]){
+        static bool system_pipe(Base::socket_t fds[2]) {
             return (::pipe(fds) == 0);
         }
 
-#endif
+        // 信号处理函数
+        static bool system_signal(Int sig, const Function<void(Int)>& func, Int flags = 0){
+            struct sigaction action{};
+            action.sa_handler = (__sighandler_t) &func;
+            action.sa_flags = flags;
+            return (::sigaction(sig, &action, nullptr) == 0);
+        }
+        // 忽略指定信号
+        static bool system_ignore_sig(Int sig) {
+            struct sigaction action{};
+            action.sa_handler = nullptr;
+            return (::sigaction(sig, &action, nullptr) == 0);
+        }
+
+        // 发送进程信号
+        static bool system_send_sig(pid_t pid, Int sig){
+            return (::kill(pid, sig) == 0);
+        }
     }
 }
 

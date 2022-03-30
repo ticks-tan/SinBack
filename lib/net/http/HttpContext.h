@@ -40,6 +40,10 @@ namespace SinBack
             // 初始化
             bool init();
 
+            bool isInit() const {
+                return this->init_;
+            }
+
             HttpMethod getMethod() const{
                 return this->request_.method;
             }
@@ -74,6 +78,7 @@ namespace SinBack
                 if (this->url_params_) {
                     this->url_params_->clear();
                 }
+                this->init_ = false;
             }
 
             std::unordered_map<String, String>& urlParams(){
@@ -97,6 +102,8 @@ namespace SinBack
             HttpServer* server_;
             // URL 解析结果
             std::unordered_map<String, String>* url_params_;
+            // 是否初始化
+            bool init_;
         };
     }
 }
