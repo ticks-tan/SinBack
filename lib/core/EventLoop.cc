@@ -75,6 +75,8 @@ bool Core::EventLoop::run()
     this->tid_ = gettid();
     this->start_time_ = Base::getTimeOfDayUs();
 
+    Log::logi("EventLoop start running, loop_id = %ld, pid = %ld, tid = %ld",
+              this->id_, this->pid_, this->tid_);
     while (this->status_ != Stop){
         // 更新时间
         this->updateTime();
@@ -88,7 +90,8 @@ bool Core::EventLoop::run()
         // 事件循环 1 亿次
         ++this->loop_count_;
         if (this->loop_count_ == 100000000){
-            Log::logd("loop count = %lld, reset the count.", this->loop_count_.operator long long());
+            Log::logd("EventLoop loop count over : %lld, reset the count.",
+                      this->loop_count_.operator long long());
             this->loop_count_.store(0);
         }
         // 处理事件
@@ -96,6 +99,8 @@ bool Core::EventLoop::run()
     }
     this->status_ = Stop;
     this->end_time_ = Base::getTimeOfDayUs();
+    Log::logi("Event Loop stopped, loop_id = %ld, pid = %ld, tid = %ld,\n",
+              this->id_, this->pid_, this->tid_);
     return true;
 }
 

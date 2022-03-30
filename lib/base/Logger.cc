@@ -25,7 +25,6 @@ Log::Logger::Logger(Log::LoggerType type, const Log::Logger::string_type &file_n
     formatTime();
     this->sec_ = datetime_.sec;
 
-
     string_type name = file_name;
     if (name.empty()){
         name = "SinBack_Logger";
@@ -51,23 +50,19 @@ void Log::Logger::thread_run_func()
         {
             {
                 std::unique_lock<std::mutex> lock(this->back_mutex_);
-                // 如果后端缓冲区为空，则休眠超时 3s
-                if (this->stop_){
-                    goto WRITE;
-                }
-                if (this->back_buf_->empty()) {
+                // 如果后端缓冲区为空并且还在运行，则休眠超时 3s
+                if (this->back_buf_->empty() && !this->stop_) {
                     this->cv_.wait_for(lock, std::chrono::seconds(3), [this] {
                         return (this->stop_) || (!this->back_buf_->empty());
                     });
                 }
-                // 如果为超时唤醒，则交换缓冲区
+                // 如果超时唤醒并且后端队列为空，则交换缓冲区
                 {
                     std::unique_lock<std::mutex> lock1(this->front_mutex_);
                     if (this->back_buf_->empty()) {
                         this->back_buf_.swap(this->front_buf_);
                     }
                 }
-                WRITE:
                 // 全部数据都处理完成，则退出
                 if (this->stop_ && this->back_buf_->empty()) {
                     break;

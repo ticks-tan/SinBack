@@ -80,7 +80,7 @@ namespace SinBack
                     return;
                 }
                 // 前端日志时间尽量少，避免阻塞
-                std::string msg = "[";
+                String msg = "[";
                 if (msg_level == Debug) {
                     msg += "debug ";
                 } else if (msg_level == Info) {
@@ -95,11 +95,11 @@ namespace SinBack
                 {
                     std::unique_lock<std::mutex> lock(this->format_mutex_);
                     if (this->sec_  != tv.tv_sec % 60) {
-                        this->sec_ = Int(tv.tv_sec) % 60;
-                        if ((this->sec_ / 60) % 60 != this->min_) {
+                        this->sec_ = Int((tv.tv_sec) % 60);
+                        if ((tv.tv_sec / 60) % 60 != this->min_) {
                             Base::getDateTimeNow(&this->datetime_);
                             formatTime();
-                            this->min_ = (this->sec_ / 60) % 60;
+                            this->min_ = (Int)((tv.tv_sec / 60) % 60);
                         } else {
                             formatTimeSec();
                         }

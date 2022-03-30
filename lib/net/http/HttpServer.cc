@@ -96,6 +96,8 @@ bool Http::HttpServer::listen(UInt port, const std::function<void(const String &
     this->wait_cv_.wait(lock, [this](){
         return !this->running_;
     });
+    // 服务停止
+    Log::logi("Http Server stopped, pid = %ld, tid = %ld .", getpid(), gettid());
     return true;
 }
 
@@ -133,7 +135,8 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
         Size_t cnt = this->getConnectCount();
         if (cnt >= this->setting().maxAcceptCnt){
             // 超过最大连接数量
-            Log::loge("over the max connect count -- %uld !", cnt);
+            Log::loge("HttpServer over the max allow connect count : %ld, pid = %ld, tid = %ld !",
+                      cnt, getpid(), gettid());
             io->close(false);
             return;
         }
@@ -277,7 +280,7 @@ void Http::HttpServer::onMessageError(const std::weak_ptr<Core::IOEvent> &ev, co
 {
     auto io = ev.lock();
     if (io){
-        Log::loge("HttpServer receive message error, loop_id = %uld, id = %uld, err_msg = %s .",
+        Log::loge("HttpServer receive message error, loop_id = %ld, io_id = %ld, err_msg = %s .",
                   io->loop_->getId(), io->id_, err_msg.c_str());
     }
 }
@@ -286,7 +289,7 @@ void Http::HttpServer::onSendError(const std::weak_ptr<Core::IOEvent> &ev, const
 {
     auto io = ev.lock();
     if (io){
-        Log::loge("HttpServer send message error, loop_id = %uld, id = %uld, err_msg = %s .",
+        Log::loge("HttpServer send message error, loop_id = %ld, io_id = %ld, err_msg = %s .",
                   io->loop_->getId(), io->id_, err_msg.c_str());
     }
 }
@@ -356,7 +359,7 @@ void Http::HttpServer::startListenAccept(Core::EventLoopPtr loop, bool reuse_por
         Base::socket_t listen_fd = HttpServer::createListenSocketV4(this->listen_port_, reuse_port);
         // 监听
         if (listen_fd < 0){
-            perror("create listen socket");
+            Log::loge("Http Server startListenAccept error -> create listen socket error !");
             loop->stop();
         }
         // 注册 accept 事件并设置回调
@@ -452,7 +455,7 @@ void Http::HttpServer::runProcessFunc()
 
             pid = Base::system_fork();
             if (pid < 0){
-                perror("system fork");
+                Log::loge("Http Server run on process mode error -> system_fork error !");
             }else if (pid == 0) {
                 // 清空子进程pid
                 this->child_pid_.clear();
@@ -470,6 +473,8 @@ void Http::HttpServer::runProcessFunc()
         this->accept_th_.reset(new Core::EventLoopThread);
         this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
                                           this, this->accept_th_->loop().get(), true), nullptr);
+
+        Log::logi("Http Server run on process mode !");
     }
 }
 
@@ -485,6 +490,7 @@ void Http::HttpServer::runThreadFunc()
         this->accept_th_.reset(new Core::EventLoopThread);
         this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
                                           this, this->accept_th_->loop().get(), false), nullptr);
+        Log::logi("Http Server run on thread mode !");
     }
 }
 

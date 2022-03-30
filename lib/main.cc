@@ -24,10 +24,8 @@ int main(int argc, char* argv[])
     // 静态文件根目录
     server.setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/web";
     // 设置进程数量
-    server.setting().workProcessNum = 4;
-    server.setting().keepAlive = false;
-
-    Log::logi("The server is start! -- %s", Base::getDateTimeNow().c_str());
+    server.setting().workThreadNum = 4;
+    server.setting().keepAlive = true;
 
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
@@ -50,4 +48,5 @@ int main(int argc, char* argv[])
     server.listen(2022, [](const SinBack::String& err){
         printf("listen error: %s\n", err.c_str());
     });
+    return 0;
 }

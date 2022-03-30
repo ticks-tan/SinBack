@@ -75,15 +75,29 @@ namespace SinBack {
     // 获取多个类型大小
     template <typename... Types> struct TypeSize;
     template <typename Only>
-    struct TypeSize<Only> :
-            std::integral_constant<Size_t, sizeof(Only)>
-    {};
+    struct TypeSize<Only>
+    {
+        Size_t size = 0;
+        explicit TypeSize(Only&& t)
+        {
+            size = sizeof(t);
+        }
+    };
     template <typename First, typename... Other>
-    struct TypeSize<First, Other...> :
-            std::integral_constant<Size_t, TypeSize<First>::value + TypeSize<Other...>::value>
-    {};
-    template<> struct TypeSize<> : std::integral_constant<Size_t, 0>
-    {};
+    struct TypeSize<First, Other...>
+    {
+        Size_t size = 0;
+        explicit TypeSize(First&& first, Other&&... other){
+            size = TypeSize<First&&>(first).size + TypeSize<Other&&...>(other...).size;
+        }
+    };
+    template<> struct TypeSize<>
+    {
+        Size_t size = 0;
+        explicit TypeSize(){
+            size = 0;
+        }
+    };
 
     // 格式化字符串
     template <typename... Args>
@@ -91,7 +105,7 @@ namespace SinBack {
     {
         std::vector<Char> str;
         // 根据可变参数大小分配内存
-        str.reserve(format.size() + TypeSize<Args...>::value);
+        str.reserve(format.size() + TypeSize<Args&&...>(args...).size);
         ::sprintf(str.data(), format.c_str(), args...);
         return str.data();
     }
