@@ -6,12 +6,14 @@
 * Des:         
 */
 #include "LogFile.h"
+#include "base/TimeUtil.h"
 
 using namespace SinBack;
 
 Base::LogFile::LogFile()
     : fp_(nullptr)
     , close_(false)
+    , last_write_time_(0)
 {
 }
 
@@ -48,7 +50,7 @@ void Base::LogFile::close()
     if (!this->buffer_.empty() && this->fp_){
         this->close_ = true;
         this->write("");
-        ::fflush(this->fp_);
+        this->flush();
         this->close_ = false;
     }
     if (this->fp_){
@@ -65,16 +67,18 @@ void Base::LogFile::close()
 Size_t Base::LogFile::write(const string_type& buf)
 {
     if (!buf.empty()) {
-        this->buffer_ += buf;
+        this->buffer_.append(buf);
     }
+    Size_t now_time = Base::getTimeOfDayMs();
     // 缓冲区未满，不进行真正的写入操作
     // 如果 close 标志为 true, 说明文件即将关闭，强制写入缓冲区内容
-    if (this->buffer_.size() < LOGFILE_MAX_BUFFER_LEN && !this->close_){
+    if (!this->fileFp()
+    || (now_time - this->lastWriteTime() < LogFile::max_free_time &&
+    this->buffer_.size() < LOGFILE_MAX_BUFFER_LEN && !this->isClose())){
         return 0;
     }
-    if (!this->fp_){
-        return 0;
-    }
+    // 更新最后写入时间
+    this->last_write_time_ = now_time;
     // 缓冲区满，执行写入操作
     Size_t total_len = 0, buf_len = this->buffer_.size();
     Int err_count = 0;
@@ -100,7 +104,7 @@ Size_t Base::LogFile::write(const string_type& buf)
     if (total_len == buf_len) {
         this->buffer_.clear();
     } else{
-        this->buffer_.erase(0, total_len);
+        this->buffer_.removeFront(total_len);
     }
     return total_len;
 }
@@ -152,14 +156,14 @@ void Base::RollLogFile::rollFile()
         name.insert(it, std::to_string(this->roll_count_));
         this->name() = name;
         this->close();
-        this->file_fp() = ::fopen(this->name().c_str(), "w+");
+        this->fileFp() = ::fopen(this->name().c_str(), "w+");
     }
 }
 
 // 刷新文件大小
 void Base::RollLogFile::refreshFileSize()
 {
-    FILE* fp = this->file_fp();
+    FILE* fp = this->fileFp();
     Size_t cur_seek = ::ftell(fp);
     ::fseek(fp, 0, SEEK_END);
     this->file_size_ = ::ftell(fp);

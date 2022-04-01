@@ -3,7 +3,7 @@
 * CreateDate: 2022-03-03 22:15:52
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:         
+* Des:        禁止拷贝函数
 */
 #ifndef SINBACK_NONCOPYABLE_H
 #define SINBACK_NONCOPYABLE_H

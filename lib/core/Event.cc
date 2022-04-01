@@ -73,8 +73,8 @@ Int io_read_et(Core::IOEvent* io)
                     goto READ_END;
                 } else{
                     // 读取错误，处理错误
-                    Log::loge("socket read error, pid = %uld, id = %uld, error -> %s .",
-                              io->pid_, io->id_, strerror(io->error));
+                    Log::FLogE("socket read error, pid = %uld, id = %uld, error -> %s .",
+                               io->pid_, io->id_, strerror(io->error));
                     goto READ_ERR;
                 }
             }else if (len == 0){
@@ -129,8 +129,8 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
                 write_len = 0;
                 goto QUEUE_WRITE;
             } else{
-                Log::loge("socket read error, id = %uld, pid = %uld, error = %s.",
-                                            io->id_, io->pid_, strerror(io->error));
+                Log::FLogE("socket read error, id = %uld, pid = %uld, error = %s.",
+                           io->id_, io->pid_, strerror(io->error));
                 lock.unlock();
                 goto WRITE_ERROR;
             }
@@ -185,8 +185,8 @@ Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     goto WRITE_QUEUE;
                 } else {
-                    Log::loge("socket read error, pid = %uld, id = %uld, error = %s .",
-                                              io->pid_, io->id_, strerror(io->error));
+                    Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s .",
+                               io->pid_, io->id_, strerror(io->error));
                     lock.unlock();
                     // 写入出错
                     goto WRITE_ERR;
@@ -353,8 +353,8 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK){
                 return;
             }
-            Log::loge("accept error, pid = %uld, id = %uld, error = %s .",
-                                      io->pid_, io->id_, strerror(io->error));
+            Log::FLogE("accept error, pid = %uld, id = %uld, error = %s .",
+                       io->pid_, io->id_, strerror(io->error));
             goto ACCEPT_ERROR;
         }
         std::shared_ptr<Core::IOEvent> io_ptr = io->loop_->getIoEvent(client_fd);
@@ -396,8 +396,8 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
                     goto READ_END;
                 } else{
                     // 读取错误，处理错误
-                    Log::loge("socket read error, pid = %uld, id = %uld, error -> %s .",
-                                              io->pid_, io->id_, strerror(io->error));
+                    Log::FLogE("socket read error, pid = %uld, id = %uld, error -> %s .",
+                               io->pid_, io->id_, strerror(io->error));
                     goto READ_ERR;
                 }
             }else if (len == 0){
@@ -456,8 +456,8 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                 return;
             }else{
                 // 读取错误
-                Log::loge("socket read error, pid = %uld, id = %uld, error = %s",
-                                          io->pid_, io->id_, strerror(io->error));
+                Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s",
+                           io->pid_, io->id_, strerror(io->error));
                 goto READ_ERROR;
             }
         }
@@ -510,8 +510,8 @@ void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
                     lock.unlock();
                     goto WRITE_END;
                 } else {
-                    Log::loge("socket read error, pid = %uld, id = %uld, error = %s .",
-                                              io->pid_, io->id_, strerror(io->error));
+                    Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s .",
+                               io->pid_, io->id_, strerror(io->error));
                     lock.unlock();
                     goto WRITE_ERR;
                 }
@@ -569,8 +569,8 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
                 return;
             } else {
                 // 写入错误
-                Log::loge("socket read error, pid = %uld, id = %uld, error = %s",
-                                          io->pid_, io->id_, strerror(io->error));
+                Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s",
+                           io->pid_, io->id_, strerror(io->error));
                 lock.unlock();
                 goto WRITE_ERROR;
             }

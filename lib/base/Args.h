@@ -35,6 +35,11 @@ namespace SinBack
             std::unordered_map<String, String> args_;
         };
 
+        /**
+         * 构造函数
+         * @param arg 参数
+         * @return
+         */
         Args::Args(int argc, char **argv) {
             if (argc > 1) {
                 String tmp, key;
@@ -73,10 +78,18 @@ namespace SinBack
             }
         }
 
+        /**
+         * 参数个数
+         */
         Size_t Args::size() const {
             return this->args_.size();
         }
 
+        /**
+         * 获取参数，没有返回 ""
+         * @param arg
+         * @return
+         */
         String Args::getArg(const String &arg) {
             auto it = this->args_.find(arg);
             if (it != this->args_.end()){
@@ -89,6 +102,11 @@ namespace SinBack
             return (this->args_.find(arg) != this->args_.end());
         }
 
+        /**
+         * 遍历循环
+         * @param func
+         * @return
+         */
         Size_t Args::forEach(const Args::ForEachKeyFunc &func) {
             Size_t index = 0;
             auto it = this->args_.begin();
@@ -99,6 +117,11 @@ namespace SinBack
             return index;
         }
 
+        /**
+         * 遍历循环
+         * @param func
+         * @return
+         */
         Size_t Args::forEach(const Args::ForEachFunc &func) {
             Size_t index = 0;
             auto it = this->args_.begin();

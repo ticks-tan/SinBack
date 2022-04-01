@@ -19,28 +19,26 @@ int main(int argc, char* argv[])
     signal(SIGPIPE, SIG_IGN);
     HttpServer server;
     HttpService service;
+
+    String cwd = Base::system_get_cwd();
+    printf("cwd: %s\n", cwd.c_str());
     // 设置http服务器配置
-    server.setting().logPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/SinBack";
+    server.setting().logPath = cwd + "/SinBack";
     // 静态文件根目录
-    server.setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/web";
-    // 设置进程数量
+    server.setting().staticFileDir = cwd + "/web";
+    // 设置线程数量
     server.setting().workThreadNum = 4;
-    server.setting().keepAlive = true;
+    // 默认允许客户端 keep-alive，不用设置
 
     // 拦截 /test下所有 GET 请求
     service.GET("/api/test", [](HttpContext& context) -> Int {
-        Log::logi("我是测试接口 , request url = %s .", context.request().url.c_str());
+        Log::FLogI("我是测试接口 , request url = %s .", context.request().url.c_str());
         return context.sendText("我是测试接口 !");
     });
-    service.GET("/api/getTime", [](HttpContext& context) -> Int{
-        if (context.parseUrl()){
-            auto& params = context.urlParams();
-            if (params.find("format") != params.end()){
-                return context.sendText(Base::getDateTimeNow(params["format"]));
-            }
-            return context.sendText("请求参数错误");
-        }
-        return context.error();
+    service.GET("/", [](HttpContext& context) -> Int {
+        printf("所有请求都会走这里 -- %s\n", context.request().url.c_str());
+        // 返回 NEXT 时，会继续执行下一个拦截器
+        return NEXT;
     });
     // 添加到 Test 服务模块
     server.addService("Test", &service);

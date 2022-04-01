@@ -3,7 +3,7 @@
 * CreateDate: 2022-03-18 15:42:31
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:        进程相关函数
+* Des:        系统相关函数
 */
 #ifndef SINBACK_SYSTEM_H
 #define SINBACK_SYSTEM_H
@@ -17,7 +17,7 @@ namespace SinBack
 {
     namespace Base {
         // 注册终止处理函数，注册一次就会被执行一次，即使函数一样
-        static bool register_func_exit(void (*func)()) {
+        static inline bool register_func_exit(void (*func)()) {
             return (std::atexit(func) == 0);
         }
 
@@ -36,7 +36,7 @@ namespace SinBack
         };
 
         // 设置进程资源限制值
-        static bool set_resource_limit(ResourceLimitType type, Size_t limit_) {
+        static inline bool set_resource_limit(ResourceLimitType type, Size_t limit_) {
             rlimit limit{};
             limit.rlim_cur = limit_;
             limit.rlim_max = limit_;
@@ -44,7 +44,7 @@ namespace SinBack
         }
 
         // 设置进程资源限制值
-        static bool set_resource_limit64(ResourceLimitType type, Size_t limit_) {
+        static inline bool set_resource_limit64(ResourceLimitType type, Size_t limit_) {
             rlimit64 limit{};
             limit.rlim_cur = limit_;
             limit.rlim_max = limit_;
@@ -52,17 +52,17 @@ namespace SinBack
         }
 
         // fork 子进程
-        static Int system_fork() {
+        static inline Int system_fork() {
             return ::fork();
         }
 
         // vfork 子进程
-        static Int system_vfork() {
+        static inline Int system_vfork() {
             return ::vfork();
         }
 
         // 创建匿名管道
-        static bool system_pipe(Base::socket_t fds[2]) {
+        static inline bool system_pipe(Base::socket_t fds[2]) {
             return (::pipe(fds) == 0);
         }
 
@@ -81,8 +81,20 @@ namespace SinBack
         }
 
         // 发送进程信号
-        static bool system_send_sig(pid_t pid, Int sig){
+        static inline bool system_send_sig(pid_t pid, Int sig){
             return (::kill(pid, sig) == 0);
+        }
+
+        // 获取当前工作目录
+        static inline String system_get_cwd() {
+            char buf[1024]{};
+            return (::getcwd(buf, sizeof(buf)) != nullptr)
+                ? std::move(String(buf)) : std::move(String());
+        }
+
+        // 设置当前工作目录
+        static inline bool system_set_cwd(const String& path) {
+            return (::chdir(path.c_str()) == 0);
         }
     }
 }

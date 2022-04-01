@@ -9,7 +9,7 @@
 #define SINBACK_LOGFILE_H
 
 #include <cstdio>
-#include "base/Base.h"
+#include "base/Buffer.h"
 
 namespace SinBack
 {
@@ -21,6 +21,7 @@ namespace SinBack
             // 默认缓冲区大小
             static const Int LOGFILE_MAX_BUFFER_LEN = 512;
         public:
+            static const Size_t max_free_time = 5000;
             using string_type = std::basic_string<Char>;
             LogFile();
             explicit LogFile(const Char* filename);
@@ -29,15 +30,18 @@ namespace SinBack
             string_type& name(){
                 return this->filename_;
             }
-            FILE*& file_fp(){
+            FILE*& fileFp(){
                 return this->fp_;
             }
             bool& isClose(){
                 return this->close_;
             }
+            Size_t& lastWriteTime(){
+                return this->last_write_time_;
+            }
 
-            void flush();
-            void close();
+            inline void flush();
+            inline void close();
             virtual Size_t write(const string_type& buf);
         private:
             // 文件指针
@@ -45,9 +49,11 @@ namespace SinBack
             // 文件名
             string_type filename_;
             // 缓冲区，只有缓冲区满或者关闭时真正调用write写入
-            string_type buffer_;
+            Buffer buffer_;
             // 是否关闭
             bool close_;
+            // 上次写入时间
+            Size_t last_write_time_;
         };
 
         // 滚动日志文件

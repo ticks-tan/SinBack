@@ -3,15 +3,15 @@
 * CreateDate: 2022-03-03 21:13:57
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:         
+* Des:        单例模式日志记录器，支持多线程写入，字符串格式化
 */
 #ifndef SINBACK_LOGGER_H
 #define SINBACK_LOGGER_H
 
-#include <vector>
 #include <mutex>
 #include <thread>
 #include <queue>
+#include <unordered_map>
 #include <condition_variable>
 #include "base/TimeUtil.h"
 #include "base/LogFile.h"
@@ -33,18 +33,36 @@ namespace SinBack
         };
 
         // 日志类
-        class Logger : noncopyable {
+    class Logger : noncopyable{
         public:
+            // 字符串
             typedef std::basic_string<Char> string_type;
+            // 队列
             typedef std::queue<string_type> queue_type;
-        public:
-            explicit Logger(LoggerType type, const string_type &file_name = "", Size_t thread_num = 1);
+
+            // 获取日志类
+            static Logger* getLogger(const string_type& name);
+            // 注册日志类
+            static bool registerLogger(const string_type& name = "", const string_type& log_dir = "",
+                                       LoggerType type = Normal, LogLevel level = Info, Size_t thread_num = 1);
+            // 取消注册日志类
+            static bool unregisterLogger(const string_type& name);
+
+        private:
+            // 静态成员 LoggerName - Logger MAP
+            static std::unordered_map<string_type, Logger*> logger_map;
+            // 全局锁，防止多线程注册取消注册日志访问冲突
+            static std::mutex logger_mutex;
+
+            explicit Logger(LoggerType type, const string_type &file_name = "", Size_t thread_num = 2);
 
             ~Logger();
-            void set_loglevel(LogLevel level){
+            // 设置日志级别
+            void setLogLevel(LogLevel level){
                 this->level_ = level;
             }
 
+        public:
             template<typename... Type>
             Logger &debug(const String &format, Type &&... args) {
                 this->log(Debug, format, args...);
@@ -68,7 +86,7 @@ namespace SinBack
                 this->log(Error, format, args...);
                 return *this;
             }
-
+            // 获取日志文件名
             string_type fileName() const {
                 return log_->name();
             }
@@ -80,15 +98,16 @@ namespace SinBack
                     return;
                 }
                 // 前端日志时间尽量少，避免阻塞
-                String msg = "[";
+                Base::Buffer msg;
+                msg << "[";
                 if (msg_level == Debug) {
-                    msg += "debug ";
+                    msg << "debug ";
                 } else if (msg_level == Info) {
-                    msg += "info ";
+                    msg << "info ";
                 } else if (msg_level == Warn) {
-                    msg += "warn ";
+                    msg << "warn ";
                 } else if (msg_level == Error) {
-                    msg += "error ";
+                    msg << "error ";
                 }
                 timeval tv{};
                 Base::getTimeOfDay(&tv);
@@ -105,12 +124,14 @@ namespace SinBack
                         }
                     }
                 }
-                msg += this->time_str_;
-                msg += "]: ";
-                msg += std::move(SinBack::formatString(format, args...));
-                msg.push_back(STR_CTL);
+                // 格式化字符串
+                msg << this->time_str_
+                    << "]: "
+                    << std::move(SinBack::formatString(format, args...))
+                    << "\n";
+                // 最后入队操作，需要加锁
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
-                this->front_buf_->push(std::move(msg));
+                this->front_buf_->push(msg.data());
             }
             // 线程执行函数
             void thread_run_func();
@@ -144,42 +165,13 @@ namespace SinBack
             Base::DateTime datetime_;
             // 缓存时间字符串
             Char time_str_[20];
+            // 缓存的秒数
             Int sec_;
+            // 缓存的分钟数
             Int min_;
             // 停止标志
             bool stop_;
         };
-
-        static String& default_logger_path(){
-            static String $_default_logger_path_$;
-            return $_default_logger_path_$;
-        }
-        static void set_default_logger_path(const String& path){
-            default_logger_path() = path;
-        }
-
-        static LogLevel& default_logger_level(){
-            static LogLevel $_default_logger_level_$;
-            return $_default_logger_level_$;
-        }
-        static void set_default_logger_level(LogLevel level){
-            default_logger_level() = level;
-        }
-
-        static UInt& default_logger_thread_num(){
-            static UInt $_default_logger_thread_num_$;
-            return $_default_logger_thread_num_$;
-        }
-        static void set_default_logger_thread_num(UInt num){
-            default_logger_thread_num() = num;
-        }
-
-        static Logger* default_logger(){
-            // 默认日志记录器
-            static Logger $_default_logger_$(LoggerType::Rolling, default_logger_path(), default_logger_thread_num());
-            $_default_logger_$.set_loglevel(default_logger_level());
-            return &($_default_logger_$);
-        }
 
         template <typename... T>
         void file_log_print(Logger* logger, LogLevel level, const String &format, T&&...args){
@@ -204,20 +196,32 @@ namespace SinBack
             }
         }
         template <typename... T>
-        void logd(const String &format, T&&...args){
-            file_log_print(default_logger(), LogLevel::Debug, format, args...);
+        void FLogD(const String &format, T&&...args){
+            auto logger = Logger::getLogger("SinBackDefault");
+            if (logger) {
+                file_log_print(logger, LogLevel::Debug, format, args...);
+            }
         }
         template <typename... T>
-        void logi(const String &format, T&&...args){
-            file_log_print(default_logger(), LogLevel::Info, format, args...);
+        void FLogI(const String &format, T&&...args){
+            auto logger = Logger::getLogger("SinBackDefault");
+            if (logger) {
+                file_log_print(logger, LogLevel::Info, format, args...);
+            }
         }
         template <typename... T>
-        void logw(const String &format, T&&...args){
-            file_log_print(default_logger(), LogLevel::Warn, format, args...);
+        void FLogW(const String &format, T&&...args){
+            auto logger = Logger::getLogger("SinBackDefault");
+            if (logger) {
+                file_log_print(logger, LogLevel::Warn, format, args...);
+            }
         }
         template <typename... T>
-        void loge(const String &format, T&&...args){
-            file_log_print(default_logger(), LogLevel::Error, format, args...);
+        void FLogE(const String &format, T&&...args){
+            auto logger = Logger::getLogger("SinBackDefault");
+            if (logger) {
+                file_log_print(logger, LogLevel::Error, format, args...);
+            }
         }
     }
 }

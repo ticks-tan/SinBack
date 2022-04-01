@@ -86,9 +86,9 @@ auto SinBack::Base::ThreadPool::enqueue(F&& f, Args&&... args)
         std::unique_lock<std::mutex> lock(queue_mutex_);
 
         // don't allow enqueueing after stopping the pool
-        if(stop_)
+        if(stop_) {
             throw std::runtime_error("enqueue on stopped ThreadPool");
-
+        }
         tasks_.emplace([task](){ (*task)(); });
     }
     cv_.notify_one();

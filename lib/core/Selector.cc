@@ -18,7 +18,7 @@ Core::Selector::Selector(Core::EventLoop* loop)
     this->fd_ = epoll_create(Selector::default_selector_size);
     error_ = (this->fd_ == -1);
     if (error_){
-        Log::loge("epoll create error!");
+        Log::FLogE("epoll create error!");
     }
 }
 
@@ -108,7 +108,7 @@ Int Core::Selector::pollEvent(Int timeout)
         if (errno == EINTR){
             return 0;
         }
-        Log::loge("epoll_wait error, return code is %d", ep_cnt);
+        Log::FLogE("epoll_wait error, return code is %d", ep_cnt);
         return ep_cnt;
     }
     if (ep_cnt == 0){

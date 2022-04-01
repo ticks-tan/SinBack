@@ -3,7 +3,7 @@
 * CreateDate: 2022-03-15 23:52:31
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:         
+* Des:        简单文件类封装
 */
 #ifndef SINBACK_FILE_H
 #define SINBACK_FILE_H
@@ -56,6 +56,10 @@ namespace SinBack {
                 return ( !this->name_.empty() && (::access(this->name_.c_str(), F_OK | R_OK) == 0));
             }
 
+            /**
+             * 获取文件扩展名
+             * @return
+             */
             String suffix(){
                 auto it = this->name_.find_last_of('.');
                 if (it != String::npos){

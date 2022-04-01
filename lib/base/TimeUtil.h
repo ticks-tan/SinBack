@@ -76,8 +76,12 @@ namespace SinBack
         // DateTime转换为 time_t
         Long dateTimeTo(DateTime date);
         // 线程休眠
-        void sleepMs(Int time);
-        void sleepUs(Int time);
+        inline void sleepMs(Int time){
+            std::this_thread::sleep_for(std::chrono::milliseconds(time));
+        }
+        inline void sleepUs(Int time){
+            std::this_thread::sleep_for(std::chrono::microseconds(time));
+        }
 
     }
 }

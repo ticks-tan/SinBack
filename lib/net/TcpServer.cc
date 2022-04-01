@@ -124,7 +124,7 @@ SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& ev)
         auto* server = (TcpServer*)io->context_;
         if (server) {
             if (server->acceptCount() > default_max_accept_count) {
-                Log::logw("accept count over max !");
+                Log::FLogW("accept count over max !");
                 io->loop_->closeIo(io->fd_);
                 return;
             }
@@ -180,7 +180,7 @@ Base::socket_t Net::TcpServer::createListenFd(UInt port)
     this->port_ = port;
     Base::socket_t sock = Base::creatSocket(Base::IP_4, Base::S_TCP, true);
     if (sock < 0){
-        Log::loge("create socket error -- %s .", strerror(errno));
+        Log::FLogE("create socket error -- %s .", strerror(errno));
         perror("socket()");
         return -1;
     }
@@ -190,12 +190,12 @@ Base::socket_t Net::TcpServer::createListenFd(UInt port)
     Base::setSocketReuseAddress(this->listen_fd_);
 
     if (!Base::bindSocket(sock, Base::IP_4, nullptr, (Int) port)){
-        Log::loge("bind socket error -- %s .", strerror(errno));
+        Log::FLogE("bind socket error -- %s .", strerror(errno));
         perror("bind()");
         return -1;
     }
     if (!Base::listenSocket(sock)){
-        Log::loge("listen socket error -- {}", strerror(errno));
+        Log::FLogE("listen socket error -- {}", strerror(errno));
         perror("listen()");
         return -1;
     }
