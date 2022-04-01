@@ -17,7 +17,7 @@ int main()
 
     // 有新客户端连接会调用该函数
     server.onNewClient = [](const TcpServer::ChannelPtr& io) {
-        fmt::print("有新客户端连接, fd = {}\n", io->getFd());
+        printf("有新客户端连接, fd = %d\n", io->getFd());
     };
     // 有新数据读取后会调用该函数
     server.onMessage = [](const TcpServer::ChannelPtr& io, const String& read_msg) {
@@ -26,28 +26,26 @@ int main()
     };
     // 服务端读取数据错误会调用该函数
     server.onErrorMessage = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
-        fmt::print("读取错误，错误信息: {}\n", err_msg);
+        printf("读取错误，错误信息: %s\n", err_msg.c_str());
         // 这里不用调用 io->close ，读取错误会自动关闭
     };
     // 数据成功写入会调用该函数
     server.onWrite = [](const TcpServer::ChannelPtr& io, Size_t len) {
         // len 为写入数据大小
-        fmt::print("成功写入{}字节数据\n", len);
+        printf("成功写入%ld字节数据\n", len);
     };
     // 服务端写入时错误会调用该函数
     server.onErrorWrite = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
-        fmt::print("写入错误，错误信息: {}\n", err_msg);
+        printf("写入错误，错误信息: %s\n", err_msg.c_str());
         // 读取和写入错误时，IO句柄对应 loop 的日志记录器都会记录该错误
     };
     // IO关闭后调用该函数
     server.onClose = [](const TcpServer::ChannelPtr& io) {
         // 这里不应该再调用 read 和 read，因为此时 IO 已经关闭，不会处理读取和写入事件
-        fmt::print("IO关闭，fd = {}\n", io->getFd());
+        printf("IO关闭，fd = %d\n", io->getFd());
     };
 
     // 开始运行，并监听 2022 端口
     server.run(2022);
-
-    while (getchar() != '\n');
     return 0;
 }

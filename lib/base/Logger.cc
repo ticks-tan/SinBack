@@ -60,7 +60,8 @@ void Log::Logger::thread_run_func()
                 // 如果后端缓冲区为空并且还在运行，则休眠超时 3s
                 if (this->back_buf_->empty() && !this->stop_) {
                     this->cv_.wait_for(lock, std::chrono::seconds(3), [this] {
-                        return (this->stop_) || (!this->back_buf_->empty());
+                        return (this->stop_) || (!this->back_buf_->empty() ||
+                            this->front_buf_->size() >= front_queue_max_size);
                     });
                 }
                 // 如果超时唤醒并且后端队列为空，则交换缓冲区
@@ -176,4 +177,16 @@ bool Log::Logger::unregisterLogger(const Log::Logger::string_type &name)
     delete it->second;
     logger_map.erase(it);
     return true;
+}
+
+/**
+ * @brief 取消注册所有日志记录器
+ */
+void Log::Logger::unregisterAllLogger()
+{
+    std::unique_lock<std::mutex> lock(logger_mutex);
+    for (auto& it : logger_map){
+        delete it.second;
+    }
+    logger_map.clear();
 }

@@ -42,6 +42,8 @@ void Http::HttpServer::sigStop(int sig)
     if (this->running_) {
         this->stop();
     }
+    // 取消所有日志记录器
+    Log::Logger::unregisterAllLogger();
 }
 
 /**

@@ -16,7 +16,7 @@ using namespace SinBack;
 
 int main(int argc, char* argv[])
 {
-    signal(SIGPIPE, SIG_IGN);
+    Base::system_signal(SIGPIPE, SIG_IGN);
     HttpServer server;
     HttpService service;
 

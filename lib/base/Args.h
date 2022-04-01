@@ -3,7 +3,7 @@
 * CreateDate: 2022-03-22 23:08:18
 * Author:     ticks
 * Email:      2938384958@qq.com
-* Des:        处理命令行参数
+* Des:        命令行参数解析
 */
 #ifndef SINBACK_ARGS_H
 #define SINBACK_ARGS_H

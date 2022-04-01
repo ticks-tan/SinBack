@@ -47,12 +47,17 @@ namespace SinBack
                                        LoggerType type = Normal, LogLevel level = Info, Size_t thread_num = 1);
             // 取消注册日志类
             static bool unregisterLogger(const string_type& name);
+            // 取消注册所有日志类
+            static void unregisterAllLogger();
 
         private:
             // 静态成员 LoggerName - Logger MAP
             static std::unordered_map<string_type, Logger*> logger_map;
             // 全局锁，防止多线程注册取消注册日志访问冲突
             static std::mutex logger_mutex;
+
+            // 前端日志队列最大值，超过这个值会唤醒后端日志线程
+            static const Size_t front_queue_max_size = 2000;
 
             explicit Logger(LoggerType type, const string_type &file_name = "", Size_t thread_num = 2);
 
@@ -132,6 +137,11 @@ namespace SinBack
                 // 最后入队操作，需要加锁
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
                 this->front_buf_->push(msg.data());
+                // 前端队列长度很大了，通知后端线程快写日志
+                if (this->front_buf_->size() >= front_queue_max_size) {
+                    lock.unlock();
+                    this->cv_.notify_one();
+                }
             }
             // 线程执行函数
             void thread_run_func();
