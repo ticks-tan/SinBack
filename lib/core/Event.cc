@@ -45,7 +45,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
 // 边缘触发 read 封装
 void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
-void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
+void handle_keep_alive(Size_t id, const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
 
 
 Int io_read_et(Core::IOEvent* io)
@@ -53,7 +53,7 @@ Int io_read_et(Core::IOEvent* io)
     if (io){
         if (io->closed || !io->ready_) return -1;
 
-        std::vector<Char> buf;
+        Base::Buffer buf;
         buf.reserve(256);
         // 每次需要读取长度
         Size_t need_read_len = 0, handle_len;
@@ -83,17 +83,17 @@ Int io_read_et(Core::IOEvent* io)
             }else{
                 // 成功读取数据
                 read_len += len;
-                io->read_buf_.append(buf.data(), len);
+                io->read_buf_.write(buf.data(), len);
                 buf.clear();
             }
         }
         READ_END:
         // 读取结束，调用回调函数
-        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.length()) ? io->read_len_ : io->read_buf_.length();
+        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.size()) ? io->read_len_ : io->read_buf_.size();
         if (handle_len > 0) {
             handle_read_cb(io->shared_from_this(), (void *) (io->read_buf_.data()), handle_len);
             // 删除前面数据，防止缓冲区无限膨胀
-            io->read_buf_.erase(0, handle_len);
+            io->read_buf_.removeFront(handle_len);
         }
         SinBack::Core::EventLoop::addIoEvent(io->shared_from_this(), handle_event_func,
                                              Core::IO_READ | Core::IO_TYPE_ET);
@@ -253,18 +253,20 @@ void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev)
 }
 
 // keepalive回调 ?
-void handle_keep_alive(const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev)
+void handle_keep_alive(Size_t id, const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev)
 {
     auto timer = ev.lock();
     if (timer){
         if (io){
-            if (io->closed || !io->ready_) return;
+            // 不是同一个IO或IO已经关闭
+            if (io->closed || !io->ready_ || io->id_ != id) return;
             auto loop = (Core::EventLoopPtr)(io->loop_);
             if (loop) {
                 ULong last_rw_time = std::max(io->last_read_time_, io->last_write_time_);
                 ULong time_ms = (loop->getCurrentTime() - last_rw_time) / 1000;
                 if (time_ms + 100 < io->keep_alive_ms_) {
-                    loop->addTimer(std::bind(&handle_keep_alive, io, std::placeholders::_1), io->keep_alive_ms_, 1);
+                    loop->addTimer(std::bind(&handle_keep_alive, io->id_, io, std::placeholders::_1),
+                                   io->keep_alive_ms_, 1);
                 } else {
                     io->close();
                 }
@@ -290,7 +292,7 @@ void handle_read_cb(const std::weak_ptr<Core::IOEvent>& ev, void* buf, Size_t le
     auto io = ev.lock();
     if (io) {
         if (io->read_cb_) {
-            std::basic_string<Char> buffer((Char*)buf, len);
+            String buffer((Char*)buf, len);
             io->read_cb_(io, buffer);
         }
     }
@@ -376,7 +378,7 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
     if (io){
         if (io->closed || !io->ready_) return;
 
-        std::vector<Char> buf;
+        Base::Buffer buf;
         buf.reserve(256);
         // 每次需要读取长度
         Size_t need_read_len = 0, handle_len;
@@ -406,16 +408,16 @@ void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
             }else{
                 // 成功读取数据
                 read_len += len;
-                io->read_buf_.append(buf.data(), len);
+                io->read_buf_.write(buf.data(), len);
                 buf.clear();
             }
         }
         READ_END:
         // 读取结束，调用回调函数
-        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.length()) ? io->read_len_ : io->read_buf_.length();
+        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.size()) ? io->read_len_ : io->read_buf_.size();
         handle_read_cb(io, (void*)(io->read_buf_.data()), handle_len);
         // 删除前面数据，防止缓冲区无限膨胀
-        io->read_buf_.erase(0, handle_len);
+        io->read_buf_.removeFront(handle_len);
         return;
         READ_ERR:
         // 错误回调
@@ -434,7 +436,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
     if (io){
         if (io->closed || !io->ready_) return;
 
-        std::vector<Char> buf;
+        Base::Buffer buf;
         buf.reserve(256);
         // 需要读取的长度
         Size_t need_read_len = 0;
@@ -465,11 +467,11 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         if (read_len == 0){
             goto DISCONNECT;
         }
-        io->read_buf_.append(buf.data(), read_len);
+        io->read_buf_.write(buf.data(), read_len);
         buf.clear();
         // 读取回调
         handle_read_cb(io, (void*)(io->read_buf_.data()), read_len);
-        io->read_buf_.erase(0, read_len);
+        io->read_buf_.removeFront(read_len);
         return;
         READ_ERROR:
         // 读取错误回调
@@ -487,7 +489,7 @@ void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
     auto io = ev.lock();
     if (io){
         Long write_len = 0, len;
-        std::basic_string<Char> buf;
+        String buf;
 
         std::unique_lock<std::mutex> lock(io->write_mutex_);
 
@@ -617,10 +619,10 @@ Int Core::IOEvent::read(Size_t read_len)
         if (!this->read_buf_.empty() && this->read_buf_.size() >= read_len){
             // 有数据
             handle_read_cb(this->shared_from_this(), (void*)this->read_buf_.data(), read_len);
-            if (this->read_buf_.length() == read_len){
+            if (this->read_buf_.size() == read_len){
                 this->read_buf_.clear();
             } else {
-                this->read_buf_.erase(0, read_len);
+                this->read_buf_.removeFront(read_len);
             }
         } else {
             return this->read();
@@ -668,13 +670,15 @@ Int Core::IOEvent::close(bool timer)
 
 bool Core::IOEvent::setKeepAlive(Size_t timeout_ms)
 {
-    if (this->closed || !this->active_ || !this->loop_) return false;
+    if (this->closed || !this->active_) return false;
     if (this->loop_) {
         this->last_read_time_ = this->last_write_time_ = this->loop_->getCurrentTime();
         this->keep_alive_ms_ = timeout_ms;
-        this->loop_->addTimer(std::bind(&handle_keep_alive, shared_from_this(), std::placeholders::_1), timeout_ms, 1);
+        this->loop_->addTimer(std::bind(&handle_keep_alive, this->id_, shared_from_this(),
+                                        std::placeholders::_1),timeout_ms, 1);
+        return true;
     }
-    return true;
+    return false;
 }
 
 /**

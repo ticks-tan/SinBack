@@ -339,13 +339,19 @@ void Base::Buffer::reserve(Size_t len)
     if (len <= this->capacity()){
         return;
     }
+    Size_t old_capacity = this->capacity();
     Size_t new_capacity = this->capacity() * 2;
     if (new_capacity < len){
         new_capacity = len;
     }
+    if (!this->data_){
+        this->data_.reset(new Char[new_capacity], std::default_delete<Char[]>());
+        this->capacity_ = new_capacity;
+        return;
+    }
     auto old_data = std::move(this->data_);
-    this->data_.reset(new Char[new_capacity]);
-    std::memcpy(this->data_.get(), old_data.get(), this->capacity_);
+    this->data_.reset(new Char[new_capacity], std::default_delete<Char[]>());
+    std::memcpy(this->data_.get(), old_data.get(), old_capacity);
     this->capacity_ = new_capacity;
 }
 

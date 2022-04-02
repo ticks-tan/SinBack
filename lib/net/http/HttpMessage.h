@@ -23,6 +23,8 @@ namespace SinBack
             using Map = std::unordered_map<String, String>;
             using Iterator = Map::iterator;
         public:
+            HttpHeader() = default;
+
             void setHead(const String& key, const String& value){
                 if (!key.empty() && !value.empty()) {
                     this->data_[key] = value;
@@ -64,6 +66,8 @@ namespace SinBack
         class HttpContent
         {
         public:
+            HttpContent() = default;
+
             String& data(){
                 return data_;
             }
@@ -287,6 +291,12 @@ namespace SinBack
         class HttpRequest
         {
         public:
+            HttpRequest(){
+                url = "";
+                method = HttpMethod::HTTP_GET;
+                http_version = HTTP_1_1;
+            }
+
             // 请求URL
             String url;
             // 请求方法
@@ -306,6 +316,11 @@ namespace SinBack
         class HttpResponse
         {
         public:
+            HttpResponse(){
+                status_code = 200;
+                http_version = HTTP_1_1;
+            }
+
             // Http版本
             HttpVersion http_version = HTTP_1_1;
             // 状态代码

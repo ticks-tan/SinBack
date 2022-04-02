@@ -476,12 +476,12 @@ Core::EventLoop::readIo(Base::socket_t fd, Size_t read_len,
     if (read_len > 0){
         io->read_len_ = read_len;
         io->read_buf_.reserve(io->read_buf_.capacity() + read_len);
-        if (read_len <= io->read_buf_.length()){
+        if (read_len <= io->read_buf_.size()){
             // 需要读取的数据已经在缓冲区中，直接调用回调
             if (io->read_cb_){
-                std::basic_string<Char> buffer(io->read_buf_, read_len);
+                std::basic_string<Char> buffer(io->read_buf_.data(), read_len);
                 io->read_cb_(io, buffer);
-                io->read_buf_.erase(0, read_len);
+                io->read_buf_.removeFront(read_len);
             }
             return io;
         }

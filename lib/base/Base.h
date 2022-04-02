@@ -103,11 +103,11 @@ namespace SinBack {
     template <typename... Args>
     String formatString(const String& format, Args&&... args)
     {
-        std::vector<Char> str;
+        TypeSize<Args&&...> type_size(args...);
+        UniquePtr<Char[]> buffer(new Char[1 + format.size() + type_size.size]);
         // 根据可变参数大小分配内存
-        str.reserve(format.size() + TypeSize<Args&&...>(args...).size);
-        ::sprintf(str.data(), format.c_str(), args...);
-        return str.data();
+        ::sprintf(buffer.get(), format.c_str(), args...);
+        return buffer.get();
     }
 
 }

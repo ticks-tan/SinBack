@@ -11,6 +11,7 @@
 #include <deque>
 #include <atomic>
 #include <mutex>
+#include "base/Buffer.h"
 #include "base/SocketUtil.h"
 
 namespace SinBack
@@ -149,7 +150,7 @@ namespace SinBack
             // 保持活跃时间
             Size_t keep_alive_ms_ = 0;
             // 读取缓冲区
-            string_type read_buf_;
+            Base::Buffer read_buf_;
             // 读取长度
             Size_t read_len_ = 0;
             // 写入缓冲队列

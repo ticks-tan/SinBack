@@ -16,7 +16,8 @@ using namespace SinBack;
 
 int main(int argc, char* argv[])
 {
-    Base::system_signal(SIGPIPE, SIG_IGN);
+    Base::system_signal(SIGPIPE, nullptr);
+    Base::system_signal(SIGINT, nullptr);
     HttpServer server;
     HttpService service;
 
@@ -34,11 +35,6 @@ int main(int argc, char* argv[])
     service.GET("/api/test", [](HttpContext& context) -> Int {
         Log::FLogI("我是测试接口 , request url = %s .", context.request().url.c_str());
         return context.sendText("我是测试接口 !");
-    });
-    service.GET("/", [](HttpContext& context) -> Int {
-        printf("所有请求都会走这里 -- %s\n", context.request().url.c_str());
-        // 返回 NEXT 时，会继续执行下一个拦截器
-        return NEXT;
     });
     // 添加到 Test 服务模块
     server.addService("Test", &service);
