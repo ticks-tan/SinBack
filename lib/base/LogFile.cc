@@ -26,7 +26,7 @@ Base::LogFile::LogFile(const Char *filename)
 {
     this->filename_ = filename;
     this->filename_ += ".log";
-    this->fp_ = ::fopen(this->filename_.c_str(), "w+");
+    this->fp_ = ::fopen(this->filename_.data(), "w+");
     this->buffer_.reserve(LOGFILE_MAX_BUFFER_LEN);
 }
 
@@ -150,13 +150,14 @@ Size_t Base::RollLogFile::write(const string_type& buf)
 void Base::RollLogFile::rollFile()
 {
     ++this->roll_count_;
-    auto it = this->base_name_.find_last_of('.');
+    auto it = this->base_name_.rfind('.');
     if (it != LogFile::string_type::npos){
         string_type name = this->base_name_;
+        // 根据滚动次数重命名文件
         name.insert(it, std::to_string(this->roll_count_));
         this->name() = name;
         this->close();
-        this->fileFp() = ::fopen(this->name().c_str(), "w+");
+        this->fileFp() = ::fopen(this->name().data(), "w+");
     }
 }
 

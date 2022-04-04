@@ -75,27 +75,42 @@ namespace SinBack
         using EventLoopPtr = EventLoop*;
         // 事件基类
     struct Event{
-            // pid
-            pid_t pid_ = 0;
-            //  事件id
-            Size_t id_ = 0;
-            // 是否初始化
-            bool init_ = false;
+        Event(){
+            pid_ = 0;
+            id_ = 0;
+            cb_ = nullptr;
+            type_ = EventType::Event_Type_Custom;
+            active_ = pending_ = false;
+            priority_ = Event_Priority_Lowest;
+            context_ = nullptr;
+            init_ = false;
+            loop_ = nullptr;
+        }
+        // pid
+        pid_t pid_ = 0;
+        //  事件id
+        Size_t id_ = 0;
+        // 是否初始化
+        bool init_ = false;
+        // 事件优先级
+        EventPriority priority_ = Event_Priority_Lowest;
+        // EventLoop
+        EventLoopPtr loop_ = nullptr;
+        // 是否活跃
+        bool active_ = false;
+        // 是否为待处理状态
+        bool pending_ = false;
+        // 回调函数
+        EventCB cb_ = nullptr;
+        // 自定义数据指针
+        void* context_ = nullptr;
+    private:
             // 事件类型
             EventType type_ = Event_Type_None;
-            // 事件优先级
-            EventPriority priority_ = Event_Priority_Lowest;
-            // EventLoop
-            EventLoopPtr loop_ = nullptr;
-            // 是否活跃
-            bool active_ = false;
-            // 是否为待处理状态
-            bool pending_ = false;
-            // 回调函数
-            EventCB cb_ = nullptr;
-            // 自定义数据指针
-            void* context_ = nullptr;
-
+    public:
+        virtual EventType type() const {
+            return type_;
+        }
             // 初始化
             virtual void init(){
                 pid_ = getpid();
@@ -115,6 +130,20 @@ namespace SinBack
         {
             using string_type = String;
             static const Size_t default_keep_alive_timeout = 1000;
+
+            IOEvent(){
+                type_ = EventType::Event_Type_IO;
+                Event::priority_ = Event_Priority_Normal;
+                evs_ = active_evs_ = 0;
+                fd_ = Base::socket_t(-1);
+                ready_ = accept_ = false;
+                closed = false;
+                error = 0;
+                read_len_ = 0;
+                last_read_time_ = 0;
+                last_write_time_ = 0;
+                keep_alive_ms_ = 0;
+            }
             // 监听事件
             Int evs_ = 0;
             // 事件回调
@@ -157,12 +186,19 @@ namespace SinBack
             std::deque<string_type> write_queue_;
             // 写入锁
             std::mutex write_mutex_;
+        private:
+            // 事件类型
+            EventType type_ = Event_Type_None;
+        public:
+            EventType type() const override {
+                return type_;
+            }
 
             // 初始化
             void init() override{
                 // 父类初始化
                 Event::init();
-                Event::type_ = EventType::Event_Type_IO;
+                type_ = EventType::Event_Type_IO;
                 Event::priority_ = Event_Priority_Normal;
                 evs_ = active_evs_ = 0;
                 fd_ = Base::socket_t(-1);
@@ -194,7 +230,12 @@ namespace SinBack
         struct TimerEvent : public Event
         {
             static const Int infinity = -1;
-
+            TimerEvent()
+            {
+                timeout_ = next_time_ = repeat_ = 0;
+                Event::priority_ = Event_Priority_Highest;
+                type_ = EventType::Event_Type_Timer;
+            }
             // 定时器执行次数
             Int repeat_ = 0;
             // 超时时间
@@ -203,12 +244,18 @@ namespace SinBack
             ULong next_time_ = 0;
             // 回调事件
             TimerEventCB cb_ = nullptr;
+        private:
+            // 事件类型
+            EventType type_ = Event_Type_None;
+        public:
+            EventType type() const override {
+                return type_;
+            }
 
             // 初始化
             void init() override{
                 Event::init();
                 timeout_ = next_time_ = repeat_ = 0;
-                Event::type_ = Event_Type_Timer;
                 Event::priority_ = Event_Priority_Highest;
             }
         };
@@ -217,15 +264,27 @@ namespace SinBack
         struct IdleEvent : Event
         {
             static const Int infinity = -1;
+            IdleEvent()
+            {
+                repeat_ = 0;
+                Event::priority_ = Event_Priority_Highest;
+                type_ = EventType::Event_Type_Idle;
+            }
             // 回调函数
             IdleEventCB cb_ = nullptr;
             // 执行次数
             Int repeat_ = 0;
+        private:
+            // 事件类型
+            EventType type_ = Event_Type_None;
+        public:
+            EventType type() const override {
+                return type_;
+            }
 
             // 初始化
             void init() override {
                 Event::init();
-                Event::type_ = Event_Type_Idle;
                 repeat_ = 0;
                 cb_ = nullptr;
             }

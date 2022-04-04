@@ -46,7 +46,7 @@ Base::Buffer::Buffer(const std::vector<Char> &buf)
 }
 
 
-Base::Buffer::Buffer(const String &buf)
+Base::Buffer::Buffer(const string_type &buf)
         :Buffer()
 {
     Size_t len = buf.size();
@@ -105,7 +105,7 @@ SSize_t Base::Buffer::read(Char *buf, Size_t len)
     return read_len;
 }
 
-SSize_t Base::Buffer::read(String &buf, Size_t len)
+SSize_t Base::Buffer::read(Base::Buffer::string_type &buf, Size_t len)
 {
     if (len > this->size()){
         return -1;
@@ -159,12 +159,12 @@ SSize_t Base::Buffer::write(const Char *buf, Size_t len)
     return write_len;
 }
 
-SSize_t Base::Buffer::write(const String &buf, Size_t len)
+SSize_t Base::Buffer::write(const string_type &buf, Size_t len)
 {
     if (len > buf.size()){
         return 0;
     }
-    return this->write(buf.c_str(), len);
+    return this->write(buf.data(), len);
 }
 
 SSize_t Base::Buffer::write(const Base::Buffer &buf, Size_t len)
@@ -187,7 +187,7 @@ SSize_t Base::Buffer::write(const Base::Buffer &buf, Size_t len)
     return write_len;
 }
 
-SSize_t Base::Buffer::readAll(String &buf)
+SSize_t Base::Buffer::readAll(Base::Buffer::string_type &buf)
 {
     SSize_t read_len = 0;
     Size_t i = this->begin_;
@@ -217,16 +217,16 @@ SSize_t Base::Buffer::readAll(Base::Buffer &buf)
     return read_len;
 }
 
-SSize_t Base::Buffer::writeAll(const String &buf)
+SSize_t Base::Buffer::writeAll(const string_type &buf)
 {
-    return this->write(buf.c_str(), buf.size());
+    return this->write(buf.data(), buf.size());
 }
 
 SSize_t Base::Buffer::writeAll(const Base::Buffer &buf) {
     return this->write(buf, buf.size());
 }
 
-SSize_t Base::Buffer::append(const String &buf)
+SSize_t Base::Buffer::append(const string_type &buf)
 {
     return this->writeAll(buf);
 }
@@ -255,7 +255,7 @@ bool Base::Buffer::removeBack(Size_t len)
     return true;
 }
 
-Base::Buffer &Base::Buffer::operator=(const String &buf)
+Base::Buffer &Base::Buffer::operator=(const string_type &buf)
 {
     this->begin_ = this->end_ = 0;
     this->reserve(buf.size() + 1);
@@ -283,7 +283,7 @@ Base::Buffer &Base::Buffer::operator=(const Base::Buffer &buf)
     return *this;
 }
 
-Base::Buffer &Base::Buffer::operator+=(const String &buf)
+Base::Buffer &Base::Buffer::operator+=(const string_type &buf)
 {
     this->append(buf);
     return *this;
@@ -298,7 +298,7 @@ Base::Buffer &Base::Buffer::operator+=(const Base::Buffer &buf)
     return *this;
 }
 
-Base::Buffer &Base::Buffer::operator<<(const String &buf)
+Base::Buffer &Base::Buffer::operator<<(const string_type &buf)
 {
     return this->operator+=(buf);
 }
@@ -316,8 +316,8 @@ Base::Buffer operator+(const Base::Buffer &buf1, const Base::Buffer &buf2)
     return buf;
 }
 
-Base::Buffer &Base::Buffer::operator>>(String &buf) {
-    this->readAll(std::forward<String&>(buf));
+Base::Buffer &Base::Buffer::operator>>(string_type &buf) {
+    this->readAll(std::forward<string_type &>(buf));
     return *this;
 }
 
@@ -329,8 +329,8 @@ Base::Buffer &Base::Buffer::operator>>(Base::Buffer &buf) {
     return *this;
 }
 
-Base::Buffer::operator String() {
-    String buf(this->data_.get() + this->begin_, this->size());
+Base::Buffer::operator string_type() {
+    string_type buf(this->data_.get() + this->begin_, this->size());
     return std::move(buf);
 }
 

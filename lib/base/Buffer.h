@@ -9,7 +9,7 @@
 #define SIN_BACK_BUFFER_H
 
 #include <vector>
-#include "Base.h"
+#include "base/SinString.h"
 
 namespace SinBack
 {
@@ -17,8 +17,9 @@ namespace SinBack
         // Buffer类设计
         class Buffer{
         public:
+            using string_type = String;
             explicit Buffer();
-            explicit Buffer(const String& buf);
+            explicit Buffer(const string_type & buf);
             explicit Buffer(const Char* buf);
             explicit Buffer(const std::vector<Char>& buf);
             Buffer(const Buffer& buf);
@@ -56,35 +57,35 @@ namespace SinBack
             }
             // 从缓存中读取字符串
             SSize_t read(Char* buf, Size_t len);
-            SSize_t read(String & buf, Size_t len);
+            SSize_t read(string_type & buf, Size_t len);
             SSize_t read(Buffer& buf, Size_t len);
             // 向缓存中写入字符串
             SSize_t write(const Char* buf, Size_t len);
-            SSize_t write(const String & buf, Size_t len);
+            SSize_t write(const string_type & buf, Size_t len);
             SSize_t write(const Buffer& buf, Size_t len);
             // 从缓存读取所有字符
-            SSize_t readAll(String& buf);
+            SSize_t readAll(string_type & buf);
             SSize_t readAll(Buffer& buf);
             // 向缓存中写入所有字符
-            SSize_t writeAll(const String & buf);
+            SSize_t writeAll(const string_type & buf);
             SSize_t writeAll(const Buffer& buf);
             // 向缓存中写入字符串
-            SSize_t append(const String & buf);
+            SSize_t append(const string_type & buf);
             SSize_t append(const Buffer& buf);
             // 移除缓存中的字符串
             bool removeFront(Size_t len);
             bool removeBack(Size_t len);
 
-            Buffer& operator = (const String & buf);
+            Buffer& operator = (const string_type & buf);
             Buffer& operator = (const Buffer& buf);
             friend Buffer operator + (const Buffer& buf1, const Buffer& buf2);
-            Buffer& operator += (const String & buf);
+            Buffer& operator += (const string_type & buf);
             Buffer& operator += (const Buffer& buf);
-            Buffer& operator << (const String & buf);
+            Buffer& operator << (const string_type & buf);
             Buffer& operator << (const Buffer& buf);
-            Buffer& operator >> (String& buf);
+            Buffer& operator >> (string_type & buf);
             Buffer& operator >> (Buffer& buf);
-            explicit operator String();
+            explicit operator string_type();
 
         private:
             // 存储实际内容

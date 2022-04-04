@@ -19,7 +19,7 @@ namespace SinBack
 {
     namespace Core
     {
-        class EventLoop : noncopyable
+        class EventLoop final : noncopyable
         {
         public:
             EventLoop();

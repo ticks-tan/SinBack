@@ -36,7 +36,7 @@ namespace SinBack
     class Logger : noncopyable{
         public:
             // 字符串
-            typedef std::basic_string<Char> string_type;
+        using string_type = SinBack::String;
             // 队列
             typedef std::queue<string_type> queue_type;
 
@@ -69,36 +69,36 @@ namespace SinBack
 
         public:
             template<typename... Type>
-            Logger &debug(const String &format, Type &&... args) {
+            Logger &debug(const string_type &format, Type &&... args) {
                 this->log(Debug, format, args...);
                 return *this;
             }
 
             template<typename... Type>
-            Logger &info(const String &format, Type &&... args) {
+            Logger &info(const string_type &format, Type &&... args) {
                 this->log(Info, format, args...);
                 return *this;
             }
 
             template<typename... Type>
-            Logger &warn(const String &format, Type &&... args) {
+            Logger &warn(const string_type &format, Type &&... args) {
                 this->log(Warn, format, args...);
                 return *this;
             }
 
             template<typename... Type>
-            Logger &error(const String &format, Type &&... args) {
+            Logger &error(const string_type &format, Type &&... args) {
                 this->log(Error, format, args...);
                 return *this;
             }
             // 获取日志文件名
-            string_type fileName() const {
+            string_type& fileName() const {
                 return log_->name();
             }
 
         private:
             template<typename... Type>
-            void log(LogLevel msg_level, const String &format, Type &&...args) {
+            void log(LogLevel msg_level, const string_type&format, Type&&...args) {
                 if (msg_level < this->level_) {
                     return;
                 }
@@ -132,7 +132,7 @@ namespace SinBack
                 // 格式化字符串
                 msg << this->time_str_
                     << "]: "
-                    << std::move(SinBack::formatString(format, args...))
+                    << std::move(SinBack::format(format, std::forward<Type&&>(args)...))
                     << "\n";
                 // 最后入队操作，需要加锁
                 std::unique_lock<std::mutex> lock(this->front_mutex_);
@@ -184,7 +184,7 @@ namespace SinBack
         };
 
         template <typename... T>
-        void file_log_print(Logger* logger, LogLevel level, const String &format, T&&...args){
+        void file_log_print(Logger* logger, LogLevel level, const Logger::string_type &format, T&&...args){
             if (!logger){
                 return;
             }
@@ -206,28 +206,28 @@ namespace SinBack
             }
         }
         template <typename... T>
-        void FLogD(const String &format, T&&...args){
+        void FLogD(const Logger::string_type &format, T&&...args){
             auto logger = Logger::getLogger("SinBackDefault");
             if (logger) {
                 file_log_print(logger, LogLevel::Debug, format, args...);
             }
         }
         template <typename... T>
-        void FLogI(const String &format, T&&...args){
+        void FLogI(const Logger::string_type &format, T&&...args){
             auto logger = Logger::getLogger("SinBackDefault");
             if (logger) {
                 file_log_print(logger, LogLevel::Info, format, args...);
             }
         }
         template <typename... T>
-        void FLogW(const String &format, T&&...args){
+        void FLogW(const Logger::string_type &format, T&&...args){
             auto logger = Logger::getLogger("SinBackDefault");
             if (logger) {
                 file_log_print(logger, LogLevel::Warn, format, args...);
             }
         }
         template <typename... T>
-        void FLogE(const String &format, T&&...args){
+        void FLogE(const Logger::string_type &format, T&&...args){
             auto logger = Logger::getLogger("SinBackDefault");
             if (logger) {
                 file_log_print(logger, LogLevel::Error, format, args...);

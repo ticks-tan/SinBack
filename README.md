@@ -39,7 +39,7 @@ int main()
     // 添加到 Test 服务模块
     server.addService("Test", &service);
     // 开始监听2021端口
-    server.listen(2022, [](const SinBack::String& err){
+    server.listen(2022, [](const SinBack::SinString& err){
         fmt::print("listen error: %s\n", err);
     });
     return 0;
@@ -62,12 +62,12 @@ int main()
         fmt::print("有新客户端连接, fd = %d\n", io->getFd());
     };
     // 有新数据读取后会调用该函数
-    server.onMessage = [](const TcpServer::ChannelPtr& io, const String& read_msg) {
+    server.onMessage = [](const TcpServer::ChannelPtr& io, const SinString& read_msg) {
         // 像客户端写入发来的数据
         io->read(read_msg);
     };
     // 服务端读取数据错误会调用该函数
-    server.onErrorMessage = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
+    server.onErrorMessage = [](const TcpServer::ChannelPtr& io, const SinString& err_msg) {
         fmt::print("读取错误，错误信息: %s\n", err_msg);
         // 这里不用调用 io->close ，读取错误会自动关闭
     };
@@ -77,7 +77,7 @@ int main()
         fmt::print("成功写入%ld字节数据\n", len);
     };
     // 服务端写入时错误会调用该函数
-    server.onErrorWrite = [](const TcpServer::ChannelPtr& io, const String& err_msg) {
+    server.onErrorWrite = [](const TcpServer::ChannelPtr& io, const SinString& err_msg) {
         fmt::print("写入错误，错误信息: %s\n", err_msg);
         // 读取和写入错误时，IO句柄对应 loop 的日志记录器都会记录该错误
     };

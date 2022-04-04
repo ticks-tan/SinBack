@@ -15,9 +15,9 @@ namespace SinBack
     namespace Tools
     {
         // url编码
-        std::string url_encode(const std::string& url);
+        SinBack::String url_encode(const SinBack::String& url);
         // url解码
-        std::string url_decode(const std::string& url);
+        SinBack::String url_decode(const SinBack::String& url);
     }
 }
 

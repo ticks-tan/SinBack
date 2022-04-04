@@ -20,17 +20,18 @@ namespace SinBack
         class HttpHeader
         {
         public:
+            using string_type = SinBack::String;
             using Map = std::unordered_map<String, String>;
             using Iterator = Map::iterator;
         public:
             HttpHeader() = default;
 
-            void setHead(const String& key, const String& value){
+            void setHead(const string_type& key, const string_type& value){
                 if (!key.empty() && !value.empty()) {
                     this->data_[key] = value;
                 }
             }
-            String getHead(const String& key) const{
+            String getHead(const string_type& key) const{
                 auto it = this->data_.find(key);
                 if (it != this->data_.end()){
                     return it->second;
@@ -49,10 +50,10 @@ namespace SinBack
                 return str;
             }
 
-            String operator [](const String& key) const{
+            String operator [](const string_type& key) const{
                 return getHead(key);
             }
-            String& operator [](const String& key){
+            String& operator [](const string_type& key){
                 return this->data_[key];
             }
             void clear() {
@@ -66,6 +67,7 @@ namespace SinBack
         class HttpContent
         {
         public:
+            using string_type = SinBack::String;
             HttpContent() = default;
 
             String& data(){
@@ -81,7 +83,7 @@ namespace SinBack
                 this->data_.clear();
             }
         private:
-            String data_;
+            string_type data_;
         };
 
         // Http请求方法
@@ -291,6 +293,7 @@ namespace SinBack
         class HttpRequest
         {
         public:
+            using string_type = SinBack::String;
             HttpRequest(){
                 url = "";
                 method = HttpMethod::HTTP_GET;
@@ -298,7 +301,7 @@ namespace SinBack
             }
 
             // 请求URL
-            String url;
+            string_type url;
             // 请求方法
             HttpMethod method;
             // 协议版本
@@ -308,7 +311,7 @@ namespace SinBack
             // 内容
             HttpContent content;
             // 解析为字符串格式
-            String toString() const;
+            string_type toString() const;
             // 清空内容
             void clear();
         };
@@ -316,6 +319,7 @@ namespace SinBack
         class HttpResponse
         {
         public:
+            using string_type = SinBack::String;
             HttpResponse(){
                 status_code = 200;
                 http_version = HTTP_1_1;
@@ -331,7 +335,7 @@ namespace SinBack
             HttpContent content;
 
             // 解析为字符串格式
-            String toString();
+            string_type toString();
             // 清空内容
             void clear();
         };

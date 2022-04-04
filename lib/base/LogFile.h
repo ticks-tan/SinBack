@@ -22,7 +22,7 @@ namespace SinBack
             static const Int LOGFILE_MAX_BUFFER_LEN = 512;
         public:
             static const Size_t max_free_time = 5000;
-            using string_type = std::basic_string<Char>;
+            using string_type = SinBack::String;
             LogFile();
             explicit LogFile(const Char* filename);
             virtual ~LogFile();

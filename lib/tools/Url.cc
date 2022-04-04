@@ -21,7 +21,7 @@ static inline bool is_hex(char ch){
 }
 
 
-std::string SinBack::Tools::url_encode(const std::string& url){
+SinBack::String SinBack::Tools::url_encode(const SinBack::String& url){
     auto len = url.length();
     String str;
     Char tmp[4] = "%00";
@@ -41,7 +41,7 @@ std::string SinBack::Tools::url_encode(const std::string& url){
     return str;
 }
 
-std::string SinBack::Tools::url_decode(const std::string& url) {
+SinBack::String SinBack::Tools::url_decode(const SinBack::String& url) {
     auto len = url.length();
     String str;
     Char ch;

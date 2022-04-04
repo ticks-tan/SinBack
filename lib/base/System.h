@@ -89,12 +89,12 @@ namespace SinBack
         static inline String system_get_cwd() {
             char buf[1024]{};
             return (::getcwd(buf, sizeof(buf)) != nullptr)
-                ? std::move(String(buf)) : std::move(String());
+                   ? std::move(String (buf)) : std::move(String());
         }
 
         // 设置当前工作目录
         static inline bool system_set_cwd(const String& path) {
-            return (::chdir(path.c_str()) == 0);
+            return (::chdir(path.data()) == 0);
         }
     }
 }

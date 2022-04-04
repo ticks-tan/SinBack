@@ -36,7 +36,7 @@ add_library(SinBack_Shared SHARED
         ${SinBack_Base}
         ${SinBack_Core}
         ${SinBack_Net}
-        ${SinBack_Tools})
+        ${SinBack_Tools} lib/base/SinString.h lib/base/SinString.cc)
 
 add_library(SinBack_Static STATIC
         ${SinBack_Base}

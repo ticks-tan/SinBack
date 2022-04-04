@@ -136,13 +136,13 @@ SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& ev)
             const ChannelPtr channel = server->addChannel(io);
             Base::setSocketNonblock(channel->getFd());
             // 设置读取回调
-            channel->setReadCb([server, &channel](const String &buf) {
+            channel->setReadCb([server, &channel](const string_type &buf) {
                 if (server->onMessage) {
                     server->onMessage(channel, buf);
                 }
             });
             // 设置读取错误回调
-            channel->setReadErrCb([server, &channel](const String &err) {
+            channel->setReadErrCb([server, &channel](const string_type &err) {
                 if (server->onErrorMessage) {
                     server->onErrorMessage(channel, err);
                 }
@@ -154,7 +154,7 @@ SinBack::Net::TcpServer::newClient(const std::weak_ptr<Core::IOEvent>& ev)
                 }
             });
             // 设置写入错误回调
-            channel->setWriteErrCb([server, &channel](const String &err) {
+            channel->setWriteErrCb([server, &channel](const string_type &err) {
                 if (server->onErrorWrite) {
                     server->onErrorWrite(channel, err);
                 }

@@ -80,9 +80,9 @@ void Log::Logger::thread_run_func()
                     buf = std::move(this->back_buf_->front());
                     this->back_buf_->pop();
                     if (this->type_ == Normal) {
-                        this->log_->write(buf);
+                        this->log_->write(buf.c_str());
                     } else if (this->type_ == Rolling) {
-                        std::dynamic_pointer_cast<Base::RollLogFile>(this->log_)->write(buf);
+                        std::dynamic_pointer_cast<Base::RollLogFile>(this->log_)->write(buf.c_str());
                     }
                 }
             }

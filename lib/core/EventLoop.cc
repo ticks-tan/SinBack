@@ -161,7 +161,6 @@ std::shared_ptr<Core::IOEvent> Core::EventLoop::getIoEvent(Base::socket_t fd)
         ptr->init();
         ptr->loop_ = this;
         ptr->fd_ = fd;
-        ptr->type_ = Event_Type_IO;
         this->io_evs_[fd] = ptr;
     } else {
         ptr = it->second;
@@ -280,17 +279,17 @@ Int Core::EventLoop::processPending()
                 if (item->pending_){
                     // 执行回调函数
                     if (item->active_){
-                        if (item->type_ == Core::Event_Type_IO){
+                        if (item->type() == Core::Event_Type_IO){
                             auto io = std::dynamic_pointer_cast<Core::IOEvent>(item);
                             if (io->cb_) {
                                 io->cb_(io);
                             }
-                        }else if (item->type_ == Core::Event_Type_Timer){
+                        }else if (item->type() == Core::Event_Type_Timer){
                             auto timer = std::dynamic_pointer_cast<Core::TimerEvent>(item);
                             if (timer->cb_) {
                                 timer->cb_(timer);
                             }
-                        }else if (item->type_ == Core::Event_Type_Idle){
+                        }else if (item->type() == Core::Event_Type_Idle){
                             auto idle = std::dynamic_pointer_cast<Core::IdleEvent>(item);
                             if (idle->cb_) {
                                 idle->cb_(idle);
@@ -633,7 +632,6 @@ std::shared_ptr<Core::Event>
 Core::EventLoop::addCustom(const Core::EventCB &cb) {
     std::shared_ptr<Core::Event> custom(new Event);
     custom->init();
-    custom->type_ = Event_Type_Custom;
     custom->priority_ = Core::Event_Priority_Lowest;
     custom->loop_ = this;
     custom->cb_ = cb;

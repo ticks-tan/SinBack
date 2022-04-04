@@ -10,7 +10,7 @@
 
 #include <chrono>
 #include <thread>
-#include "Base.h"
+#include "base/Base.h"
 
 namespace SinBack
 {
@@ -46,7 +46,7 @@ namespace SinBack
         // 获取当前日期时间
         bool getDateTimeNow(DateTime* dt);
         // 获取当前时间并格式化为指定格式
-        std::string getDateTimeNow(const std::string& format = "%Y-%m-%d %H:%M:%S");
+        String getDateTimeNow(const String& format = "%Y-%m-%d %H:%M:%S");
 
         // 获取时间点后多少时间对应 time_t
         template <TimeType Type> static Long getTimeAfter(Long time, Long after){

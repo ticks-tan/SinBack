@@ -24,7 +24,7 @@ const String Http::HttpContext::error_str = " .----------------.  .-------------
                                             "| '--------------' || '--------------' || '--------------' || '--------------' || '--------------' |\n"
                                             " '----------------'  '----------------'  '----------------'  '----------------'  '----------------' ";
 
-// const String Http::HttpContext::notfound_str = SIN_STR("-_- -_- -_- -_- 404 Not Found -_- -_- -_- -_-\n");
+// const SinString Http::HttpContext::notfound_str = SIN_STR("-_- -_- -_- -_- 404 Not Found -_- -_- -_- -_-\n");
 const String Http::HttpContext::notfound_str = "   _____  _______      _____    _______          __    ___________                      .___\n"
                    "  /  |  | \\   _  \\    /  |  |   \\      \\   _____/  |_  \\_   _____/___  __ __  ____    __| _/\n"
                    " /   |  |_/  /_\\  \\  /   |  |_  /   |   \\ /  _ \\   __\\  |    __)/  _ \\|  |  \\/    \\  / __ | \n"
@@ -52,7 +52,7 @@ Http::HttpContext::~HttpContext()
     this->url_params_ = nullptr;
 }
 
-Int Http::HttpContext::sendText(const String &text)
+Int Http::HttpContext::sendText(const string_type &text)
 {
     this->response_.status_code = 200;
     this->response_.header.setHead("Content-Type", "text/plain;charset=UTF-8");
@@ -75,7 +75,7 @@ Int Http::HttpContext::error() {
     return 1;
 }
 
-Int Http::HttpContext::sendFile(const String &file_name)
+Int Http::HttpContext::sendFile(const string_type &file_name)
 {
     if (!this->cache_file_->reOpen(file_name, Base::ReadOnly)){
         goto NotFound;
@@ -94,20 +94,20 @@ Int Http::HttpContext::sendFile(const String &file_name)
 
 bool Http::HttpContext::parseUrl()
 {
-    String& url = this->request_.url;
+    string_type& url = this->request_.url;
     std::basic_regex<Char> reg("/([0-9a-zA-Z-_]{1,}[/]?)*\\?([^?=&.]{1,}=[^?=&.]{1,}[&]?)*");
     if (std::regex_match(url, reg)){
         // 请求格式正确格式
         Size_t pos, start, end;
-        String key, value;
+        string_type key, value;
         url = Tools::url_decode(url);
         pos = url.find_first_of('?');
-        if (pos != String::npos){
+        if (pos != string_type::npos){
             start = pos + 1;
             // 循环查找
-            while ((pos = url.find_first_of('&', pos + 1)) != String::npos){
+            while ((pos = url.find_first_of('&', pos + 1)) != string_type::npos){
                 end = url.find_first_of('=', start);
-                if (end != String::npos && end < pos){
+                if (end != string_type::npos && end < pos){
                     // 添加到 url_params
                     key = url.substr(start, end - start);
                     start = end + 1;
@@ -123,7 +123,7 @@ bool Http::HttpContext::parseUrl()
             if (start < url.length()){
                 end = url.length();
                 pos = url.find_first_of('=', start);
-                if (pos != String::npos && pos < end){
+                if (pos != string_type::npos && pos < end){
                     key = url.substr(start, pos - start);
                     start = pos + 1;
                     value = url.substr(start, end - start);

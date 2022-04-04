@@ -19,16 +19,18 @@ namespace SinBack
         class HttpContext
         {
         public:
-            static const String notfound_str;
-            static const String error_str;
+            using string_type = SinBack::String;
+        public:
+            static const string_type notfound_str;
+            static const string_type error_str;
         public:
             explicit HttpContext(HttpServer* server);
             ~HttpContext();
 
             // 发送文本数据
-            Int sendText(const SinBack::String& text);
+            Int sendText(const string_type& text);
             // 发送文件
-            Int sendFile(const SinBack::String& file_name);
+            Int sendFile(const string_type& file_name);
             // 回应404
             Int notFound();
             // 回应错误
@@ -81,9 +83,9 @@ namespace SinBack
                 this->init_ = false;
             }
 
-            std::unordered_map<String, String>& urlParams(){
+            std::unordered_map<string_type, string_type>& urlParams(){
                 if (this->url_params_ == nullptr){
-                    this->url_params_ = new std::unordered_map<String, String>;
+                    this->url_params_ = new std::unordered_map<string_type, string_type>;
                 }
                 return *this->url_params_;
             }
@@ -101,7 +103,7 @@ namespace SinBack
             // 对应 HttpServer 指针
             HttpServer* server_;
             // URL 解析结果
-            std::unordered_map<String, String>* url_params_;
+            std::unordered_map<string_type, string_type>* url_params_;
             // 是否初始化
             bool init_;
         };

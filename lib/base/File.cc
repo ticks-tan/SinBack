@@ -19,26 +19,26 @@ Base::File::File()
 {
 }
 
-Base::File::File(const String &name, Base::OpenFileMode mode)
+Base::File::File(const string_type &name, Base::OpenFileMode mode)
     : name_(name)
     , mode_(mode)
     , file_(nullptr)
 {
     switch (mode) {
         case ReadOnly:
-            this->file_ = fopen(name.c_str(), "r");
+            this->file_ = fopen(name.data(), "r");
             break;
         case WriteOnly:
-            this->file_ = fopen(name.c_str(), "w");
+            this->file_ = fopen(name.data(), "w");
             break;
         case ReadWrite:
-            this->file_ = fopen(name.c_str(), "w+");
+            this->file_ = fopen(name.data(), "w+");
             break;
         case Append:
-            this->file_ = fopen(name.c_str(), "a+");
+            this->file_ = fopen(name.data(), "a+");
             break;
         default:
-            this->file_ = fopen(name.c_str(), "w+");
+            this->file_ = fopen(name.data(), "w+");
             break;
     }
 }
@@ -59,28 +59,28 @@ Base::File::~File()
  * @return true
  * @return false
  */
-bool Base::File::reOpen(const String &name, Base::OpenFileMode mode)
+bool Base::File::reOpen(const string_type &name, Base::OpenFileMode mode)
 {
     if (name.empty() || this->name_ == name && this->mode_ == mode) return true;
-    if (Base::isDir(name.c_str())) return false;
+    if (Base::isDir(name.data())) return false;
     this->close();
     this->name_ = name;
     this->mode_ = mode;
     switch (mode) {
         case ReadOnly:
-            this->file_ = fopen(name.c_str(), "r");
+            this->file_ = fopen(name.data(), "r");
             break;
         case WriteOnly:
-            this->file_ = fopen(name.c_str(), "w");
+            this->file_ = fopen(name.data(), "w");
             break;
         case ReadWrite:
-            this->file_ = fopen(name.c_str(), "w+");
+            this->file_ = fopen(name.data(), "w+");
             break;
         case Append:
-            this->file_ = fopen(name.c_str(), "a+");
+            this->file_ = fopen(name.data(), "a+");
             break;
         default:
-            this->file_ = fopen(name.c_str(), "w+");
+            this->file_ = fopen(name.data(), "w+");
             break;
     }
     return (this->file_ != nullptr);
@@ -125,7 +125,7 @@ Long Base::File::read(void *buf, Size_t len)
  * @param len : 读取长度
  * @return : 读取的字符串
  */
-String Base::File::read(Size_t len)
+Base::File::string_type Base::File::read(Size_t len)
 {
     if (this->file_ && len > 0) {
         std::vector<Char> buf;
@@ -140,9 +140,9 @@ String Base::File::read(Size_t len)
  * @brief 读取文件到字符串读取长度
  * @return : 读取的字符串
  */
-String Base::File::readAll()
+Base::File::string_type Base::File::readAll()
 {
-    String buffer;
+    string_type buffer;
     if (this->file_ && !this->name_.empty()){
         std::vector<Char> buf;
         buf.reserve(128);
@@ -197,9 +197,9 @@ Long Base::File::write(const void *buf, Size_t len)
  * @param buf : 写入字符串
  * @return : 写入的长度
  */
-Long Base::File::write(const String &buf)
+Long Base::File::write(const string_type &buf)
 {
-    return this->write(buf.c_str(), buf.length());
+    return this->write(buf.data(), buf.length());
 }
 
 /**
@@ -207,7 +207,7 @@ Long Base::File::write(const String &buf)
  * @param buf : 写入字符串
  * @return : File&
  */
-Base::File &Base::File::operator<<(const String &buf)
+Base::File &Base::File::operator<<(const string_type &buf)
 {
     this->write(buf);
     return *this;
@@ -218,7 +218,7 @@ Base::File &Base::File::operator<<(const String &buf)
  * @param buf : 要读取到的字符串
  * @return : File&
  */
-Base::File &Base::File::operator>>(String &buf)
+Base::File &Base::File::operator>>(string_type &buf)
 {
     buf = std::move(this->readAll());
     return *this;

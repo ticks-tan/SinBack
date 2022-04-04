@@ -13,7 +13,6 @@ namespace SinBack {
     class noncopyable {
     public:
         noncopyable(const noncopyable &) = delete;
-
         noncopyable &operator=(const noncopyable &) = delete;
 
     protected:
@@ -21,6 +20,7 @@ namespace SinBack {
 
         ~noncopyable() = default;
     };
+
 }
 
 #endif //SINBACK_NONCOPYABLE_H

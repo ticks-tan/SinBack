@@ -20,6 +20,7 @@ namespace SinBack {
         class HttpServer : noncopyable
         {
         public:
+            using string_type = SinBack::String;
             // Http服务设置
             struct Setting
             {
@@ -60,7 +61,7 @@ namespace SinBack {
             }
 
             // 获取 services
-            std::unordered_map<SinBack::String, HttpService*>& services(){
+            std::unordered_map<string_type, HttpService*>& services(){
                 return this->services_;
             }
 
@@ -113,7 +114,7 @@ namespace SinBack {
             // 设置
             Setting setting_;
             // 多个服务
-            std::unordered_map<String, HttpService*> services_;
+            std::unordered_map<string_type, HttpService*> services_;
             // accept 线程
             std::shared_ptr<Core::EventLoopThread> accept_th_;
             // 工作线程

@@ -9,10 +9,10 @@
 #define SIN_BACK_BASE_H
 
 #include <algorithm>
-#include <string>
 #include <functional>
 #include <memory>
-#include <vector>
+#include <string>
+#include <cstring>
 #include "base/noncopyable.h"
 
 // Linux平台
@@ -32,47 +32,24 @@ namespace SinBack {
     typedef unsigned long long ULLong;
     typedef char Char;
     typedef unsigned char UChar;
+    typedef unsigned char Byte;
+    typedef float Float;
+    typedef double Double;
 
-    // string
-    using String = std::basic_string<Char>;
     // shared_ptr
     template <typename T> using SharedPtr = std::shared_ptr<T>;
     // unique_ptr
     template <typename T> using UniquePtr = std::unique_ptr<T>;
     // function
     template <typename T> using Function = std::function<T>;
+    // string
+    typedef std::basic_string<Char> String;
 
     // 字符串结尾
 #define CHAR_END    ('\0')
     // 字符换行
 #define STR_CTL     ('\n')
 
-// str2 是否以 str1 开头
-    static bool startWith(const String& str1, const String& str2)
-    {
-        if (str1.length() > str2.length()) return false;
-        Size_t pos = 0, len1 = str1.length();
-        for (; pos < len1; ++pos){
-            if (str1[pos] != str2[pos]){
-                return false;
-            }
-        }
-        return true;
-    }
-    // str2 是否以 str1 结尾
-    static bool endWith(const String& str1, const String& str2)
-    {
-        if (str1.length() > str2.length()) return false;
-        Size_t pos = 0, len1 = str1.length(), len2 = str2.length();
-        for (; pos < len1; ++pos){
-            if (str1[len1 - pos - 1] != str2[len2 - pos - 1]){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    // 获取多个类型大小
     template <typename... Types> struct TypeSize;
     template <typename Only>
     struct TypeSize<Only>
@@ -100,14 +77,49 @@ namespace SinBack {
     };
 
     // 格式化字符串
-    template <typename... Args>
-    String formatString(const String& format, Args&&... args)
+    template<typename... T> static String format(const String& fmt, T&&... args)
     {
-        TypeSize<Args&&...> type_size(args...);
-        UniquePtr<Char[]> buffer(new Char[1 + format.size() + type_size.size]);
-        // 根据可变参数大小分配内存
-        ::sprintf(buffer.get(), format.c_str(), args...);
-        return buffer.get();
+        TypeSize<T&&...> type_size(args...);
+        Size_t str_len = fmt.size() + type_size.size;
+        UniquePtr<Char[]> str(new Char[str_len + 1]);
+        std::snprintf(str.get(), str_len, fmt.c_str(), args...);
+        return str.get();
+    }
+
+    // 字符串是否以指定字符串开头
+    static bool startsWith(const String &str, const String& prefix)
+    {
+        if (str.size() < prefix.size())
+            return false;
+        return str.compare(0, prefix.size(), prefix) == 0;
+    }
+
+    static bool startsWith(const Char *str, const Char *prefix)
+    {
+        if (str == nullptr || prefix == nullptr)
+            return false;
+        Size_t str_len = std::strlen(str);
+        Size_t prefix_len = std::strlen(prefix);
+        if (str_len < prefix_len)
+            return false;
+        return std::strncmp(str, prefix, prefix_len) == 0;
+    }
+    // 字符串是否以指定字符串结尾
+    static bool endsWith(const String &str, const String& suffix)
+    {
+        if (str.size() < suffix.size())
+            return false;
+        return str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+    }
+    static bool endsWith(const Char *str, const Char *suffix)
+    {
+        if (str == nullptr || suffix == nullptr)
+            return false;
+        Size_t str_len = std::strlen(str);
+        Size_t suffix_len = std::strlen(suffix);
+        if (str_len < suffix_len)
+            return false;
+        return std::strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
     }
 
 }

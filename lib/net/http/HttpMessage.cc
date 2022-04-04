@@ -10,10 +10,10 @@
 
 using namespace SinBack;
 
-SinBack::String
+Http::HttpRequest::string_type
 Http::HttpRequest::toString() const
 {
-    String request;
+    string_type request;
     request += Http::get_http_method_name(this->method) + " ";
     request += this->url + " ";
     switch (this->http_version) {
@@ -36,9 +36,9 @@ void Http::HttpRequest::clear()
     this->method = HTTP_GET;
 }
 
-SinBack::String
+Http::HttpRequest::string_type
 Http::HttpResponse::toString() {
-    String response;
+    string_type response;
     switch (this->http_version) {
         case HTTP_1_0:
             response += "HTTP/1.0\r\n";

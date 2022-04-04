@@ -18,21 +18,22 @@ namespace SinBack
         class Args : noncopyable
         {
         public:
-            using ForEachKeyFunc = std::function<void(const String&)>;
-            using ForEachFunc = std::function<void(const String &, const String &)>;
+            using string_type = SinBack::String;
+            using ForEachKeyFunc = std::function<void(const string_type &)>;
+            using ForEachFunc = std::function<void(const string_type &, const string_type &)>;
 
             Args(int argc, char* argv[]);
             // 参数个数
             Size_t size() const;
             // 获取参数，没有返回 ""
-            String getArg(const String& arg);
+            string_type getArg(const string_type & arg);
             // 判断参数是否存在
-            bool hasArg(const String& arg) const;
+            bool hasArg(const string_type & arg) const;
             // 循环获取参数
             Size_t forEach(const ForEachKeyFunc& func);
             Size_t forEach(const ForEachFunc& func);
         private:
-            std::unordered_map<String, String> args_;
+            std::unordered_map<string_type , string_type> args_;
         };
 
         /**
@@ -42,11 +43,11 @@ namespace SinBack
          */
         Args::Args(int argc, char **argv) {
             if (argc > 1) {
-                String tmp, key;
+                string_type tmp, key;
                 Size_t i = 1, pos;
                 for (; i < argc; ++i) {
                     tmp = argv[i];
-                    if ((pos = tmp.find('=')) != String::npos){
+                    if ((pos = tmp.find('=')) != string_type::npos){
                         // exec --path=./
                         if (!key.empty()){
                             this->args_[key] = "";
@@ -90,7 +91,7 @@ namespace SinBack
          * @param arg
          * @return
          */
-        String Args::getArg(const String &arg) {
+        Args::string_type Args::getArg(const string_type &arg) {
             auto it = this->args_.find(arg);
             if (it != this->args_.end()){
                 return it->second;
@@ -98,7 +99,7 @@ namespace SinBack
             return "";
         }
 
-        bool Args::hasArg(const String &arg) const{
+        bool Args::hasArg(const string_type &arg) const{
             return (this->args_.find(arg) != this->args_.end());
         }
 

@@ -6,6 +6,7 @@
 * Des:         
 */
 #include <sys/stat.h>
+#include <cstdio>
 #include "FileUtil.h"
 
 using namespace SinBack;
@@ -62,11 +63,11 @@ SSize_t Base::getFileSize(const Char* path)
  * @return
  */
 bool Base::clearFile(const Char *path) {
-    FILE *fp = fopen(path, "w");
+    FILE *fp = std::fopen(path, "w");
     if (fp == nullptr) {
         return false;
     }
-    fclose(fp);
+    std::fclose(fp);
     return true;
 }
 
@@ -89,17 +90,17 @@ SSize_t Base::getFileModifyTime(const Char *path) {
  * @param recursive
  * @return
  */
-bool Base::createDir(const String &path, Int mode, bool recursive) {
-    if (isDir(path.c_str())) {
+bool Base::createDir(const SinBack::String &path, Int mode, bool recursive) {
+    if (isDir(path.data())) {
         return true;
     }
     if (recursive) {
-        String parent = path.substr(0, path.rfind('/'));
+        SinBack::String parent = path.substr(0, path.rfind('/'));
         if (!createDir(parent, mode, true)) {
             return false;
         }
     }
-    if (mkdir(path.c_str(), mode) != 0) {
+    if (mkdir(path.data(), mode) != 0) {
         return false;
     }
     return true;

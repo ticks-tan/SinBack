@@ -28,28 +28,29 @@ namespace SinBack {
         class File : public noncopyable
         {
         public:
+            using string_type = String;
             File();
-            File(const String& name, OpenFileMode mode);
+            File(const string_type & name, OpenFileMode mode);
             ~File();
             // 重新打开一个文件
-            bool reOpen(const String& name, OpenFileMode mode);
+            bool reOpen(const string_type & name, OpenFileMode mode);
             // 读取数据
             Long read(void* buf, Size_t len);
-            String read(Size_t len);
-            String readAll();
+            string_type read(Size_t len);
+            string_type readAll();
             // 写入数据
             Long write(const void* buf, Size_t len);
-            Long write(const String& buf);
+            Long write(const string_type & buf);
 
-            File& operator << (const String& buf);
-            File& operator >> (String& buf);
+            File& operator << (const string_type & buf);
+            File& operator >> (string_type & buf);
 
             // 获取文件大小
             Size_t size();
             // 清空文件
             bool clear();
 
-            String& fileName(){
+            string_type& fileName(){
                 return this->name_;
             }
             bool exist() const{
@@ -60,9 +61,9 @@ namespace SinBack {
              * 获取文件扩展名
              * @return
              */
-            String suffix(){
+            string_type suffix(){
                 auto it = this->name_.find_last_of('.');
-                if (it != String::npos){
+                if (it != string_type::npos){
                     return this->name_.substr(it);
                 }
                 return "";
@@ -74,7 +75,7 @@ namespace SinBack {
             // 文件指针
             FILE* file_;
             // 文件名
-            String name_;
+            string_type name_;
             // 文件打开模式
             OpenFileMode mode_;
         };

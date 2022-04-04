@@ -43,13 +43,13 @@ bool SinBack::Base::getDateTimeNow(DateTime* dt){
     return true;
 }
 // 获取当前时间并格式化为指定格式
-std::string SinBack::Base::getDateTimeNow(const std::string& format){
+SinBack::String SinBack::Base::getDateTimeNow(const String& format){
     auto now_time = std::chrono::system_clock::now();
     time_t time = std::chrono::system_clock::to_time_t(now_time);
     tm* t = gmtime(&time);
     char str[21] = {0};
     if (t) {
-        strftime(str, 20, format.c_str(), t);
+        strftime(str, 20, format.data(), t);
     }
     return str;
 }

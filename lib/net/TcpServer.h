@@ -18,6 +18,7 @@ namespace SinBack
         class TcpServer
         {
         public:
+            using string_type = SinBack::String;
             using EventLoopPtr = std::shared_ptr<SinBack::Core::EventLoop>;
             using ChannelPtr = std::shared_ptr<SinBack::Core::Channel>;
             static const UInt default_max_accept_count = 4096;
@@ -25,13 +26,13 @@ namespace SinBack
             // 新客户端连接
             std::function<void(const ChannelPtr&)> onNewClient;
             // 有新消息
-            std::function<void(const ChannelPtr&, const String&)> onMessage;
+            std::function<void(const ChannelPtr&, const string_type&)> onMessage;
             // 读取消息错误
-            std::function<void(const ChannelPtr&, const String&)> onErrorMessage;
+            std::function<void(const ChannelPtr&, const string_type&)> onErrorMessage;
             // 写入消息完成
             std::function<void(const ChannelPtr&, Size_t)> onWrite;
             // 写入消息错误
-            std::function<void(const ChannelPtr&, const String&)> onErrorWrite;
+            std::function<void(const ChannelPtr&, const string_type&)> onErrorWrite;
             // 关闭
             std::function<void(const ChannelPtr&)> onClose;
         public:

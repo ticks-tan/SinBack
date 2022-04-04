@@ -63,7 +63,7 @@ void Http::HttpServer::init()
     this->setting_.workThreadNum = std::thread::hardware_concurrency();
 }
 
-bool Http::HttpServer::addService(const String &name, Http::HttpService *service)
+bool Http::HttpServer::addService(const string_type &name, Http::HttpService *service)
 {
     auto it = this->services_.find(name);
     std::unique_lock<std::mutex> lock(this->mutex_);
@@ -205,7 +205,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                 }
 
                 Int method = http_context->request().method;
-                SinBack::String url = http_context->request().url;
+                string_type url = http_context->request().url;
                 bool keep_alive = http_context->request().header.getHead("Connection") == "keep-alive";
 
                 if (!this->setting_.keepAlive && keep_alive){
@@ -215,7 +215,6 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                 }
 
                 Int call_ret = 0;
-                bool is_call = false;
 
                 // 查找匹配的 service
                 for (auto &service: this->services()) {
@@ -226,7 +225,6 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                         if (call->method & method){
                             if (call->callback){
                                 call_ret = call->callback(*http_context);
-                                is_call = true;
                             }
                             // 如果不为 NEXT, 后续回调被忽略
                             if (call_ret != Http::ServiceCallBackRet::NEXT){
@@ -236,7 +234,7 @@ void Http::HttpServer::onNewMessage(const std::weak_ptr<Core::IOEvent>& ev, cons
                     }
                 }
                 // 没有执行回调 (请求没有被拦截，或者拦截后没有需要返回的数据)
-                if (!is_call && http_context->response().content.empty()){
+                if (http_context->response().content.empty()){
                     // 如果启用了静态文件服务，则返回对应文件
                     if (!this->setting_.staticFileDir.empty()){
                         sendStaticFile(io, http_context, url);
@@ -278,7 +276,7 @@ void Http::HttpServer::onSend(const std::weak_ptr<Core::IOEvent>& ev, Size_t wri
 {
 }
 
-void Http::HttpServer::onMessageError(const std::weak_ptr<Core::IOEvent> &ev, const String &err_msg)
+void Http::HttpServer::onMessageError(const std::weak_ptr<Core::IOEvent> &ev, const SinBack::String &err_msg)
 {
     auto io = ev.lock();
     if (io){
@@ -287,7 +285,7 @@ void Http::HttpServer::onMessageError(const std::weak_ptr<Core::IOEvent> &ev, co
     }
 }
 
-void Http::HttpServer::onSendError(const std::weak_ptr<Core::IOEvent> &ev, const String &err_msg)
+void Http::HttpServer::onSendError(const std::weak_ptr<Core::IOEvent> &ev, const SinBack::String &err_msg)
 {
     auto io = ev.lock();
     if (io){
@@ -405,6 +403,12 @@ void Http::HttpServer::sendHttpResponse(const std::shared_ptr<Core::IOEvent>& io
     io->write(buf.c_str(), buf.length());
 }
 
+/**
+ * 发送Http静态文件
+ * @param io
+ * @param context
+ * @param path
+ */
 void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, Http::HttpContext *context, String& path) const
 {
     path.insert(0, this->setting_.staticFileDir);
@@ -432,17 +436,21 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
             context->response().header.setHead("Content-Type",
                                                Http::get_http_content_type(context->cache_file_->suffix()));
             context->response().content.data() = std::move(context->cache_file_->readAll());
-            String buf = context->response().toString();
+            string_type buf = context->response().toString();
             buf += context->response().content.data();
             io->write(buf.c_str(), buf.length());
             // 清空数据
             context->clear();
             io->close();
         }, io, path, io->id_);
+        // 等待线程函数执行完成
         result.get();
     }
 }
 
+/**
+ * 多进程模式
+ */
 void Http::HttpServer::runProcessFunc()
 {
     if (this->setting_.workProcessNum > 0){
@@ -481,6 +489,9 @@ void Http::HttpServer::runProcessFunc()
     }
 }
 
+/**
+ * 多线程模式
+ */
 void Http::HttpServer::runThreadFunc()
 {
     // 注册 TERM 信号处理函数
@@ -497,6 +508,10 @@ void Http::HttpServer::runThreadFunc()
     }
 }
 
+/**
+ * 子进程退出处理函数
+ * @param sig
+ */
 void Http::HttpServer::processExitCall(Int sig){
     if (sig == SIGCHLD){
         Int status;

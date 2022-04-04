@@ -8,7 +8,7 @@
 #ifndef SINBACK_FILEUTIL_H
 #define SINBACK_FILEUTIL_H
 
-#include "Base.h"
+#include "base/Base.h"
 
 namespace SinBack
 {
@@ -25,7 +25,7 @@ namespace SinBack
         // 获取文件最后修改时间
         SSize_t getFileModifyTime(const Char* path);
         // 创建目录
-        bool createDir(const String& path, Int mode = 0755, bool recursive = false);
+        bool createDir(const SinBack::String& path, Int mode = 0755, bool recursive = false);
     }
 }
 
