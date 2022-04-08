@@ -10,9 +10,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 
 include_directories(${PROJECT_SOURCE_DIR}/lib)
 
-# http-parse module
-# add_subdirectory(${PROJECT_SOURCE_DIR}/lib/llhttp)
-
 file(GLOB_RECURSE SinBack_Base
         "${PROJECT_SOURCE_DIR}/lib/base/*.h"
         "${PROJECT_SOURCE_DIR}/lib/base/*.cc")
@@ -37,11 +34,11 @@ add_library(SinBack_Shared SHARED
         ${SinBack_Net}
         ${SinBack_Tools})
 
-add_library(SinBack_Static STATIC
-        ${SinBack_Base}
-        ${SinBack_Core}
-        ${SinBack_Net}
-        ${SinBack_Tools})
+#add_library(SinBack_Static STATIC
+#        ${SinBack_Base}
+#        ${SinBack_Core}
+#        ${SinBack_Net}
+#        ${SinBack_Tools})
 
 add_executable(SinBack_Test
         ${SinBack_Base}
@@ -51,10 +48,10 @@ add_executable(SinBack_Test
         lib/main.cc)
 
 set_target_properties(SinBack_Shared PROPERTIES OUTPUT_NAME "SinBack")
-set_target_properties(SinBack_Static PROPERTIES OUTPUT_NAME "SinBack")
+# set_target_properties(SinBack_Static PROPERTIES OUTPUT_NAME "SinBack")
 
 set_target_properties(SinBack_Shared PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-set_target_properties(SinBack_Static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+# set_target_properties(SinBack_Static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
 set_target_properties(SinBack_Shared PROPERTIES VERSION 1.0 SOVERSION 1)
 
@@ -66,7 +63,7 @@ if (OPENSSL_FOUND)
 endif()
 
 link_directories(/usr/lib)
-# link_libraries(pthread llhttp OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(SinBack_Shared pthread llhttp OpenSSL::Crypto OpenSSL::SSL)
 target_link_libraries(SinBack_Test pthread llhttp OpenSSL::Crypto OpenSSL::SSL)
 
 

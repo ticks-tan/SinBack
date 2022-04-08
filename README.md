@@ -4,8 +4,9 @@
 
 ---
 
-### 外部依赖库(已添加至项目，无需手动添加)：
+### 外部依赖库：
  - [llhttp](https://github.com/nodejs/llhttp) : nodejs 官方 http1 请求响应解析库 。
+ - [OpenSSL](https://www.openssl.org)
 
 ---
 
@@ -93,32 +94,16 @@ int main()
 }
 ```
 
----
-
-### 后续预计添加功能
-- 详细代码注释
-- UDP服务
-- epoll支持边缘触发
-- 添加Http2协议
-- 添加WebSocket协议
-- lua脚本
-- 完善Http服务
-- Mongodb和Mysql连接
-- SSL支持
-- ...
----
-
 ### 代码结构
 
 ----- base :  底层函数封装
 
 ----- core : 事件驱动核心代码
 
------ net : 顶层网络封装
+----- net : 应用层网络封装
 
 ----- tools : 一些工具函数
 
 ---
-
 
 代码问题请发邮件：**tw2938384958@gmail.com** 、 **2938384958@qq.com**
