@@ -44,7 +44,7 @@ namespace SinBack
             std::array<epoll_event, default_selector_size> events_;
             // EventLoop
             EventLoop* loop_;
-            // error
+            // error_
             bool error_;
         };
     }

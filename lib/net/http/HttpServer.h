@@ -36,6 +36,11 @@ namespace SinBack {
                 bool keepAlive;
                 // 静态文件路径, 不指定即为当前工作目录
                 String staticFileDir;
+                // 启用SSL
+                bool enableSSL;
+                // 证书路径
+                String certPath;
+                String keyPath;
             };
             // 默认 keep-alive 超时时间为60s
             static const UInt default_keep_alive = 60000;
@@ -77,6 +82,9 @@ namespace SinBack {
         private:
             // 初始化 HttpServer
             void init();
+
+            // 初始化SSL
+            void initSSL();
 
             // 子进程退出信号处理
             static void processExitCall(Int sig);

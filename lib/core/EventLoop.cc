@@ -29,6 +29,7 @@ Core::EventLoop::EventLoop()
     , loop_count_(0), actives_count_(0)
     , pending_count_(0), io_count_(0), custom_count_(0), idle_count_(0), timer_count_(0)
     , thread_pool_(default_thread_pool_count)
+    , has_ssl_(false)
 {
     //  初始化 Loop
     initLoop();
@@ -58,6 +59,9 @@ void Core::EventLoop::initLoop()
 {
     this->id_ = event_loop_next_id();
     this->selector_ = std::make_shared<Core::Selector>(this);
+#ifdef SINBACK_OPENSSL
+    this->ssl_ = std::make_shared<Base::OpenSSL>();
+#endif
 }
 
 /**
@@ -167,6 +171,9 @@ std::shared_ptr<Core::IOEvent> Core::EventLoop::getIoEvent(Base::socket_t fd)
     }
     if (!ptr->ready_){
         ptr->ready();
+    }
+    if (this->has_ssl_){
+        ptr->has_ssl_ = true;
     }
     return ptr;
 }
@@ -304,7 +311,7 @@ Int Core::EventLoop::processPending()
                     item->pending_ = false;
                 }
             }else{
-                Log::FLogD("event pending error!");
+                Log::FLogD("event pending error_!");
             }
         }
         // 清理待执行链表
@@ -425,7 +432,7 @@ Int Core::EventLoop::removeIoEvent(const std::weak_ptr<Core::IOEvent> &ev, Int e
 {
     std::shared_ptr<Core::IOEvent> io = ev.lock();
     if (io){
-        if (io->closed || !io->active_ || !io->ready_) return -1;
+        if (io->closed_ || !io->active_ || !io->ready_) return -1;
 
         if (io->evs_ & events){
             io->loop_->selector_->delEvent(io->fd_, events);

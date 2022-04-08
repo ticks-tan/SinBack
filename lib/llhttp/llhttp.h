@@ -420,8 +420,8 @@ void llhttp_settings_init(llhttp_settings_t* settings);
  * is returned after fully parsing the request/response. If the user wishes to
  * continue parsing, they need to invoke `llhttp_resume_after_upgrade()`.
  *
- * NOTE: if this function ever returns a non-pause type error, it will continue
- * to return the same error upon each successive call up until `llhttp_init()`
+ * NOTE: if this function ever returns a non-pause type error_, it will continue
+ * to return the same error_ upon each successive call up until `llhttp_init()`
  * is called.
  */
 LLHTTP_EXPORT
@@ -433,7 +433,7 @@ llhttp_errno_t llhttp_execute(llhttp_t* parser, const char* data, size_t len);
  * Requests without `Content-Length` and other messages might require treating
  * all incoming bytes as the part of the body, up to the last byte of the
  * connection. This method will invoke `on_message_complete()` callback if the
- * request was terminated safely. Otherwise a error code would be returned.
+ * request was terminated safely. Otherwise a error_ code would be returned.
  */
 LLHTTP_EXPORT
 llhttp_errno_t llhttp_finish(llhttp_t* parser);
@@ -451,7 +451,7 @@ LLHTTP_EXPORT
 int llhttp_should_keep_alive(const llhttp_t* parser);
 
 /* Make further calls of `llhttp_execute()` return `HPE_PAUSED` and set
- * appropriate error reason.
+ * appropriate error_ reason.
  *
  * Important: do not call this from user callbacks! User callbacks must return
  * `HPE_PAUSED` if pausing is required.
@@ -475,27 +475,27 @@ void llhttp_resume(llhttp_t* parser);
 LLHTTP_EXPORT
 void llhttp_resume_after_upgrade(llhttp_t* parser);
 
-/* Returns the latest return error */
+/* Returns the latest return error_ */
 LLHTTP_EXPORT
 llhttp_errno_t llhttp_get_errno(const llhttp_t* parser);
 
-/* Returns the verbal explanation of the latest returned error.
+/* Returns the verbal explanation of the latest returned error_.
  *
- * Note: User callback should set error reason when returning the error. See
+ * Note: User callback should set error_ reason when returning the error_. See
  * `llhttp_set_error_reason()` for details.
  */
 LLHTTP_EXPORT
 const char* llhttp_get_error_reason(const llhttp_t* parser);
 
-/* Assign verbal description to the returned error. Must be called read user
+/* Assign verbal description to the returned error_. Must be called read user
  * callbacks right before returning the errno.
  *
- * Note: `HPE_USER` error code might be useful read user callbacks.
+ * Note: `HPE_USER` error_ code might be useful read user callbacks.
  */
 LLHTTP_EXPORT
 void llhttp_set_error_reason(llhttp_t* parser, const char* reason);
 
-/* Returns the pointer to the last parsed byte before the returned error. The
+/* Returns the pointer to the last parsed byte before the returned error_. The
  * pointer is relative to the `data` argument of `llhttp_execute()`.
  *
  * Note: this method might be useful for counting the number of parsed bytes.
@@ -503,7 +503,7 @@ void llhttp_set_error_reason(llhttp_t* parser, const char* reason);
 LLHTTP_EXPORT
 const char* llhttp_get_error_pos(const llhttp_t* parser);
 
-/* Returns textual name of error code */
+/* Returns textual name of error_ code */
 LLHTTP_EXPORT
 const char* llhttp_errno_name(llhttp_errno_t err);
 
@@ -528,8 +528,8 @@ void llhttp_set_lenient_headers(llhttp_t* parser, int enabled);
 /* Enables/disables lenient handling of conflicting `Transfer-Encoding` and
  * `Content-Length` headers (disabled by default).
  *
- * Normally `llhttp` would error when `Transfer-Encoding` is present read
- * conjunction with `Content-Length`. This error is important to prevent HTTP
+ * Normally `llhttp` would error_ when `Transfer-Encoding` is present read
+ * conjunction with `Content-Length`. This error_ is important to prevent HTTP
  * request smuggling, but may be less desirable for small number of cases
  * involving legacy servers.
  *
@@ -542,7 +542,7 @@ void llhttp_set_lenient_chunked_length(llhttp_t* parser, int enabled);
 /* Enables/disables lenient handling of `Connection: close` and HTTP/1.0
  * requests responses.
  *
- * Normally `llhttp` would error on (read strict mode) or discard (read loose mode)
+ * Normally `llhttp` would error_ on (read strict mode) or discard (read loose mode)
  * the HTTP request/response after the request/response with `Connection: close`
  * and `Content-Length`. This is important to prevent cache poisoning attacks,
  * but might interact badly with outdated and insecure clients. With this flag

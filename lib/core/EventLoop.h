@@ -93,6 +93,26 @@ namespace SinBack
             ULong getCurrentTime() const {
                 return this->cur_time_;
             }
+            // 获取SSL
+            std::shared_ptr<Base::OpenSSL> getSSL(){
+                if (this->has_ssl_){
+                    if (!this->ssl_){
+                        this->ssl_ = std::make_shared<Base::OpenSSL>();
+                    }
+                    return this->ssl_;
+                }
+                return nullptr;
+            }
+
+            void enableSSL(){
+#ifdef SINBACK_OPENSSL
+                this->has_ssl_ = true;
+#endif
+                this->has_ssl_ = false;
+            }
+            void disableSSL(){
+                this->has_ssl_ = false;
+            }
 
             // 通过套接字获取 IOEvent
             std::shared_ptr<IOEvent> getIoEvent(Base::socket_t fd);
@@ -217,6 +237,10 @@ namespace SinBack
             Base::ThreadPool thread_pool_;
             // 锁
             std::mutex mutex_;
+            // SSL
+            std::shared_ptr<Base::OpenSSL> ssl_;
+            // 是否开启 ssl
+            bool has_ssl_;
         };
     }
 }

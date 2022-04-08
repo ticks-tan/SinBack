@@ -44,6 +44,7 @@ void Http::HttpServer::sigStop(int sig)
     }
     // 取消所有日志记录器
     Log::Logger::unregisterAllLogger();
+    exit(0);
 }
 
 /**
@@ -61,6 +62,8 @@ void Http::HttpServer::init()
     this->setting_.workProcessNum = 0;
     // 默认线程数量为当前核心数两倍
     this->setting_.workThreadNum = std::thread::hardware_concurrency();
+    // 默认不启用 SSL
+    this->setting_.enableSSL = false;
 }
 
 bool Http::HttpServer::addService(const string_type &name, Http::HttpService *service)
@@ -143,7 +146,7 @@ void Http::HttpServer::onNewClient(const std::weak_ptr<Core::IOEvent>& ev)
             return;
         }
 
-        if (this->setting_.workProcessNum == 0) {
+        if (this->setting_.workThreadNum > 0) {
             // 多线程模式
             auto loop = this->work_th_->loop();
             if (loop) {
@@ -280,7 +283,7 @@ void Http::HttpServer::onMessageError(const std::weak_ptr<Core::IOEvent> &ev, co
 {
     auto io = ev.lock();
     if (io){
-        Log::FLogE("HttpServer receive message error, loop_id = %ld, io_id = %ld, err_msg = %s .",
+        Log::FLogE("HttpServer receive message error_, loop_id = %ld, io_id = %ld, err_msg = %s .",
                    io->loop_->getId(), io->id_, err_msg.c_str());
     }
 }
@@ -289,7 +292,7 @@ void Http::HttpServer::onSendError(const std::weak_ptr<Core::IOEvent> &ev, const
 {
     auto io = ev.lock();
     if (io){
-        Log::FLogE("HttpServer send message error, loop_id = %ld, io_id = %ld, err_msg = %s .",
+        Log::FLogE("HttpServer send message error_, loop_id = %ld, io_id = %ld, err_msg = %s .",
                    io->loop_->getId(), io->id_, err_msg.c_str());
     }
 }
@@ -360,7 +363,7 @@ void Http::HttpServer::startListenAccept(Core::EventLoopPtr loop, bool reuse_por
         Base::socket_t listen_fd = HttpServer::createListenSocketV4(this->listen_port_, reuse_port);
         // 监听
         if (listen_fd < 0){
-            Log::FLogE("Http Server startListenAccept error -> create listen socket error !");
+            Log::FLogE("Http Server startListenAccept error_ -> create listen socket error_ !");
             loop->stop();
         }
         // 注册 accept 事件并设置回调
@@ -428,7 +431,7 @@ void Http::HttpServer::sendStaticFile(const std::shared_ptr<Core::IOEvent> &io, 
         // 文件操作。放到线程池中执行
         auto result = io->loop_->queueFunc([](const std::shared_ptr<Core::IOEvent> &io, const String &path, ULong id) {
             auto* context = (HttpContext*)io->context_;
-            if (io->id_ != id || io->closed || context == nullptr) return ;
+            if (io->id_ != id || io->closed_ || context == nullptr) return ;
             if (!context->isInit()){
                 context->init();
             }
@@ -461,17 +464,25 @@ void Http::HttpServer::runProcessFunc()
         Base::system_signal(SIGCHLD, HttpServer::processExitCall);
         // 注册 TERM 信号处理函数
         Base::system_signal(SIGTERM, std::bind(&HttpServer::sigStop, this, std::placeholders::_1));
+        Base::system_signal(SIGSEGV, std::bind(&HttpServer::sigStop, this, std::placeholders::_1));
 
         for (; i < this->setting_.workProcessNum; ++i){
-
             pid = Base::system_fork();
             if (pid < 0){
-                Log::FLogE("Http Server run on process mode error -> system_fork error !");
+                Log::FLogE("Http Server run on process mode error_ -> system_fork error_ !");
             }else if (pid == 0) {
                 // 清空子进程pid
                 this->child_pid_.clear();
+                // 工作线程
+                if (this->setting_.workThreadNum > 0) {
+                    this->work_th_.reset(new Core::EventLoopPool(this->setting_.workThreadNum));
+                    this->work_th_->start();
+                }
                 // 开始运行 EventLoop
                 this->accept_th_.reset(new Core::EventLoopThread);
+                if (this->setting_.enableSSL) {
+                    this->initSSL();
+                }
                 this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
                                                   this, this->accept_th_->loop().get(), true), nullptr);
                 return;
@@ -479,6 +490,10 @@ void Http::HttpServer::runProcessFunc()
                 // 存储子进程id，以便停止子进程
                 this->child_pid_.push_back(pid);
             }
+        }
+        if (this->setting_.workThreadNum > 0) {
+            this->work_th_.reset(new Core::EventLoopPool(this->setting_.workThreadNum));
+            this->work_th_->start();
         }
         // 开始运行 EventLoop
         this->accept_th_.reset(new Core::EventLoopThread);
@@ -496,12 +511,16 @@ void Http::HttpServer::runThreadFunc()
 {
     // 注册 TERM 信号处理函数
     Base::system_signal(SIGTERM, std::bind(&HttpServer::sigStop, this, std::placeholders::_1));
+    Base::system_signal(SIGSEGV, std::bind(&HttpServer::sigStop, this, std::placeholders::_1));
 
     if (this->setting_.workThreadNum > 0){
         this->work_th_.reset(new Core::EventLoopPool(this->setting_.workThreadNum));
         this->work_th_->start();
 
         this->accept_th_.reset(new Core::EventLoopThread);
+        if (this->setting_.enableSSL) {
+            this->initSSL();
+        }
         this->accept_th_->start(std::bind(&HttpServer::startListenAccept,
                                           this, this->accept_th_->loop().get(), false), nullptr);
         Log::FLogI("Http Server run on thread mode !");
@@ -520,6 +539,35 @@ void Http::HttpServer::processExitCall(Int sig){
             if (errno == EINTR){
                 goto WAIT;
             }
+        }
+    }
+}
+
+/**
+ * 初始化 SSL
+ */
+void Http::HttpServer::initSSL()
+{
+    // 设置 SSL / TSL
+    Base::OpenSSL::loadSSL();
+    auto loop = this->accept_th_->loop();
+    loop->enableSSL();
+    if (!this->setting_.certPath.empty()){
+        if (!loop->getSSL()->setCertFile(this->setting_.certPath)){
+            Log::FLogE("Http Server run on process mode error -> setCertFile error !");
+            exit(0);
+        }
+    }
+    if (!this->setting_.keyPath.empty()){
+        if (!loop->getSSL()->setKeyFile(this->setting_.keyPath)){
+            Log::FLogE("Http Server run on process mode error -> setKeyFile error !");
+            exit(0);
+        }
+    }
+    if (!this->setting_.certPath.empty() && !this->setting_.keyPath.empty()){
+        if (!loop->getSSL()->check()){
+            Log::FLogE("Http Server run on process mode error -> check SSL error !");
+            exit(0);
         }
     }
 }

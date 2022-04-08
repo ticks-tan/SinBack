@@ -40,7 +40,7 @@ int main()
     server.addService("Test", &service);
     // 开始监听2021端口
     server.listen(2022, [](const SinBack::SinString& err){
-        fmt::print("listen error: %s\n", err);
+        fmt::print("listen error_: %s\n", err);
     });
     return 0;
 }

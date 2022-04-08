@@ -30,3 +30,4 @@
 *.exe
 *.read
 *.app
+/lib/llhttp/

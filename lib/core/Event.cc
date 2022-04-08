@@ -9,15 +9,10 @@
 #include "Event.h"
 #include "cstring"
 
-
 using namespace SinBack;
-
-Int io_read_et(Core::IOEvent* io);
 
 // 水平触发 write函数
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len);
-// 边缘触发 read 函数
-Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len);
 
 // 根据活动事件选择 accept、read和write
 void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev);
@@ -36,108 +31,64 @@ void handle_close_cb(const std::weak_ptr<Core::IOEvent>& ev);
 
 // accept 封装
 void handle_accept(const std::weak_ptr<Core::IOEvent>& ev);
-// 边缘触发 read 封装
-void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev);
 // 水平触发 read 封装
 void handle_read(const std::weak_ptr<Core::IOEvent>& ev);
 // 水平触发 read 封装
 void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
-// 边缘触发 read 封装
-void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev);
 
 void handle_keep_alive(Size_t id, const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
 
-
-Int io_read_et(Core::IOEvent* io)
-{
-    if (io){
-        if (io->closed || !io->ready_) return -1;
-
-        Base::Buffer buf;
-        buf.reserve(256);
-        // 每次需要读取长度
-        Size_t need_read_len = 0, handle_len;
-        // 实际读取长度
-        Long read_len = 0, len;
-
-        while (true){
-            // 获取buffer剩余长度
-            need_read_len = buf.capacity() - buf.size();
-            len = Base::readSocket(io->fd_, buf.data(), need_read_len);
-            io->last_read_time_ = Base::getTimeOfDayUs();
-
-            if (len < 0){
-                io->error = errno;
-                if (errno == EAGAIN || errno == EWOULDBLOCK){
-                    // 没有数据可读，返回
-                    goto READ_END;
-                } else{
-                    // 读取错误，处理错误
-                    Log::FLogE("socket read error, pid = %uld, id = %uld, error -> %s .",
-                               io->pid_, io->id_, strerror(io->error));
-                    goto READ_ERR;
-                }
-            }else if (len == 0){
-                // 客户端断开连接
-                goto DISCONNECT;
-            }else{
-                // 成功读取数据
-                read_len += len;
-                io->read_buf_.write(buf.data(), len);
-                buf.clear();
-            }
-        }
-        READ_END:
-        // 读取结束，调用回调函数
-        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.size()) ? io->read_len_ : io->read_buf_.size();
-        if (handle_len > 0) {
-            handle_read_cb(io->shared_from_this(), (void *) (io->read_buf_.data()), handle_len);
-            // 删除前面数据，防止缓冲区无限膨胀
-            io->read_buf_.removeFront(handle_len);
-        }
-        SinBack::Core::EventLoop::addIoEvent(io->shared_from_this(), handle_event_func,
-                                             Core::IO_READ | Core::IO_TYPE_ET);
-        return (Int)handle_len;
-        READ_ERR:
-        // 错误回调
-        handle_read_err_cb(io->shared_from_this(), strerror(io->error));
-        DISCONNECT:
-        // 关闭连接
-        io->close();
-        return 0;
-    }
-    return -1;
-}
-
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 {
-    if (io->closed || !io->ready_) return -1;
+    if (io->closed_ || !io->ready_) return -1;
     if (buf == nullptr || len == 0) return 0;
 
     Long write_len = 0;
-
     std::unique_lock<std::mutex> lock(io->write_mutex_);
 
     if (io->write_queue_.empty()){
-        // 写入队列为空，尝试写入一次，一次没有写入完再添加到事件循环中等待事件触发
-        write_len = Base::writeSocket(io->fd_, buf, len);
-        io->last_write_time_ = Base::getTimeOfDayUs();
 
-        if (write_len < 0){
-            io->error = errno;
-            if (errno == EINTR || errno == EAGAIN){
-                write_len = 0;
-                goto QUEUE_WRITE;
-            } else{
-                Log::FLogE("socket read error, id = %uld, pid = %uld, error = %s.",
-                           io->id_, io->pid_, strerror(io->error));
-                lock.unlock();
-                goto WRITE_ERROR;
+        if (io->has_ssl_ && io->ssl_){
+            write_len = Base::sslWriteSocket(io->ssl_, buf, len);
+            io->last_write_time_ = Base::getTimeOfDayUs();
+
+            if (write_len <= 0){
+                Int error = SSL_get_error(io->ssl_, static_cast<Int>(write_len));
+                if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE){
+                    write_len = 0;
+                    goto QUEUE_WRITE;
+                }else if (error == SSL_ERROR_ZERO_RETURN) {
+                    lock.unlock();
+                    goto DISCONNECT;
+                }else {
+                    io->error_ = errno;
+                    Log::FLogE("socket read error_, id = %uld, pid = %uld, error_ = %s.",
+                               io->id_, io->pid_, strerror(io->error_));
+                    lock.unlock();
+                    goto WRITE_ERROR;
+                }
             }
-        } else if (write_len == 0){
-            // 对端关闭
-            lock.unlock();
-            goto DISCONNECT;
+        }else {
+            // 写入队列为空，尝试写入一次，一次没有写入完再添加到事件循环中等待事件触发
+            write_len = Base::writeSocket(io->fd_, buf, len);
+            io->last_write_time_ = Base::getTimeOfDayUs();
+
+            if (write_len < 0) {
+                if (errno == EINTR || errno == EAGAIN) {
+                    write_len = 0;
+                    goto QUEUE_WRITE;
+                } else {
+                    io->error_ = errno;
+                    Log::FLogE("socket read error_, id = %uld, pid = %uld, error_ = %s.",
+                               io->id_, io->pid_, strerror(io->error_));
+                    lock.unlock();
+                    goto WRITE_ERROR;
+                }
+            } else if (write_len == 0) {
+                // 对端关闭
+                lock.unlock();
+                goto DISCONNECT;
+            }
         }
         // 一次性写入完成
         if (write_len == len){
@@ -149,79 +100,20 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
     }
 
     if (write_len < len){
-        std::basic_string<Char> buffer = ((Char*)buf + write_len);
-        io->write_queue_.push_back(buffer);
+        SinBack::String buffer = (static_cast<const Char*>(buf) + write_len);
+        io->write_queue_.push_back(std::move(buffer));
     }
     WRITE_END:
     lock.unlock();
     if (write_len > 0){
         handle_write_cb(io->shared_from_this(), write_len);
     }
-    return (Int)write_len;
+    return static_cast<Int>(write_len);
     WRITE_ERROR:
-    handle_write_err_cb(io->shared_from_this(), strerror(io->error));
+    handle_write_err_cb(io->shared_from_this(), strerror(io->error_));
     DISCONNECT:
     io->close();
-    return write_len < 0 ? -1 : (Int)write_len;
-}
-
-Int io_write_et(Core::IOEvent* io, const void *buf, Size_t len)
-{
-    if (io->closed || !io->ready_) return -1;
-    if (buf == nullptr || len == 0) return 0;
-
-    Long write_len = 0, w_len;
-
-    std::unique_lock<std::mutex> lock(io->write_mutex_);
-    if (io->write_queue_.empty()){
-
-        while (true) {
-            w_len = Base::writeSocket(io->fd_, (Char *) buf + write_len, len - write_len);
-            io->last_write_time_ = Base::getTimeOfDayUs();
-
-            if (w_len < 0) {
-                io->error = errno;
-                // 写入缓冲区满
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    goto WRITE_QUEUE;
-                } else {
-                    Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s .",
-                               io->pid_, io->id_, strerror(io->error));
-                    lock.unlock();
-                    // 写入出错
-                    goto WRITE_ERR;
-                }
-            } else if (w_len == 0) {
-                lock.unlock();
-                // 对端关闭
-                goto DISCONNECT;
-            }
-            write_len += w_len;
-            // 一次性写完
-            if (write_len == len) {
-                goto WRITE_END;
-            }
-        }
-        WRITE_QUEUE:
-        SinBack::Core::EventLoop::addIoEvent(io->shared_from_this(), handle_event_func,
-                                             Core::IO_WRITE | Core::IO_TYPE_ET);
-    }
-    if (write_len < len){
-        std::basic_string<Char> buffer = ((Char*)buf + write_len);
-        io->write_queue_.push_back(buffer);
-    }
-    WRITE_END:
-    lock.unlock();
-    if (write_len > 0){
-        handle_write_cb(io->shared_from_this(), write_len);
-    }
-    return (Int)write_len;
-    WRITE_ERR:
-    // 错误回调
-    handle_write_err_cb(io->shared_from_this(), strerror(io->error));
-    DISCONNECT:
-    io->close();
-    return (write_len < 0) ? -1 : (Int)write_len;
+    return write_len < 0 ? -1 : static_cast<Int>(write_len);
 }
 
 // 处理事件
@@ -234,20 +126,12 @@ void handle_event_func(const std::weak_ptr<Core::IOEvent>& ev)
                 handle_accept(io);
             } else{
                 io->last_read_time_ = Base::getTimeOfDayUs();
-#ifdef SINBACK_EPOLLET
-                handle_read_et(io);
-#else
                 handle_read(io);
-#endif
             }
         }
         if ((io->active_evs_ & Core::IO_WRITE) && (io->evs_ & Core::IO_WRITE)){
             io->last_write_time_ = Base::getTimeOfDayUs();
-#ifdef SINBACK_EPOLLET
-            handle_write_et(io);
-#else
             handle_write(io);
-#endif
         }
     }
 }
@@ -259,7 +143,7 @@ void handle_keep_alive(Size_t id, const std::shared_ptr<Core::IOEvent>& io, cons
     if (timer){
         if (io){
             // 不是同一个IO或IO已经关闭
-            if (io->closed || !io->ready_ || io->id_ != id) return;
+            if (io->closed_ || !io->ready_ || io->id_ != id) return;
             auto loop = (Core::EventLoopPtr)(io->loop_);
             if (loop) {
                 ULong last_rw_time = std::max(io->last_read_time_, io->last_write_time_);
@@ -344,100 +228,60 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
-        if (io->closed || !io->ready_) return;
+        if (io->closed_ || !io->ready_) return;
         //  新客户端地址信息
         ::sockaddr_in address{};
         // 地址信息长度（）字节
         ::socklen_t len = sizeof address;
         Base::socket_t client_fd = Base::acceptSocket(io->fd_, &address, &len);
         if (client_fd < 0) {
-            io->error = errno;
+            io->error_ = errno;
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK){
                 return;
             }
-            Log::FLogE("accept error, pid = %uld, id = %uld, error = %s .",
-                       io->pid_, io->id_, strerror(io->error));
+            Log::FLogE("accept error_, pid = %uld, id = %uld, error_ = %s .",
+                       io->pid_, io->id_, strerror(io->error_));
             goto ACCEPT_ERROR;
         }
         std::shared_ptr<Core::IOEvent> io_ptr = io->loop_->getIoEvent(client_fd);
         io_ptr->accept_cb_ = io->accept_cb_;
         io_ptr->context_ = io->context_;
+        // OpenSSL
+        if (io_ptr->has_ssl_ && !io_ptr->ssl_){
+            io->ssl_ = io_ptr->loop_->getSSL()->newSSL();
+            if (io_ptr->ssl_ == nullptr){
+                io_ptr->close(false);
+                return;
+            }
+            Int acp = SSL_set_fd(io_ptr->ssl_, io_ptr->fd_);
+            if (acp == 0){
+                io_ptr->close(false);
+                return;
+            }
+            acp = SSL_accept(io_ptr->ssl_);
+            if (acp == 0){
+                io_ptr->close(false);
+                return;
+            }
+        }
         handle_accept_cb(io_ptr);
         return;
     }
     ACCEPT_ERROR:
-    // io->close();
     return;
 }
 
-// 处理ET模式下读取事件
-void handle_read_et(const std::weak_ptr<Core::IOEvent>& ev)
-{
-    // ET模式下必须一次性将数据读取完，不然后续再触发事件就难了
-    auto io = ev.lock();
-    if (io){
-        if (io->closed || !io->ready_) return;
-
-        Base::Buffer buf;
-        buf.reserve(256);
-        // 每次需要读取长度
-        Size_t need_read_len = 0, handle_len;
-        // 实际读取长度
-        Long read_len = 0, len;
-
-        while (true){
-            // 获取buffer剩余长度
-            need_read_len = buf.capacity() - buf.size();
-            len = Base::readSocket(io->fd_, buf.data(), need_read_len);
-            io->last_read_time_ = Base::getTimeOfDayUs();
-
-            if (len < 0){
-                io->error = errno;
-                if (errno == EAGAIN || errno == EWOULDBLOCK){
-                    // 没有数据可读，返回
-                    goto READ_END;
-                } else{
-                    // 读取错误，处理错误
-                    Log::FLogE("socket read error, pid = %uld, id = %uld, error -> %s .",
-                               io->pid_, io->id_, strerror(io->error));
-                    goto READ_ERR;
-                }
-            }else if (len == 0){
-                // 客户端断开连接
-                goto DISCONNECT;
-            }else{
-                // 成功读取数据
-                read_len += len;
-                io->read_buf_.write(buf.data(), len);
-                buf.clear();
-            }
-        }
-        READ_END:
-        // 读取结束，调用回调函数
-        handle_len = (io->read_len_ > 0 && io->read_len_ <= io->read_buf_.size()) ? io->read_len_ : io->read_buf_.size();
-        handle_read_cb(io, (void*)(io->read_buf_.data()), handle_len);
-        // 删除前面数据，防止缓冲区无限膨胀
-        io->read_buf_.removeFront(handle_len);
-        return;
-        READ_ERR:
-        // 错误回调
-        handle_read_err_cb(io, strerror(io->error));
-        DISCONNECT:
-        // 关闭连接
-        io->close();
-        return;
-    }
-}
 
 // 处理读取事件
 void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
-        if (io->closed || !io->ready_) return;
+        if (io->closed_ || !io->ready_) return;
 
         Base::Buffer buf;
         buf.reserve(256);
+
         // 需要读取的长度
         Size_t need_read_len = 0;
         // 读取长度
@@ -447,25 +291,45 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         // 避免读取长度为0,返回0导致错误关闭套接字
         if (need_read_len == 0) return;
 
-        // 开始读取
-        read_len = Base::readSocket(io->fd_, (void *) (buf.data()), need_read_len);
-        io->last_read_time_ = Base::getTimeOfDayUs();
+        if (io->has_ssl_ && io->ssl_){
+            read_len = Base::sslReadSocket(io->ssl_, buf.data(), need_read_len);
+            io->last_read_time_ = Base::getTimeOfDayUs();
 
-        if (read_len < 0){
-            io->error = errno;
-            // 信号中断，下次再读取
-            if (errno == EINTR || errno == EAGAIN){
-                return;
-            }else{
-                // 读取错误
-                Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s",
-                           io->pid_, io->id_, strerror(io->error));
-                goto READ_ERROR;
+            if (read_len <= 0){
+                Int error = SSL_get_error(io->ssl_, static_cast<Int>(read_len));
+                if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ){
+                    return;
+                }else if (error == SSL_ERROR_ZERO_RETURN){
+                    goto DISCONNECT;
+                }else {
+                    io->error_ = errno;
+                    // 读取错误
+                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                               io->pid_, io->id_, strerror(io->error_));
+                    goto READ_ERROR;
+                }
             }
-        }
-        // 对端关闭
-        if (read_len == 0){
-            goto DISCONNECT;
+        }else {
+            // 开始读取
+            read_len = Base::readSocket(io->fd_, buf.data(), need_read_len);
+            io->last_read_time_ = Base::getTimeOfDayUs();
+
+            if (read_len < 0) {
+                // 信号中断，下次再读取
+                if (errno == EINTR || errno == EAGAIN) {
+                    return;
+                } else {
+                    io->error_ = errno;
+                    // 读取错误
+                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                               io->pid_, io->id_, strerror(io->error_));
+                    goto READ_ERROR;
+                }
+            }
+            // 对端关闭
+            if (read_len == 0) {
+                goto DISCONNECT;
+            }
         }
         io->read_buf_.write(buf.data(), read_len);
         buf.clear();
@@ -475,7 +339,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         return;
         READ_ERROR:
         // 读取错误回调
-        handle_read_err_cb(io, strerror(io->error));
+        handle_read_err_cb(io, strerror(io->error_));
         DISCONNECT:
         // 关闭套接字
         io->close();
@@ -483,116 +347,84 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
     }
 }
 
-// 处理ET模式下写入事件
-void handle_write_et(const std::weak_ptr<Core::IOEvent>& ev)
-{
-    auto io = ev.lock();
-    if (io){
-        Long write_len = 0, len;
-        String buf;
-
-        std::unique_lock<std::mutex> lock(io->write_mutex_);
-
-        if (io->closed || !io->ready_) return;
-        if (io->write_queue_.empty()) return;
-
-        while (!io->write_queue_.empty()){
-            if (io->closed) return;
-
-            // 取出队列头部数据
-            buf = io->write_queue_.front();
-            io->write_queue_.pop_front();
-
-            len = Base::writeSocket(io->fd_, buf.data(), buf.length());
-            io->last_write_time_ = Base::getTimeOfDayUs();
-
-            if (len < 0){
-                io->error = errno;
-                if (errno == EAGAIN || errno == EWOULDBLOCK){
-                    lock.unlock();
-                    goto WRITE_END;
-                } else {
-                    Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s .",
-                               io->pid_, io->id_, strerror(io->error));
-                    lock.unlock();
-                    goto WRITE_ERR;
-                }
-            }else if (len == 0){
-                // 对端关闭
-                lock.unlock();
-                goto DISCONNECT;
-            }else{
-                write_len += len;
-                // 写入成功
-                if (len < buf.length()){
-                    // 没写完整，将剩余部分添加到队列头部
-                    io->write_queue_.push_front(buf.substr(len));
-                }
-            }
-        }
-        WRITE_END:
-        handle_write_cb(io, write_len);
-        return;
-        WRITE_ERR:
-        // 错误回调
-        handle_write_err_cb(io, strerror(io->error));
-        DISCONNECT:
-        io->close();
-        return;
-    }
-}
 
 // 处理写入回调
 void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io) {
-        Long write_len = 0, len;
-        std::basic_string<Char> buf;
+        Long write_len = 0;
+        SinBack::String buf;
 
         std::unique_lock<std::mutex> lock(io->write_mutex_);
         WRITE_START:
-        if (io->closed || !io->ready_) return;
+        if (io->closed_ || !io->ready_) return;
         if (io->write_queue_.empty()) {
             return;
         }
 
+        write_len = 0;
         // 获取写入队列头部数据
         buf = io->write_queue_.front();
         io->write_queue_.pop_front();
 
-        len = Base::writeSocket(io->fd_, buf.data(), buf.length());
-        io->last_write_time_ = Base::getTimeOfDayUs();
+        if (io->has_ssl_ && io->ssl_){
+            write_len = Base::sslWriteSocket(io->ssl_, buf.data(), buf.size());
+            io->last_write_time_ = Base::getTimeOfDayUs();
 
-        if (write_len < 0) {
-            io->error = errno;
-            // 写入失败，下次再写
-            if (errno == EINTR || errno == EAGAIN) {
-                return;
-            } else {
-                // 写入错误
-                Log::FLogE("socket read error, pid = %uld, id = %uld, error = %s",
-                           io->pid_, io->id_, strerror(io->error));
-                lock.unlock();
-                goto WRITE_ERROR;
+            if (write_len <= 0){
+                Int error = SSL_get_error(io->ssl_, static_cast<Int>(write_len));
+                if (error == SSL_ERROR_WANT_WRITE || error == SSL_ERROR_WANT_READ){
+                    write_len = 0;
+                    goto WRITE_END;
+                } else if (error == SSL_ERROR_ZERO_RETURN){
+                    lock.unlock();
+                    goto DISCONNECT;
+                }else {
+                    io->error_ = error;
+                    // 写入错误
+                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                               io->pid_, io->id_, strerror(io->error_));
+                    lock.unlock();
+                    goto WRITE_ERROR;
+                }
             }
-        } else if (len == 0) {
-            lock.unlock();
-            goto DISCONNECT;
-        }
-        // 写入回调
-        handle_write_cb(io, len);
+        }else {
+            write_len = Base::writeSocket(io->fd_, buf.data(), buf.size());
+            io->last_write_time_ = Base::getTimeOfDayUs();
 
-        write_len += len;
-        if (write_len < buf.length()) {
-            io->write_queue_.push_front(buf.substr(write_len));
+            if (write_len < 0) {
+                // 写入失败，下次再写
+                if (errno == EINTR || errno == EAGAIN) {
+                    write_len = 0;
+                    goto WRITE_END;
+                } else {
+                    io->error_ = errno;
+                    // 写入错误
+                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                               io->pid_, io->id_, strerror(io->error_));
+                    lock.unlock();
+                    goto WRITE_ERROR;
+                }
+            } else if (write_len == 0) {
+                lock.unlock();
+                goto DISCONNECT;
+            }
         }
-        if (!io->closed) {
+        lock.unlock();
+        // 写入回调
+        handle_write_cb(io, write_len);
+        lock.lock();
+        WRITE_END:
+        if (write_len < buf.length()) {
+            io->write_queue_.push_front(std::move(buf.substr(write_len)));
+        }
+        if (!io->closed_) {
             goto WRITE_START;
         }
         return;
         WRITE_ERROR:
-        handle_write_err_cb(io, strerror(io->error));
+        handle_write_err_cb(io, strerror(io->error_));
         DISCONNECT:
         io->close();
     }
@@ -628,27 +460,22 @@ Int Core::IOEvent::read(Size_t read_len)
             return this->read();
         }
     }
-    return (Int)read_len;
+    return static_cast<Int>(read_len);
 }
 
-Int Core::IOEvent::write(const void *buf, Size_t len)
-{
-#ifdef SINBACK_EPOLLET
-    return io_write_et(this, buf, len);
-#else
+Int Core::IOEvent::write(const void *buf, Size_t len) {
     return io_write(this, buf, len);
-#endif
 }
 
 Int Core::IOEvent::close(bool timer)
 {
     {
         std::unique_lock<std::mutex> lock(this->write_mutex_);
-        if (this->closed || !this->ready_) return -1;
+        if (this->closed_ || !this->ready_) return -1;
 
         // 还有数据没完成，加入定时器
         ULong id = this->id_;
-        if (!this->write_queue_.empty() && this->error == 0 && timer){
+        if (!this->write_queue_.empty() && this->error_ == 0 && timer){
             this->loop_->addTimer([id, this](const std::weak_ptr<Core::TimerEvent> &ev) {
                 if (this->id_ == id) {
                     this->close();
@@ -656,11 +483,18 @@ Int Core::IOEvent::close(bool timer)
             }, 100, 1);
             return 1;
         }
-        this->closed = true;
+        this->closed_ = true;
         // 清理IO事件
         this->clean();
         Core::EventLoop::loop_event_inactive(shared_from_this());
         // 关闭套接字
+        if (this->has_ssl_){
+            Base::sslCloseSocket(this->ssl_);
+            if (this->ssl_){
+                SSL_free(this->ssl_);
+            }
+            this->ssl_ = nullptr;
+        }
         Base::closeSocket(this->fd_);
     }
     // 关闭回调
@@ -670,7 +504,7 @@ Int Core::IOEvent::close(bool timer)
 
 bool Core::IOEvent::setKeepAlive(Size_t timeout_ms)
 {
-    if (this->closed || !this->active_) return false;
+    if (this->closed_ || !this->active_) return false;
     if (this->loop_) {
         this->last_read_time_ = this->last_write_time_ = this->loop_->getCurrentTime();
         this->keep_alive_ms_ = timeout_ms;
@@ -687,12 +521,12 @@ bool Core::IOEvent::setKeepAlive(Size_t timeout_ms)
 void Core::IOEvent::ready()
 {
     this->ready_ = true;
-    this->closed = false;
+    this->closed_ = false;
     this->last_read_time_ = this->last_write_time_ = Base::getTimeOfDayUs();
     this->read_buf_.clear();
     this->write_queue_.clear();
     this->pending_ = false;
-    this->error = 0;
+    this->error_ = 0;
     this->evs_ = this->active_evs_ = 0;
     this->accept_ = false;
     this->read_len_ = 0;
@@ -711,12 +545,10 @@ void Core::IOEvent::clean()
 {
     if (!this->ready_) return;
     this->ready_ = false;
-#ifdef SINBACK_EPOLLET
-    Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR | Core::IO_TYPE_ET);
-#else
     Core::EventLoop::removeIoEvent(shared_from_this(), Core::IO_RDWR);
-#endif
     this->read_buf_.clear();
     this->read_len_ = 0;
     this->write_queue_.clear();
+    this->ssl_ = nullptr;
+    this->has_ssl_ = false;
 }

@@ -62,7 +62,7 @@ namespace SinBack
         }
 
         // 创建匿名管道
-        static inline bool system_pipe(Base::socket_t fds[2]) {
+        static inline bool system_pipe(Int fds[2]) {
             return (::pipe(fds) == 0);
         }
 

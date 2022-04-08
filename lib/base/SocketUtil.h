@@ -8,8 +8,6 @@
 #ifndef SINBACK_SOCKETUTIL_H
 #define SINBACK_SOCKETUTIL_H
 
-#ifdef OS_WINDOWS
-#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -17,6 +15,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "base/Base.h"
+
+#ifdef SINBACK_OPENSSL
+#include "base/OpenSSL.h"
 #endif
 
 namespace SinBack
@@ -253,6 +254,35 @@ typedef Int socket_t;
             }
             ::close(sock_fd);
         }
+
+#ifdef SINBACK_OPENSSL
+        static Long
+        sslWriteSocket(SSL* ssl, const void* buf, Size_t len){
+            Size_t tmp = 0;
+            Int ret = SSL_write_ex(ssl, buf, len, &tmp);
+            if (ret == 1 && tmp > 0){
+                return static_cast<Long>(tmp);
+            }
+            return ret;
+        }
+
+        static Long
+        sslReadSocket(SSL* ssl, void* buf, Size_t len){
+            Size_t tmp = 0;
+            Int ret = SSL_read_ex(ssl, buf, len, &tmp);
+            if (ret == 1 && tmp > 0){
+                return static_cast<Long>(tmp);
+            }
+            return ret;
+        }
+
+        static void sslCloseSocket(SSL* ssl){
+            if (ssl) {
+                SSL_shutdown(ssl);
+            }
+        }
+
+#endif
     }
 }
 

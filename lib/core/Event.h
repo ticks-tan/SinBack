@@ -13,6 +13,7 @@
 #include <mutex>
 #include "base/Buffer.h"
 #include "base/SocketUtil.h"
+#include "base/OpenSSL.h"
 
 namespace SinBack
 {
@@ -137,8 +138,8 @@ namespace SinBack
                 evs_ = active_evs_ = 0;
                 fd_ = Base::socket_t(-1);
                 ready_ = accept_ = false;
-                closed = false;
-                error = 0;
+                closed_ = false;
+                error_ = 0;
                 read_len_ = 0;
                 last_read_time_ = 0;
                 last_write_time_ = 0;
@@ -149,7 +150,7 @@ namespace SinBack
             // 事件回调
             IOEventCB cb_ = nullptr;
             // 错误
-            Int error = 0;
+            Int error_ = 0;
             // 活动事件
             Int active_evs_ = 0;
             // socket_t
@@ -159,7 +160,11 @@ namespace SinBack
             // 是否 accept
             bool accept_ = false;
             // 是否关闭
-            bool closed = false;
+            bool closed_ = false;
+            // 是否开启SSL
+            bool has_ssl_ = false;
+            // SSL
+            SSL* ssl_ = nullptr;
             // accept 回调
             IOAcceptCB accept_cb_ = nullptr;
             // read 回调
@@ -203,12 +208,14 @@ namespace SinBack
                 evs_ = active_evs_ = 0;
                 fd_ = Base::socket_t(-1);
                 ready_ = accept_ = false;
-                closed = false;
-                error = 0;
+                closed_ = false;
+                error_ = 0;
                 read_len_ = 0;
                 last_read_time_ = 0;
                 last_write_time_ = 0;
                 keep_alive_ms_ = 0;
+                has_ssl_ = false;
+                ssl_ = nullptr;
             }
             // 开始准备
             void ready();

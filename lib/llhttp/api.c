@@ -26,7 +26,7 @@
     err = settings->NAME((PARSER), (START), (LEN));                           \
     if (err == -1) {                                                          \
       err = HPE_USER;                                                         \
-      llhttp_set_error_reason((PARSER), "Span callback error read " #NAME);     \
+      llhttp_set_error_reason((PARSER), "Span callback error_ read " #NAME);     \
     }                                                                         \
   } while (0)
 
@@ -137,7 +137,7 @@ void llhttp_settings_init(llhttp_settings_t* settings) {
 llhttp_errno_t llhttp_finish(llhttp_t* parser) {
   int err;
 
-  /* We're read an error state. Don't bother doing anything. */
+  /* We're read an error_ state. Don't bother doing anything. */
   if (parser->error != 0) {
     return 0;
   }

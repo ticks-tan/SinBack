@@ -20,6 +20,8 @@
 #define OS_LINUX
 #endif
 
+#define SINBACK_OPENSSL
+
 namespace SinBack {
     // 类型定义
     typedef unsigned long Size_t;

@@ -186,28 +186,31 @@ namespace SinBack
   XX(45, FLUSH, "FLUSH")
 
   // 常见文件类型对应 Content-Type
-#define HTTP_CONTENT_TYPE_MAP(XX) \
-    XX(0, ".html", "text/html") \
-    XX(1, ".hml", "text/html")    \
-    XX(2, ".txt", "text/plain")   \
-    XX(3, ".xml", "text/xml")     \
-    XX(4, ".gif", "image/gif")    \
-    XX(5, ".jpg", "image/x-jpg")   \
-    XX(6, ".jpeg", "image/jpeg")  \
-    XX(7, ".png", "image/x-png")    \
-    XX(8, ".xhtml", "application/xhtml+xml") \
-    XX(9, ".json", "application/json")       \
-    XX(10, ".pdf", "application/pdf")        \
-    XX(11, ".word", "application/msword")    \
-    XX(12, ".doc", "application/msword")     \
-    XX(13, ".docx", "application/msword")    \
-    XX(14, ".bmp", "application/x-bmp")      \
-    XX(15, ".jpe", "image/jpeg")  \
-    XX(16, ".mp4", "video/mpeg4") \
-    XX(17, ".ppt", "application/ppt")        \
-    XX(18, ".wav", "audio/wav")   \
-    XX(19, ".xls", "application/x-xls")      \
-    XX(20, ".pdf", "application/pdf")
+#define HTTP_CONTENT_TYPE_MAP(XX)       \
+    XX(0,   ".html",    "text/html")    \
+    XX(1,   ".hml",     "text/html")    \
+    XX(2,   ".txt",     "text/plain")   \
+    XX(3,   ".xml",     "text/xml")     \
+    XX(4,   ".gif",     "image/gif")    \
+    XX(5,   ".jpg",     "image/x-jpg")  \
+    XX(6,   ".jpeg",    "image/jpeg")   \
+    XX(7,   ".png",     "image/x-png")  \
+    XX(8,   ".xhtml",   "application/xhtml+xml")    \
+    XX(9,   ".json",    "application/json")         \
+    XX(10,  ".pdf",     "application/pdf")          \
+    XX(11,  ".word",    "application/msword")       \
+    XX(12,  ".doc",     "application/msword")       \
+    XX(13,  ".docx",    "application/msword")       \
+    XX(14,  ".bmp",     "application/x-bmp")        \
+    XX(15,  ".jpe",     "image/jpeg")           \
+    XX(16,  ".mp4",     "video/mpeg4")          \
+    XX(17,  ".ppt",     "application/ppt")      \
+    XX(18,  ".wav",     "audio/wav")            \
+    XX(19,  ".xls",     "application/x-xls")    \
+    XX(20,  ".pdf",     "application/pdf")      \
+    XX(21,  ".css",     "text/css")             \
+    XX(22,  ".js",      "text/javascript")
+
 
     // Http 回应代码对应字符
 #define HTTP_STATUS_CODE_MAP(XX) \

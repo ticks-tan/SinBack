@@ -28,6 +28,10 @@ namespace SinBack
             void resume();
             void join();
 
+            bool hasSSL() {
+                return this->loop_->getSSL() != nullptr;
+            }
+
             SharedPtr<Core::EventLoop> loop();
 
         private:

@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
     // 设置http服务器配置
     server.setting().logPath = cwd + "/SinBack";
     // 静态文件根目录
-    server.setting().staticFileDir = cwd + "/web";
+    server.setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/vscode/动态网页设计/Ticks/blog";
     // 设置线程数量
     server.setting().workThreadNum = 4;
     // 默认允许客户端 keep-alive，不用设置
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     server.addService("Test", &service);
     // 开始监听2021端口
     server.listen(2022, [](const SinBack::String& err){
-        printf("listen error: %s\n", err.c_str());
+        printf("listen error_: %s\n", err.c_str());
     });
     return 0;
 }

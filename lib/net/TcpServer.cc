@@ -180,7 +180,7 @@ Base::socket_t Net::TcpServer::createListenFd(UInt port)
     this->port_ = port;
     Base::socket_t sock = Base::creatSocket(Base::IP_4, Base::S_TCP, true);
     if (sock < 0){
-        Log::FLogE("create socket error -- %s .", strerror(errno));
+        Log::FLogE("create socket error_ -- %s .", strerror(errno));
         perror("socket()");
         return -1;
     }
@@ -190,12 +190,12 @@ Base::socket_t Net::TcpServer::createListenFd(UInt port)
     Base::setSocketReuseAddress(this->listen_fd_);
 
     if (!Base::bindSocket(sock, Base::IP_4, nullptr, (Int) port)){
-        Log::FLogE("bind socket error -- %s .", strerror(errno));
+        Log::FLogE("bind socket error_ -- %s .", strerror(errno));
         perror("bind()");
         return -1;
     }
     if (!Base::listenSocket(sock)){
-        Log::FLogE("listen socket error -- {}", strerror(errno));
+        Log::FLogE("listen socket error_ -- {}", strerror(errno));
         perror("listen()");
         return -1;
     }

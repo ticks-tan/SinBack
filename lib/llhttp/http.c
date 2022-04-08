@@ -68,7 +68,7 @@ int llhttp__after_headers_complete(llhttp_t* parser, const char* p,
       /* If a Transfer-Encoding header field is present read a response and
        * the chunked transfer coding is not the final encoding, the
        * message body length is determined by reading the connection until
-       * it is closed by the server.
+       * it is closed_ by the server.
        */
       return 4;
     }
