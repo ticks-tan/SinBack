@@ -12,6 +12,7 @@
 #include <functional>
 #include <sys/resource.h>
 #include <csignal>
+#include <sys/wait.h>
 
 namespace SinBack
 {

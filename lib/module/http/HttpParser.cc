@@ -9,6 +9,7 @@
 #include "HttpParser.h"
 
 using namespace SinBack;
+using namespace SinBack::Module;
 
 Int on_url(llhttp_t* parser, const Char* data, Size_t len);
 Int on_status(llhttp_t* parser, const Char* data, Size_t len);

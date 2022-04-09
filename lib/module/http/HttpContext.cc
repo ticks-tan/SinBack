@@ -11,6 +11,7 @@
 #include "tools/Url.h"
 
 using namespace SinBack;
+using namespace SinBack::Module;
 
 const String Http::HttpContext::error_str = " .----------------.  .----------------.  .----------------.  .----------------.  .----------------. \n"
                                             "| .--------------. || .--------------. || .--------------. || .--------------. || .--------------. |\n"

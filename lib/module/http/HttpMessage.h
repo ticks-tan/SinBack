@@ -14,6 +14,7 @@
 
 namespace SinBack
 {
+    namespace Module{
     namespace Http
     {
         // HTTP头部信息
@@ -137,52 +138,52 @@ namespace SinBack
         };
 
         // Http请求方法对应字符串
-#define HTTP_METHOD_DEFINE(XX) \
-  XX(0, DELETE, "DELETE") \
-  XX(1, GET, "GET") \
-  XX(2, HEAD, "HEAD") \
-  XX(3, POST, "POST") \
-  XX(4, PUT, "PUT") \
-  XX(5, CONNECT, "CONNECT") \
-  XX(6, OPTIONS, "OPTIONS") \
-  XX(7, TRACE, "TRACE") \
-  XX(8, COPY, "COPY") \
-  XX(9, LOCK, "LOCK") \
-  XX(10, MKCOL, "MKCOL") \
-  XX(11, MOVE, "MOVE") \
-  XX(12, PROPFIND, "PROPFIND") \
-  XX(13, PROPPATCH, "PROPPATCH") \
-  XX(14, SEARCH, "SEARCH") \
-  XX(15, UNLOCK, "UNLOCK") \
-  XX(16, BIND, "BIND") \
-  XX(17, REBIND, "REBIND") \
-  XX(18, UNBIND, "UNBIND") \
-  XX(19, ACL, "ACL") \
-  XX(20, REPORT, "REPORT") \
-  XX(21, MKACTIVITY, "MKACTIVITY") \
-  XX(22, CHECKOUT, "CHECKOUT") \
-  XX(23, MERGE, "MERGE") \
-  XX(24, MSEARCH, "M-SEARCH") \
-  XX(25, NOTIFY, "NOTIFY") \
-  XX(26, SUBSCRIBE, "SUBSCRIBE") \
-  XX(27, UNSUBSCRIBE, "UNSUBSCRIBE") \
-  XX(28, PATCH, "PATCH") \
-  XX(29, PURGE, "PURGE") \
-  XX(30, MKCALENDAR, "MKCALENDAR") \
-  XX(31, LINK, "LINK") \
-  XX(32, UNLINK, "UNLINK") \
-  XX(33, SOURCE, "SOURCE") \
-  XX(34, PRI, "PRI") \
-  XX(35, DESCRIBE, "DESCRIBE") \
-  XX(36, ANNOUNCE, "ANNOUNCE") \
-  XX(37, SETUP, "SETUP") \
-  XX(38, PLAY, "PLAY") \
-  XX(39, PAUSE, "PAUSE") \
-  XX(40, TEARDOWN, "TEARDOWN") \
-  XX(41, GET_PARAMETER, "GET_PARAMETER") \
-  XX(42, SET_PARAMETER, "SET_PARAMETER") \
-  XX(43, REDIRECT, "REDIRECT") \
-  XX(44, RECORD, "RECORD") \
+#define HTTP_METHOD_DEFINE(XX)          \
+  XX(0, DELETE, "DELETE")               \
+  XX(1, GET, "GET")                     \
+  XX(2, HEAD, "HEAD")                   \
+  XX(3, POST, "POST")                   \
+  XX(4, PUT, "PUT")                     \
+  XX(5, CONNECT, "CONNECT")             \
+  XX(6, OPTIONS, "OPTIONS")             \
+  XX(7, TRACE, "TRACE")                 \
+  XX(8, COPY, "COPY")                   \
+  XX(9, LOCK, "LOCK")                   \
+  XX(10, MKCOL, "MKCOL")                \
+  XX(11, MOVE, "MOVE")                  \
+  XX(12, PROPFIND, "PROPFIND")          \
+  XX(13, PROPPATCH, "PROPPATCH")        \
+  XX(14, SEARCH, "SEARCH")              \
+  XX(15, UNLOCK, "UNLOCK")              \
+  XX(16, BIND, "BIND")                  \
+  XX(17, REBIND, "REBIND")              \
+  XX(18, UNBIND, "UNBIND")              \
+  XX(19, ACL, "ACL")                    \
+  XX(20, REPORT, "REPORT")              \
+  XX(21, MKACTIVITY, "MKACTIVITY")      \
+  XX(22, CHECKOUT, "CHECKOUT")          \
+  XX(23, MERGE, "MERGE")                \
+  XX(24, MSEARCH, "M-SEARCH")           \
+  XX(25, NOTIFY, "NOTIFY")              \
+  XX(26, SUBSCRIBE, "SUBSCRIBE")        \
+  XX(27, UNSUBSCRIBE, "UNSUBSCRIBE")    \
+  XX(28, PATCH, "PATCH")                \
+  XX(29, PURGE, "PURGE")                \
+  XX(30, MKCALENDAR, "MKCALENDAR")      \
+  XX(31, LINK, "LINK")                  \
+  XX(32, UNLINK, "UNLINK")              \
+  XX(33, SOURCE, "SOURCE")              \
+  XX(34, PRI, "PRI")                    \
+  XX(35, DESCRIBE, "DESCRIBE")          \
+  XX(36, ANNOUNCE, "ANNOUNCE")          \
+  XX(37, SETUP, "SETUP")                \
+  XX(38, PLAY, "PLAY")                  \
+  XX(39, PAUSE, "PAUSE")                \
+  XX(40, TEARDOWN, "TEARDOWN")          \
+  XX(41, GET_PARAMETER, "GET_PARAMETER")\
+  XX(42, SET_PARAMETER, "SET_PARAMETER")\
+  XX(43, REDIRECT, "REDIRECT")          \
+  XX(44, RECORD, "RECORD")              \
   XX(45, FLUSH, "FLUSH")
 
   // 常见文件类型对应 Content-Type
@@ -212,66 +213,66 @@ namespace SinBack
     XX(22,  ".js",      "text/javascript")
 
 
-    // Http 回应代码对应字符
-#define HTTP_STATUS_CODE_MAP(XX) \
-    XX(0, 100, "Continue")          \
-    XX(1, 101, "Switching Protocol")\
-    XX(2, 102, "Processing")        \
-    XX(3, 103, "Early Hints")     \
-    XX(4, 200, "OK")             \
-    XX(5, 201, "Created")        \
-    XX(6, 202, "Accepted")       \
+    // Http 响应代码对应字符
+#define HTTP_STATUS_CODE_MAP(XX)                \
+    XX(0, 100, "Continue")                      \
+    XX(1, 101, "Switching Protocol")            \
+    XX(2, 102, "Processing")                    \
+    XX(3, 103, "Early Hints")                   \
+    XX(4, 200, "OK")                            \
+    XX(5, 201, "Created")                       \
+    XX(6, 202, "Accepted")                      \
     XX(7, 203, "Non-Authoritative Information") \
-    XX(8, 204, "No Content")     \
-    XX(9, 205, "Reset Content")  \
-    XX(10, 207, "Multi-Status")  \
-    XX(11, 208, "Already Reported") \
-    XX(12, 226, "IM Used")       \
-    XX(13, 300, "Multiple Choice")  \
-    XX(14, 301, "Moved Permanently")\
-    XX(15, 302, "Found")         \
-    XX(16, 303, "See Other")     \
-    XX(17, 304, "Not modified")  \
+    XX(8, 204, "No Content")                    \
+    XX(9, 205, "Reset Content")                 \
+    XX(10, 207, "Multi-Status")                 \
+    XX(11, 208, "Already Reported")             \
+    XX(12, 226, "IM Used")                      \
+    XX(13, 300, "Multiple Choice")              \
+    XX(14, 301, "Moved Permanently")            \
+    XX(15, 302, "Found")                        \
+    XX(16, 303, "See Other")                    \
+    XX(17, 304, "Not modified")                 \
     XX(18, 307, "Temporary Redirect")           \
     XX(19, 308, "Permanent Redirect")           \
-    XX(20, 400, "Bad Request")   \
-    XX(21, 401, "Unauthorized")  \
-    XX(22, 402, "Payment Required") \
-    XX(23, 403, "Forbidden")     \
-    XX(24, 404, "Not Found")     \
+    XX(20, 400, "Bad Request")                  \
+    XX(21, 401, "Unauthorized")                 \
+    XX(22, 402, "Payment Required")             \
+    XX(23, 403, "Forbidden")                    \
+    XX(24, 404, "Not Found")                    \
     XX(25, 405, "Method Not Allowed")           \
-    XX(26, 406, "Not Acceptable")\
+    XX(26, 406, "Not Acceptable")               \
     XX(27, 407, "Proxy Authentication Required")\
-    XX(28, 408, "Request Timeout")  \
-    XX(29, 409, "Conflict")      \
-    XX(30, 410, "Gone")          \
-    XX(31, 411, "Length Required")  \
+    XX(28, 408, "Request Timeout")              \
+    XX(29, 409, "Conflict")                     \
+    XX(30, 410, "Gone")                         \
+    XX(31, 411, "Length Required")              \
     XX(32, 412, "Precondition Failed")          \
-    XX(33, 413, "Payload Too Large")\
-    XX(34, 414, "Url Too Long")  \
+    XX(33, 413, "Payload Too Large")            \
+    XX(34, 414, "Url Too Long")                 \
     XX(35, 415, "Unsupported Media Type")       \
     XX(36, 416, "Range Not Satisfiable")        \
     XX(37, 417, "Expectation Failed")           \
-    XX(38, 418, "I'm a teapot")  \
+    XX(38, 418, "I'm a teapot")                 \
     XX(39, 421, "Misdirected Request")          \
     XX(40, 422, "Unprocessable Entity")         \
-    XX(41, 424, "Failed Dependency")\
-    XX(42, 425, "Too Early")     \
-    XX(43, 426, "Upgrade Required") \
+    XX(41, 424, "Failed Dependency")            \
+    XX(42, 425, "Too Early")                    \
+    XX(43, 426, "Upgrade Required")             \
     XX(44, 428, "Precondition Required")        \
-    XX(45, 429, "Too Many Requests")\
+    XX(45, 429, "Too Many Requests")            \
     XX(46, 431, "Request Header Fields Too large") \
     XX(47, 451, "Unavailable For Legal Reasons")\
     XX(48, 500, "Internal Server Error")        \
-    XX(49, 501, "Not Implemented")  \
-    XX(50, 502, "Bad Gateway")   \
+    XX(49, 501, "Not Implemented")              \
+    XX(50, 502, "Bad Gateway")                  \
     XX(51, 503, "Service Unavailable")          \
-    XX(52, 504, "Gateway Timeout")  \
+    XX(52, 504, "Gateway Timeout")              \
     XX(53, 505, "HTTP Version Not Supported")   \
     XX(54, 506, "Variant Also Negotiates")      \
     XX(55, 507, "Insufficient Storage")         \
-    XX(56, 508, "Loop Detected") \
-    XX(57, 510, "Not Extended")  \
+    XX(56, 508, "Loop Detected")                \
+    XX(57, 510, "Not Extended")                 \
     XX(58, 511, "NetWork Authentication Required")
 
 
@@ -342,6 +343,7 @@ namespace SinBack
             // 清空内容
             void clear();
         };
+    }
     }
 }
 

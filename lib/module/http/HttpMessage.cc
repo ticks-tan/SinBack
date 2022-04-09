@@ -9,6 +9,7 @@
 #include "HttpMessage.h"
 
 using namespace SinBack;
+using namespace SinBack::Module;
 
 Http::HttpRequest::string_type
 Http::HttpRequest::toString() const

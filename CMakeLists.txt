@@ -5,6 +5,8 @@ PROJECT(SinBack_Test CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 11)
 
+set(SINBACK_OPENSSL true)
+
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/lib)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 
@@ -17,22 +19,27 @@ file(GLOB_RECURSE SinBack_Base
 file(GLOB_RECURSE SinBack_Core
         "${PROJECT_SOURCE_DIR}/lib/core/*.h"
         "${PROJECT_SOURCE_DIR}/lib/core/*.cc")
-# net module
-file(GLOB_RECURSE SinBack_Net
-        "${PROJECT_SOURCE_DIR}/lib/net/*.h"
-        "${PROJECT_SOURCE_DIR}/lib/net/*.cc"
-        "${PROJECT_SOURCE_DIR}/lib/net/http/*.h"
-        "${PROJECT_SOURCE_DIR}/lib/net/http/*.cc")
+# module module
+file(GLOB_RECURSE SinBack_Module
+        "${PROJECT_SOURCE_DIR}/lib/module/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/module/*.cc"
+        "${PROJECT_SOURCE_DIR}/lib/module/http/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/module/http/*.cc")
 # tool module
 file(GLOB_RECURSE SinBack_Tools
         "${PROJECT_SOURCE_DIR}/lib/tools/*.h"
         "${PROJECT_SOURCE_DIR}/lib/tools/*.cc")
+# Application
+file(GLOB_RECURSE SinBack_Main
+        "${PROJECT_SOURCE_DIR}/lib/*.h"
+        "${PROJECT_SOURCE_DIR}/lib/*.cc")
 
 add_library(SinBack_Shared SHARED
         ${SinBack_Base}
         ${SinBack_Core}
-        ${SinBack_Net}
-        ${SinBack_Tools})
+        ${SinBack_Module}
+        ${SinBack_Tools}
+        ${SinBack_Main})
 
 #add_library(SinBack_Static STATIC
 #        ${SinBack_Base}
@@ -43,9 +50,9 @@ add_library(SinBack_Shared SHARED
 add_executable(SinBack_Test
         ${SinBack_Base}
         ${SinBack_Core}
-        ${SinBack_Net}
+        ${SinBack_Module}
         ${SinBack_Tools}
-        lib/main.cc)
+        ${SinBack_Main})
 
 set_target_properties(SinBack_Shared PROPERTIES OUTPUT_NAME "SinBack")
 # set_target_properties(SinBack_Static PROPERTIES OUTPUT_NAME "SinBack")
