@@ -107,8 +107,9 @@ namespace SinBack
             void enableSSL(){
 #ifdef SINBACK_OPENSSL
                 this->has_ssl_ = true;
-#endif
+#else
                 this->has_ssl_ = false;
+#endif
             }
             void disableSSL(){
                 this->has_ssl_ = false;
