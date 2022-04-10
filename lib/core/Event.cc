@@ -62,7 +62,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
                     goto DISCONNECT;
                 }else {
                     io->error_ = errno;
-                    Log::FLogE("socket read error_, id = %uld, pid = %uld, error_ = %s.",
+                    Log::FLogE("ssl socket read error, id = %ud, pid = %ud, error = %s.",
                                io->id_, io->pid_, strerror(io->error_));
                     lock.unlock();
                     goto WRITE_ERROR;
@@ -79,7 +79,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
                     goto QUEUE_WRITE;
                 } else {
                     io->error_ = errno;
-                    Log::FLogE("socket read error_, id = %uld, pid = %uld, error_ = %s.",
+                    Log::FLogE("socket read error, id = %ld, pid = %ld, error = %s.",
                                io->id_, io->pid_, strerror(io->error_));
                     lock.unlock();
                     goto WRITE_ERROR;
@@ -239,7 +239,7 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK){
                 return;
             }
-            Log::FLogE("accept error_, pid = %uld, id = %uld, error_ = %s .",
+            Log::FLogE("accept error, pid = %ld, id = %ld, error = %s .",
                        io->pid_, io->id_, strerror(io->error_));
             goto ACCEPT_ERROR;
         }
@@ -250,16 +250,19 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
         if (io_ptr->has_ssl_ && !io_ptr->ssl_){
             io->ssl_ = io_ptr->loop_->getSSL()->newSSL();
             if (io_ptr->ssl_ == nullptr){
+                Log::FLogE("create SSL socket error! -- %ld", io_ptr->fd_);
                 io_ptr->close(false);
                 return;
             }
             Int acp = SSL_set_fd(io_ptr->ssl_, io_ptr->fd_);
             if (acp == 0){
+                Log::FLogE("set SSL socket read and write error! -- %ld", io_ptr->fd_);
                 io_ptr->close(false);
                 return;
             }
             acp = SSL_accept(io_ptr->ssl_);
             if (acp == 0){
+                Log::FLogE("accept SSL socket error! -- %ld", io_ptr->fd_);
                 io_ptr->close(false);
                 return;
             }
@@ -304,7 +307,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                 }else {
                     io->error_ = errno;
                     // 读取错误
-                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                    Log::FLogE("ssl socket read error, pid = %ld, id = %ld, error = %s",
                                io->pid_, io->id_, strerror(io->error_));
                     goto READ_ERROR;
                 }
@@ -321,7 +324,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                 } else {
                     io->error_ = errno;
                     // 读取错误
-                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                    Log::FLogE("socket read error, pid = %ld, id = %ld, error = %s",
                                io->pid_, io->id_, strerror(io->error_));
                     goto READ_ERROR;
                 }
@@ -383,7 +386,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
                 }else {
                     io->error_ = error;
                     // 写入错误
-                    Log::FLogE("socket read error_, pid = %uld, id = %uld, error_ = %s",
+                    Log::FLogE("ssl socket read error, pid = %uld, id = %uld, error = %s",
                                io->pid_, io->id_, strerror(io->error_));
                     lock.unlock();
                     goto WRITE_ERROR;

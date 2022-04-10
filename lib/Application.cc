@@ -129,6 +129,7 @@ void Main::Application::stop()
         // 唤醒主线程，取消睡眠
         this->wait_cv_.notify_all();
     }
+    Log::Logger::unregisterAllLogger();
 }
 
 /**
@@ -143,13 +144,13 @@ bool Main::Application::initSSL()
     loop->enableSSL();
     if (!this->setting_.certPath.empty()){
         if (!loop->getSSL()->setCertFile(this->setting_.certPath)){
-            Log::FLogE("Http Server run on process mode error -> setCertFile error !");
+            Log::FLogE("Http Server run on process mode error -> setCertFile error ! ");
             return false;
         }
     }
     if (!this->setting_.keyPath.empty()){
         if (!loop->getSSL()->setKeyFile(this->setting_.keyPath)){
-            Log::FLogE("Http Server run on process mode error -> setKeyFile error !");
+            Log::FLogE("Http Server run on process mode error -> setKeyFile error ! ");
             return false;
         }
     }
@@ -319,6 +320,7 @@ void Main::Application::runThreadMode()
 {
     // 注册 TERM 信号处理函数
     Base::system_signal(SIGTERM, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
+    Base::system_signal(SIGSEGV, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
 
     if (this->setting_.workThreadNum > 0){
         this->work_th_.reset(new Core::EventLoopPool(this->setting_.workThreadNum));
@@ -326,7 +328,11 @@ void Main::Application::runThreadMode()
 
         this->accept_th_.reset(new Core::EventLoopThread);
         if (this->setting_.enableSSL) {
-            this->initSSL();
+            if (!this->initSSL()){
+                this->work_th_->stop(true);
+                Log::Logger::unregisterAllLogger();
+                exit(1);
+            }
         }
         this->accept_th_->start(std::bind(&Application::startListenAccept,
                                           this, this->accept_th_->loop().get(), false), nullptr);
@@ -347,6 +353,7 @@ void Main::Application::runProcessMode()
         Base::system_signal(SIGCHLD, std::bind(&Application::sigWaitChild, this, std::placeholders::_1));
         // 注册 TERM 信号处理函数
         Base::system_signal(SIGTERM, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
+        Base::system_signal(SIGSEGV, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
 
         for (; i < this->setting_.workProcessNum; ++i){
             pid = Base::system_fork();
@@ -363,7 +370,11 @@ void Main::Application::runProcessMode()
                 // 开始运行 EventLoop
                 this->accept_th_.reset(new Core::EventLoopThread);
                 if (this->setting_.enableSSL) {
-                    this->initSSL();
+                    if (!this->initSSL()){
+                        this->work_th_->stop(true);
+                        Log::Logger::unregisterAllLogger();
+                        exit(1);
+                    }
                 }
                 this->accept_th_->start(std::bind(&Application::startListenAccept,
                                                   this, this->accept_th_->loop().get(), true), nullptr);
@@ -403,7 +414,6 @@ void Main::Application::sigWaitChild(int sig)
  */
 void Main::Application::sigHandleExit(int sig)
 {
-
     Log::Logger::unregisterAllLogger();
     this->stop();
     exit(0);

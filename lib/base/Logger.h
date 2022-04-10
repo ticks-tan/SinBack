@@ -112,7 +112,7 @@ namespace SinBack
                 } else if (msg_level == Warn) {
                     msg << "warn ";
                 } else if (msg_level == Error) {
-                    msg << "error_ ";
+                    msg << "error ";
                 }
                 timeval tv{};
                 Base::getTimeOfDay(&tv);

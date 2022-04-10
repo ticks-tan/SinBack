@@ -31,11 +31,14 @@ int main(int argc, char* argv[])
     app.setting().workThreadNum = 4;
     app.setting().listenPort = 2022;
     app.setting().logPath = "./SinBack";
+    app.setting().enableSSL = true;
+    app.setting().certPath = "./cert/server.crt";
+    // app.setting().keyPath = "./cert/server.key";
     app.setModule(module);
 
     app.run([](const String& msg){
         printf("%s\n", msg.c_str());
     });
-
     return 0;
 }
+

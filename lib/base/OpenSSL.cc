@@ -71,7 +71,7 @@ bool Base::OpenSSL::setCertFile(const Base::OpenSSL::string_type &cert_path)
 {
     if (this->ctx_ && !cert_path.empty()){
         this->cert_path_ = cert_path;
-        return (SSL_CTX_use_certificate_file(this->ctx_, this->cert_path_.c_str(), SSL_FILETYPE_PEM) > 0);
+        return SSL_CTX_use_certificate_file(this->ctx_, this->cert_path_.c_str(), SSL_FILETYPE_PEM);
     }
     return false;
 }
@@ -80,7 +80,7 @@ bool Base::OpenSSL::setKeyFile(const Base::OpenSSL::string_type &key_path)
 {
     if (!this->ctx_ && !key_path.empty()){
         this->key_path_ = key_path;
-        return (SSL_CTX_use_PrivateKey_file(this->ctx_, this->key_path_.c_str(), SSL_FILETYPE_PEM) > 0);
+        return SSL_CTX_use_PrivateKey_file(this->ctx_, this->key_path_.c_str(), SSL_FILETYPE_PEM);
     }
     return false;
 }

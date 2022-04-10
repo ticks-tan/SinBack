@@ -1,6 +1,6 @@
 # Prerequisites
 *.d
-
+*.log
 # Compiled Object files
 *.slo
 *.lo
@@ -30,4 +30,8 @@
 *.exe
 *.read
 *.app
-/lib/llhttp/
+
+llhttp/
+.idea/
+cmake-build-debug/
+build/
