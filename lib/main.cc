@@ -12,10 +12,15 @@ Des:
 using namespace SinBack;
 using namespace SinBack::Module;
 
+void sig_exit(int sig){
+    if (sig == SIGSEGV){
+        Log::Logger::unregisterAllLogger();
+        ::exit(1);
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    Base::system_signal(SIGPIPE, nullptr);
-
     // HTTP模块
     auto http = std::make_shared<Http::HttpServer>();
     Http::HttpService service;
