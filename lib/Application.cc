@@ -142,14 +142,18 @@ bool Main::Application::initSSL()
     Base::OpenSSL::loadSSL();
     auto loop = this->accept_th_->loop();
     loop->enableSSL();
+    if (!loop->getSSL()){
+        Log::FLogE("cannot init SSL");
+        return false;
+    }
     if (!this->setting_.certPath.empty()){
-        if (!loop->getSSL()->setCertFile(this->setting_.certPath)){
+        if (!loop->getSSL()->setPemCertFile(this->setting_.certPath)){
             Log::FLogE("Http Server run on process mode error -> setCertFile error ! ");
             return false;
         }
     }
     if (!this->setting_.keyPath.empty()){
-        if (!loop->getSSL()->setKeyFile(this->setting_.keyPath)){
+        if (!loop->getSSL()->setPemKeyFile(this->setting_.keyPath)){
             Log::FLogE("Http Server run on process mode error -> setKeyFile error ! ");
             return false;
         }

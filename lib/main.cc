@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
     Http::HttpService service;
     // 添加 Service
     service.GET("/api/test", [](Http::HttpContext& cxt) -> Int {
+        printf("url = %s\n", cxt.request().url.c_str());
         return cxt.sendText("我是测试接口");
     });
 
@@ -31,9 +32,10 @@ int main(int argc, char* argv[])
     app.setting().workThreadNum = 4;
     app.setting().listenPort = 2022;
     app.setting().logPath = "./SinBack";
-    app.setting().enableSSL = true;
-    app.setting().certPath = "./cert/server.crt";
-    // app.setting().keyPath = "./cert/server.key";
+    // app.setting().enableSSL = true;
+    // app.setting().certPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2.pem";
+    // app.setting().keyPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2-key.pem";
+
     app.setModule(module);
 
     app.run([](const String& msg){

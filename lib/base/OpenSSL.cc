@@ -25,11 +25,15 @@ void Base::OpenSSL::loadSSL() {
 }
 
 Base::OpenSSL::OpenSSL()
-    : method_(nullptr)
-    , ctx_(nullptr)
+    : ctx_(nullptr)
     , error_(false)
 {
-    this->init();
+    SSL_load_error_strings();
+    OpenSSL_add_all_algorithms();
+    this->ctx_ = SSL_CTX_new(SSLv23_server_method());
+    if (this->ctx_ == nullptr){
+        this->error_ = true;
+    }
 }
 
 Base::OpenSSL::~OpenSSL()
@@ -47,17 +51,6 @@ SSL *Base::OpenSSL::newSSL()
     return ssl;
 }
 
-void Base::OpenSSL::init()
-{
-    SSL_load_error_strings();
-    OpenSSL_add_all_algorithms();
-    this->method_ = const_cast<SSL_METHOD*>(SSLv23_server_method());
-    this->ctx_ = SSL_CTX_new(this->method_);
-    if (this->ctx_ == nullptr){
-        this->error_ = true;
-    }
-}
-
 void Base::OpenSSL::exit()
 {
     if (this->ctx_){
@@ -66,8 +59,7 @@ void Base::OpenSSL::exit()
     }
 }
 
-
-bool Base::OpenSSL::setCertFile(const Base::OpenSSL::string_type &cert_path)
+bool Base::OpenSSL::setPemCertFile(const Base::OpenSSL::string_type &cert_path)
 {
     if (this->ctx_ && !cert_path.empty()){
         this->cert_path_ = cert_path;
@@ -76,28 +68,40 @@ bool Base::OpenSSL::setCertFile(const Base::OpenSSL::string_type &cert_path)
     return false;
 }
 
-bool Base::OpenSSL::setKeyFile(const Base::OpenSSL::string_type &key_path)
+bool Base::OpenSSL::setAsnCertFile(const string_type &cert_path)
 {
-    if (!this->ctx_ && !key_path.empty()){
+    if (this->ctx_ && !cert_path.empty()){
+        this->cert_path_ = cert_path;
+        return SSL_CTX_use_certificate_file(this->ctx_, this->cert_path_.c_str(), SSL_FILETYPE_ASN1);
+    }
+    return false;
+}
+
+bool Base::OpenSSL::setPemKeyFile(const Base::OpenSSL::string_type &key_path)
+{
+    if (this->ctx_ && !key_path.empty()){
         this->key_path_ = key_path;
         return SSL_CTX_use_PrivateKey_file(this->ctx_, this->key_path_.c_str(), SSL_FILETYPE_PEM);
     }
     return false;
 }
 
-bool Base::OpenSSL::setCertAndKeyFile(const string_type& cert_path, const string_type& key_path)
+bool Base::OpenSSL::setAsnKeyFile(const string_type &key_path)
 {
-    return (setCertFile(std::forward<const string_type&>(cert_path))
-            && setKeyFile(std::forward<const string_type&>(key_path)));
+    if (this->ctx_ && !key_path.empty()){
+        this->key_path_ = key_path;
+        return SSL_CTX_use_PrivateKey_file(this->ctx_, this->key_path_.c_str(), SSL_FILETYPE_ASN1);
+    }
+    return false;
 }
 
 bool Base::OpenSSL::check()
 {
-    if (!this->ctx_ && !this->cert_path_.empty() && !this->key_path_.empty()){
+    if (this->ctx_ && !this->cert_path_.empty() && !this->key_path_.empty()){
         if (SSL_CTX_check_private_key(this->ctx_) <= 0){
             return false;
         }
-        SSL_CTX_set_verify(this->ctx_, SSL_VERIFY_NONE, nullptr);
+        SSL_CTX_set_verify(this->ctx_, SSL_VERIFY_PEER, nullptr);
         SSL_CTX_set_options(this->ctx_, SSL_OP_ALL);
         SSL_CTX_set_mode(this->ctx_, SSL_MODE_AUTO_RETRY);
         return true;

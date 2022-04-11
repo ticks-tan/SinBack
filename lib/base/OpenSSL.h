@@ -17,6 +17,18 @@ namespace SinBack
     namespace Base {
         class OpenSSL final : noncopyable {
         public:
+
+            enum ErrorCode
+            {
+                OK = 0x01,
+                Need_Close = 0x02,
+                Need_RDWR = 0x03,
+                Need_Accept = 0x04,
+                Need_Connect = 0x05,
+                Wait = 0x06,
+                Error = 0x07
+            };
+
             using string_type = SinBack::String;
 
             static pid_t s_ssl_pid;
@@ -26,16 +38,15 @@ namespace SinBack
             ~OpenSSL();
             SSL *newSSL();
             // 设置证书
-            bool setCertFile(const string_type& cert_path);
-            bool setKeyFile(const string_type& key_path);
-            bool setCertAndKeyFile(const string_type& cert_path, const string_type& key_path);
+            bool setPemCertFile(const string_type& cert_path);
+            bool setAsnCertFile(const string_type& cert_path);
+            bool setPemKeyFile(const string_type& key_path);
+            bool setAsnKeyFile(const string_type& key_path);
             // 验证证书
             bool check();
         private:
-            void init();
             void exit();
         private:
-            SSL_METHOD *method_;
             SSL_CTX *ctx_;
             string_type cert_path_;
             string_type key_path_;

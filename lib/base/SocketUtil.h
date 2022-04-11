@@ -256,24 +256,72 @@ typedef Int socket_t;
         }
 
 #ifdef SINBACK_OPENSSL
-        static Long
-        sslWriteSocket(SSL* ssl, const void* buf, Size_t len){
-            Size_t tmp = 0;
-            Int ret = SSL_write_ex(ssl, buf, len, &tmp);
-            if (ret == 1 && tmp > 0){
-                return static_cast<Long>(tmp);
+
+        static void setSSLErrorCode(OpenSSL::ErrorCode& code, Int error){
+            switch (error) {
+                case SSL_ERROR_NONE:
+                    code = OpenSSL::OK; break;
+                case SSL_ERROR_WANT_CONNECT:
+                    code = OpenSSL::Need_Connect; break;
+                case SSL_ERROR_WANT_ACCEPT:
+                    code = OpenSSL::Need_Accept;
+                case SSL_ERROR_WANT_READ:
+                    code = OpenSSL::Need_RDWR; break;
+                case SSL_ERROR_WANT_WRITE:
+                    code = OpenSSL::Need_RDWR; break;
+                case SSL_ERROR_SYSCALL:
+                    code = OpenSSL::Error; break;
+                case SSL_ERROR_SSL:
+                    code = OpenSSL::Error; break;
+                case SSL_ERROR_WANT_X509_LOOKUP:
+                    code = OpenSSL::Wait;
+                case SSL_ERROR_ZERO_RETURN:
+                    code = OpenSSL::Need_Close;
+                default:
+                    code = OpenSSL::Error; break;
             }
-            return ret;
         }
 
+        // 检查SSL缓冲区是否有数据
+        static bool sslCanReadOrWrite(SSL* ssl){
+            return (SSL_pending(ssl) > 0);
+        }
+
+        // 向SSL缓冲区写入数据
         static Long
-        sslReadSocket(SSL* ssl, void* buf, Size_t len){
+        sslWriteSocket(SSL* ssl, const void* buf, Size_t len, OpenSSL::ErrorCode& code){
+            Int ret = SSL_do_handshake(ssl);
             Size_t tmp = 0;
-            Int ret = SSL_read_ex(ssl, buf, len, &tmp);
+            if (ret != 1){
+                goto END;
+            }
+            ret = SSL_write_ex(ssl, buf, len, &tmp);
+            if (ret == 1 && tmp > 0){
+                code = OpenSSL::OK;
+                return static_cast<Long>(tmp);
+            }
+            END:
+            ret = SSL_get_error(ssl, ret);
+            setSSLErrorCode(code, ret);
+            return -1;
+        }
+
+        // 从SSL缓冲区读取数据
+        static Long
+        sslReadSocket(SSL* ssl, void* buf, Size_t len, OpenSSL::ErrorCode& code){
+            Size_t tmp = 0;
+            Int ret = SSL_do_handshake(ssl);
+            if (ret != 1){
+                goto END;
+            }
+            ret = SSL_read_ex(ssl, buf, len, &tmp);
             if (ret == 1 && tmp > 0){
                 return static_cast<Long>(tmp);
             }
-            return ret;
+            END:
+            ret = SSL_get_error(ssl, ret);
+            setSSLErrorCode(code, ret);
+            return -1;
         }
 
         static void sslCloseSocket(SSL* ssl){
