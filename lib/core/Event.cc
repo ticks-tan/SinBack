@@ -11,6 +11,9 @@
 
 using namespace SinBack;
 
+// 处理 SSL新连接
+void processNewSSLAccept(const std::weak_ptr<Core::IOEvent>& ev);
+
 // 水平触发 write函数
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len);
 
@@ -37,6 +40,27 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev);
 void handle_write(const std::weak_ptr<Core::IOEvent>& ev);
 
 void handle_keep_alive(Size_t id, const std::shared_ptr<Core::IOEvent>& io, const std::weak_ptr<Core::TimerEvent>& ev);
+
+void processNewSSLAccept(const std::weak_ptr<Core::IOEvent>& ev)
+{
+    auto io = ev.lock();
+    if (io){
+        Base::OpenSSL::ErrorCode code = Base::OpenSSL::OK;
+        Int ret = Base::sslAccept(io->ssl_, code);
+        if (ret == 1){
+            Core::EventLoop::removeIoEvent(io, Core::IO_READ);
+            handle_accept_cb(io);
+        }else if (code == Base::OpenSSL::Need_RDWR){
+            if ((io->evs_ & Core::IO_READ) == 0){
+                Core::EventLoop::addIoEvent(io, processNewSSLAccept, Core::IO_READ);
+            }
+        }else {
+            Log::FLogE("ssl accept error, pid = %ld, fd = %ld, id = %ld", io->pid_, io->fd_, io->id_);
+            io->error_ = errno;
+            io->close(false);
+        }
+    }
+}
 
 Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
 {
@@ -249,28 +273,15 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
         io_ptr->context_ = io->context_;
         // OpenSSL
         if (io_ptr->has_ssl_ && !io_ptr->ssl_){
-            io_ptr->ssl_ = io_ptr->loop_->getSSL()->newSSL();
-            if (io_ptr->ssl_ == nullptr){
+            Base::OpenSSL::ErrorCode error = Base::OpenSSL::OK;
+            io_ptr->ssl_ = Base::sslCreate(*io_ptr->loop_->getSSL(), io_ptr->fd_, error);
+            if (io_ptr->ssl_ == nullptr || error != Base::OpenSSL::OK){
                 Log::FLogE("create SSL socket error! -- %ld", io_ptr->fd_);
                 io_ptr->close(false);
                 return;
             }
-            // 设置 ssl 为 服务器模式
-            SSL_set_accept_state(io_ptr->ssl_);
-            // 设置允许 write (0, len] 模式写入
-            SSL_set_mode(io_ptr->ssl_, SSL_MODE_ENABLE_PARTIAL_WRITE);
-            Int acp = SSL_set_fd(io_ptr->ssl_, io_ptr->fd_);
-            if (acp == 0){
-                Log::FLogE("set SSL socket read and write error! -- %ld", io_ptr->fd_);
-                io_ptr->close(false);
-                return;
-            }
-            acp = SSL_accept(io_ptr->ssl_);
-            if (acp == 0){
-                Log::FLogE("accept SSL socket error! -- %ld", io_ptr->fd_);
-                io_ptr->close(false);
-                return;
-            }
+            processNewSSLAccept(io_ptr);
+            return;
         }
         handle_accept_cb(io_ptr);
         return;

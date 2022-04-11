@@ -27,6 +27,7 @@ void Base::OpenSSL::loadSSL() {
 Base::OpenSSL::OpenSSL()
     : ctx_(nullptr)
     , error_(false)
+    , verify_mode_(0)
 {
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
@@ -45,9 +46,6 @@ SSL *Base::OpenSSL::newSSL()
 {
     SSL* ssl = nullptr;
     ssl = SSL_new(this->ctx_);
-    if (ssl == nullptr){
-        // error_ handle
-    }
     return ssl;
 }
 
@@ -101,10 +99,48 @@ bool Base::OpenSSL::check()
         if (SSL_CTX_check_private_key(this->ctx_) <= 0){
             return false;
         }
-        SSL_CTX_set_verify(this->ctx_, SSL_VERIFY_PEER, nullptr);
+        // 设置错误选项
         SSL_CTX_set_options(this->ctx_, SSL_OP_ALL);
+        // 设置证书验证模式
+        SSL_CTX_set_verify(this->ctx_, this->verify_mode_, nullptr);
+        // 设置 CTX 模式
         SSL_CTX_set_mode(this->ctx_, SSL_MODE_AUTO_RETRY);
         return true;
+    }
+    return false;
+}
+
+// 设置证书验证模式
+void Base::OpenSSL::setVerifyMode(Base::OpenSSL::VerifyMode mode)
+{
+    if (mode & VERIFY_PEER){
+        this->verify_mode_ = SSL_VERIFY_PEER;
+        if (mode & VERIFY_CLIENT_ONCE){
+            this->verify_mode_ |= SSL_VERIFY_CLIENT_ONCE;
+        }
+        if (mode & VERIFY_FAIL_IF_NO_PEER_CERT){
+            this->verify_mode_ |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+        }
+    }else if (mode & VERIFY_PEER){
+        this->verify_mode_ = SSL_VERIFY_NONE;
+    }else{
+        if (mode & VERIFY_CLIENT_ONCE){
+            this->verify_mode_ = SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+        }
+        if (mode & VERIFY_FAIL_IF_NO_PEER_CERT){
+            this->verify_mode_ = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+        }
+    }
+}
+
+bool
+Base::OpenSSL::setCaDirAndFile(const Base::OpenSSL::string_type &ca_dir,
+                               const Base::OpenSSL::string_type &ca_file)
+{
+    if (this->ctx_) {
+        if (!ca_dir.empty()) this->ca_dir_ = ca_dir;
+        if (!ca_file.empty()) this->ca_file_ = ca_file;
+        return (SSL_CTX_load_verify_locations(this->ctx_, ca_file.c_str(), ca_dir.c_str()));
     }
     return false;
 }

@@ -287,15 +287,41 @@ typedef Int socket_t;
             return (SSL_pending(ssl) > 0);
         }
 
+        // 创建新 SSL
+        static SSL* sslCreate(Base::OpenSSL& ctx, socket_t fd, OpenSSL::ErrorCode& code){
+            SSL* ssl = ctx.newSSL();
+            if (ssl){
+                // 设置允许 write (0, len] 模式写入
+                SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+                // 设置SSL读写事件
+                Int acp = SSL_set_fd(ssl, fd);
+                if (acp <= 0){
+                    setSSLErrorCode(code, SSL_get_error(ssl, acp));
+                }
+            }
+            return ssl;
+        }
+
+        // SSL握手
+        static Int sslHandshake(SSL* ssl,OpenSSL::ErrorCode& code) {
+            Int ret = SSL_do_handshake(ssl);
+            if (ret == 1) return 1;
+            setSSLErrorCode(code, SSL_get_error(ssl, ret));
+            return ret;
+        }
+        // SSL accept
+        static Int sslAccept(SSL* ssl, OpenSSL::ErrorCode& code){
+            Int ret = SSL_accept(ssl);
+            if (ret == 1) return 1;
+            setSSLErrorCode(code, SSL_get_error(ssl, ret));
+            return ret;
+        }
+
         // 向SSL缓冲区写入数据
         static Long
         sslWriteSocket(SSL* ssl, const void* buf, Size_t len, OpenSSL::ErrorCode& code){
-            Int ret = SSL_do_handshake(ssl);
             Size_t tmp = 0;
-            if (ret != 1){
-                goto END;
-            }
-            ret = SSL_write_ex(ssl, buf, len, &tmp);
+            Int ret = SSL_write_ex(ssl, buf, len, &tmp);
             if (ret == 1 && tmp > 0){
                 code = OpenSSL::OK;
                 return static_cast<Long>(tmp);
@@ -310,11 +336,7 @@ typedef Int socket_t;
         static Long
         sslReadSocket(SSL* ssl, void* buf, Size_t len, OpenSSL::ErrorCode& code){
             Size_t tmp = 0;
-            Int ret = SSL_do_handshake(ssl);
-            if (ret != 1){
-                goto END;
-            }
-            ret = SSL_read_ex(ssl, buf, len, &tmp);
+            Int ret = SSL_read_ex(ssl, buf, len, &tmp);
             if (ret == 1 && tmp > 0){
                 return static_cast<Long>(tmp);
             }

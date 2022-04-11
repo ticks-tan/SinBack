@@ -25,16 +25,16 @@ int main(int argc, char* argv[])
     });
 
     module->setting().keepAlive = false;
-    module->setting().staticFileDir = "../web";
+    module->setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/vscode/HtmlCode/Ticks/blog";
     module->addService("main", &service);
 
     Main::Application app;
     app.setting().workThreadNum = 4;
-    app.setting().listenPort = 2022;
-    app.setting().logPath = "./SinBack";
-    // app.setting().enableSSL = true;
-    // app.setting().certPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2.pem";
-    // app.setting().keyPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2-key.pem";
+    app.setting().listenPort = 2023;
+    app.setting().logPath = "./SinBack1";
+    app.setting().enableSSL = true;
+    app.setting().certPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2.pem";
+    app.setting().keyPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2-key.pem";
 
     app.setModule(module);
 

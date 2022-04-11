@@ -34,9 +34,11 @@ namespace SinBack
                 Size_t listenPort;
                 // 启用SSL
                 bool enableSSL;
-                // 证书路径
+                // 证书和私钥路径
                 string_type certPath;
                 string_type keyPath;
+                //
+
             };
         public:
             Application();
