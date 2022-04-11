@@ -140,7 +140,10 @@ Base::OpenSSL::setCaDirAndFile(const Base::OpenSSL::string_type &ca_dir,
     if (this->ctx_) {
         if (!ca_dir.empty()) this->ca_dir_ = ca_dir;
         if (!ca_file.empty()) this->ca_file_ = ca_file;
-        return (SSL_CTX_load_verify_locations(this->ctx_, ca_file.c_str(), ca_dir.c_str()));
+        if (!ca_file.empty() || !ca_dir.empty()) {
+            return (SSL_CTX_load_verify_locations(this->ctx_, ca_file.c_str(), ca_dir.c_str()));
+        }
+        return SSL_CTX_set_default_verify_paths(this->ctx_);
     }
     return false;
 }

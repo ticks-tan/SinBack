@@ -16,7 +16,8 @@ int main(int argc, char* argv[])
 {
     Base::system_signal(SIGPIPE, nullptr);
 
-    auto module = std::make_shared<Http::HttpServer>();
+    // HTTP模块
+    auto http = std::make_shared<Http::HttpServer>();
     Http::HttpService service;
     // 添加 Service
     service.GET("/api/test", [](Http::HttpContext& cxt) -> Int {
@@ -24,19 +25,23 @@ int main(int argc, char* argv[])
         return cxt.sendText("我是测试接口");
     });
 
-    module->setting().keepAlive = false;
-    module->setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/vscode/HtmlCode/Ticks/blog";
-    module->addService("main", &service);
+    // 开启 http 的keep-alive
+    http->setting().keepAlive = true;
+    // 设置静态文件根目录
+    http->setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/vscode/HtmlCode/Ticks/blog";
+    http->addService("main", &service);
 
     Main::Application app;
     app.setting().workThreadNum = 4;
     app.setting().listenPort = 2023;
     app.setting().logPath = "./SinBack1";
+    // 启用 SSL
     app.setting().enableSSL = true;
+    // 指定证书和私钥
     app.setting().certPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2.pem";
     app.setting().keyPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2-key.pem";
-
-    app.setModule(module);
+    // 加载HTTP模块
+    app.setModule(http);
 
     app.run([](const String& msg){
         printf("%s\n", msg.c_str());

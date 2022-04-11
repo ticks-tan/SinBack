@@ -54,7 +54,7 @@ Main::Application::Application()
         , module_(nullptr)
 {
     // 默认设置
-    this->setting_.logPath = "./";
+    this->setting_.logPath = "./SinBack";
     // 静态文件默认开启，手动指定静态文件根目录才会开启
     this->setting_.maxConnectCnt = 4096;
     // 默认为多线程模式，指定进程数量后采用多进程模式
@@ -142,27 +142,37 @@ bool Main::Application::initSSL()
     Base::OpenSSL::loadSSL();
     auto loop = this->accept_th_->loop();
     loop->enableSSL();
-    if (!loop->getSSL()){
+    auto ssl = loop->getSSL();
+    if (!ssl){
         Log::FLogE("cannot init SSL");
         return false;
     }
-    if (!this->setting_.certPath.empty()){
-        if (!loop->getSSL()->setPemCertFile(this->setting_.certPath)){
+    if (!this->setting_.certPath.empty() && !this->setting_.keyPath.empty()){
+        // 设置证书和私钥
+        if (!ssl->setPemCertFile(this->setting_.certPath)){
             Log::FLogE("Http Server run on process mode error -> setCertFile error ! ");
             return false;
         }
-    }
-    if (!this->setting_.keyPath.empty()){
-        if (!loop->getSSL()->setPemKeyFile(this->setting_.keyPath)){
+        if (!ssl->setPemKeyFile(this->setting_.keyPath)){
             Log::FLogE("Http Server run on process mode error -> setKeyFile error ! ");
             return false;
         }
-    }
-    if (!this->setting_.certPath.empty() && !this->setting_.keyPath.empty()){
-        if (!loop->getSSL()->check()){
+        // 设置CA证书
+        if (!this->setting_.caDir.empty() || !this->setting_.caFile.empty()){
+            if (!ssl->setCaDirAndFile(this->setting_.caDir, this->setting_.caFile)){
+                Log::FLogE("Http Server run on process mode error -> set CA cert error !");
+                return false;
+            }
+        }
+        // 设置证书验证模式
+        ssl->setVerifyMode(this->setting_.certVerityMode);
+        // 检查证书
+        if (!ssl->check()){
             Log::FLogE("Http Server run on process mode error -> check SSL error !");
             return false;
         }
+    } else {
+        Log::FLogW("You should set a cert and key file!");
     }
     return true;
 }

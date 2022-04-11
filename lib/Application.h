@@ -37,7 +37,11 @@ namespace SinBack
                 // 证书和私钥路径
                 string_type certPath;
                 string_type keyPath;
-                //
+                // CA证书路径和文件
+                string_type caFile;
+                string_type caDir;
+                // 证书验证模式
+                Base::OpenSSL::VerifyMode certVerityMode;
 
             };
         public:

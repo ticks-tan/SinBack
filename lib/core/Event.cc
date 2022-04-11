@@ -55,7 +55,7 @@ void processNewSSLAccept(const std::weak_ptr<Core::IOEvent>& ev)
                 Core::EventLoop::addIoEvent(io, processNewSSLAccept, Core::IO_READ);
             }
         }else {
-            Log::FLogE("ssl accept error, pid = %ld, fd = %ld, id = %ld", io->pid_, io->fd_, io->id_);
+            Log::FLogE("ssl accept error, pid = %ld, fd = %ld, error = %d", io->pid_, io->fd_, code);
             io->error_ = errno;
             io->close(false);
         }
