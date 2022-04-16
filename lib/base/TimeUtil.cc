@@ -5,7 +5,7 @@
 * Email:      2938384958@qq.com
 * Des:         
 */
-#include "base/TimeUtil.h"
+#include "TimeUtil.h"
 
 // 获取时间
 void SinBack::Base::getTimeOfDay(timeval* tv){

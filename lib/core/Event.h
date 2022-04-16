@@ -164,7 +164,7 @@ namespace SinBack
             // 是否开启SSL
             bool has_ssl_ = false;
             // SSL
-            SSL* ssl_ = nullptr;
+            std::shared_ptr<Base::SSLSocket> ssl_;
             // accept 回调
             IOAcceptCB accept_cb_ = nullptr;
             // read 回调

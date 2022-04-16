@@ -9,7 +9,7 @@
 #define SINBACK_TEST_SINSTRING_H
 
 #include <cstring>
-#include "base/Base.h"
+#include "Base.h"
 
 namespace SinBack
 {

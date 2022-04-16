@@ -5,7 +5,7 @@
 * Email:      2938384958@qq.com
 * Des:        Event function
 */
-#include "core/EventLoop.h"
+#include "EventLoop.h"
 #include "Event.h"
 #include "cstring"
 
@@ -45,17 +45,16 @@ void processNewSSLAccept(const std::weak_ptr<Core::IOEvent>& ev)
 {
     auto io = ev.lock();
     if (io){
-        Base::OpenSSL::ErrorCode code = Base::OpenSSL::OK;
-        Int ret = Base::sslAccept(io->ssl_, code);
+        Int ret = io->ssl_->accept();
         if (ret == 1){
             Core::EventLoop::removeIoEvent(io, Core::IO_READ);
             handle_accept_cb(io);
-        }else if (code == Base::OpenSSL::Need_RDWR){
+        }else if (io->ssl_->code() == Base::OpenSSL::Need_RDWR){
             if ((io->evs_ & Core::IO_READ) == 0){
                 Core::EventLoop::addIoEvent(io, processNewSSLAccept, Core::IO_READ);
             }
         }else {
-            Log::FLogE("ssl accept error, pid = %ld, fd = %ld, error = %d", io->pid_, io->fd_, code);
+            Log::FLogE("ssl accept error, pid = %ld, fd = %ld", io->pid_, io->fd_);
             io->error_ = errno;
             io->close(false);
         }
@@ -73,19 +72,18 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
     if (io->write_queue_.empty()){
 
         if (io->has_ssl_ && io->ssl_){
-            Base::OpenSSL::ErrorCode error = Base::OpenSSL::OK;
-            write_len = Base::sslWriteSocket(io->ssl_, buf, len, error);
+            write_len = io->ssl_->write(buf, len);
             io->last_write_time_ = Base::getTimeOfDayUs();
 
             if (write_len <= 0){
-                if (error == Base::OpenSSL::Need_RDWR){
+                if (io->ssl_->code() == Base::OpenSSL::Need_RDWR){
                     write_len = 0;
                     goto QUEUE_WRITE;
-                }else if (error == Base::OpenSSL::Need_Close) {
+                }else if (io->ssl_->code() == Base::OpenSSL::Need_Close) {
                     lock.unlock();
                     goto DISCONNECT;
                 }
-                if (error == Base::OpenSSL::Error){
+                if (io->ssl_->code() == Base::OpenSSL::Error){
                     io->error_ = errno;
                     Log::FLogE("ssl socket read error, id = %ud, pid = %ud, error = %s.",
                                io->id_, io->pid_, strerror(io->error_));
@@ -273,9 +271,8 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
         io_ptr->context_ = io->context_;
         // OpenSSL
         if (io_ptr->has_ssl_ && !io_ptr->ssl_){
-            Base::OpenSSL::ErrorCode error = Base::OpenSSL::OK;
-            io_ptr->ssl_ = Base::sslCreate(*io_ptr->loop_->getSSL(), io_ptr->fd_, error);
-            if (io_ptr->ssl_ == nullptr || error != Base::OpenSSL::OK){
+            io_ptr->ssl_ = std::make_shared<Base::SSLSocket>(*io->loop_->getSSL(), io_ptr->fd_);
+            if (io_ptr->ssl_ == nullptr || io_ptr->ssl_->code() != Base::OpenSSL::OK){
                 Log::FLogE("create SSL socket error! -- %ld", io_ptr->fd_);
                 io_ptr->close(false);
                 return;
@@ -311,20 +308,18 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
         if (need_read_len == 0) return;
 
         if (io->has_ssl_ && io->ssl_){
-            Base::OpenSSL::ErrorCode error = Base::OpenSSL::OK;
             Long len = 0;
             do {
-                error = Base::OpenSSL::OK;
-                len = Base::sslReadSocket(io->ssl_, buf.data(), need_read_len, error);
+                len = io->ssl_->read(buf.data(), need_read_len);
                 io->last_read_time_ = Base::getTimeOfDayUs();
 
                 if (len <= 0) {
-                    if (error == Base::OpenSSL::Need_RDWR) {
+                    if (io->ssl_->code() == Base::OpenSSL::Need_RDWR) {
                         return;
-                    } else if (error == Base::OpenSSL::Need_Close) {
+                    } else if (io->ssl_->code() == Base::OpenSSL::Need_Close) {
                         goto DISCONNECT;
                     }
-                    if (error == Base::OpenSSL::Error) {
+                    if (io->ssl_->code() == Base::OpenSSL::Error) {
                         io->error_ = errno;
                         // 读取错误
                         Log::FLogE("ssl socket read error, pid = %ld, id = %ld, error = %s",
@@ -336,7 +331,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                 io->read_buf_.write(buf.data(), len);
                 buf.clear();
                 read_len += len;
-            }while(Base::sslCanReadOrWrite(io->ssl_));
+            }while(io->ssl_->canReadOrWrite());
 
             if (read_len > 0) {
                 handle_read_cb(io, (void *) (io->read_buf_.data()), read_len);
@@ -403,20 +398,19 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
         io->write_queue_.pop_front();
 
         if (io->has_ssl_ && io->ssl_){
-            Base::OpenSSL::ErrorCode error;
-            write_len = Base::sslWriteSocket(io->ssl_, buf.data(), buf.size(), error);
+            write_len = io->ssl_->write(buf.data(), buf.size());
             io->last_write_time_ = Base::getTimeOfDayUs();
 
             if (write_len <= 0){
-                if (error == Base::OpenSSL::Need_RDWR){
+                if (io->ssl_->code() == Base::OpenSSL::Need_RDWR){
                     write_len = 0;
                     goto WRITE_END;
-                } else if (error == Base::OpenSSL::Need_Close){
+                } else if (io->ssl_->code() == Base::OpenSSL::Need_Close){
                     lock.unlock();
                     goto DISCONNECT;
                 }
-                if (error == Base::OpenSSL::Error){
-                    io->error_ = error;
+                if (io->ssl_->code() == Base::OpenSSL::Error){
+                    io->error_ = errno;
                     // 写入错误
                     Log::FLogE("ssl socket read error, pid = %uld, id = %uld, error = %s",
                                io->pid_, io->id_, strerror(io->error_));
@@ -521,11 +515,8 @@ Int Core::IOEvent::close(bool timer)
         Core::EventLoop::loop_event_inactive(shared_from_this());
         // 关闭SSL套接字
         if (this->has_ssl_){
-            Base::sslCloseSocket(this->ssl_);
-            if (this->ssl_){
-                SSL_free(this->ssl_);
-            }
-            this->ssl_ = nullptr;
+            this->ssl_->close();
+            this->ssl_.reset();
         }
         Base::closeSocket(this->fd_);
     }

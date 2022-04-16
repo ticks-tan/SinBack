@@ -10,7 +10,7 @@
 
 #include <sys/epoll.h>
 #include <sys/types.h>
-#include "core/Event.h"
+#include "Event.h"
 
 namespace SinBack
 {

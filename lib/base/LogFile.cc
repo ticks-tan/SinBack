@@ -6,7 +6,7 @@
 * Des:         
 */
 #include "LogFile.h"
-#include "base/TimeUtil.h"
+#include "TimeUtil.h"
 
 using namespace SinBack;
 

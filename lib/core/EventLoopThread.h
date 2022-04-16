@@ -8,7 +8,7 @@
 #ifndef SINBACK_EVENTLOOPTHREAD_H
 #define SINBACK_EVENTLOOPTHREAD_H
 
-#include "core/EventLoop.h"
+#include "EventLoop.h"
 
 namespace SinBack
 {

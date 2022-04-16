@@ -13,8 +13,8 @@
 #include <queue>
 #include <unordered_map>
 #include <condition_variable>
-#include "base/TimeUtil.h"
-#include "base/LogFile.h"
+#include "TimeUtil.h"
+#include "LogFile.h"
 
 namespace SinBack
 {

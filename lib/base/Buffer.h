@@ -9,7 +9,7 @@
 #define SIN_BACK_BUFFER_H
 
 #include <vector>
-#include "base/SinString.h"
+#include "Base.h"
 
 namespace SinBack
 {

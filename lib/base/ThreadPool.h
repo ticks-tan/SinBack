@@ -15,7 +15,7 @@
 #include <condition_variable>
 #include <future>
 #include <stdexcept>
-#include "base/Base.h"
+#include "Base.h"
 
 namespace SinBack {
     namespace Base {

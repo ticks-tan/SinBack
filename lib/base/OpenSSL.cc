@@ -6,7 +6,7 @@
 * Des:
 */
 #include "OpenSSL.h"
-#include "base/System.h"
+#include "System.h"
 
 using namespace SinBack;
 
@@ -42,10 +42,19 @@ Base::OpenSSL::~OpenSSL()
     this->exit();
 }
 
-SSL *Base::OpenSSL::newSSL()
+SSL *Base::OpenSSL::newSSL(Int fd, ErrorCode& code)
 {
     SSL* ssl = nullptr;
     ssl = SSL_new(this->ctx_);
+    if (ssl){
+        // 设置允许 write (0, len] 模式写入
+        SSL_set_mode(ssl, SSL_MODE_ENABLE_PARTIAL_WRITE);
+        // 设置SSL读写事件
+        Int acp = SSL_set_fd(ssl, fd);
+        if (acp <= 0){
+            setSSLErrorCode(code, SSL_get_error(ssl, acp));
+        }
+    }
     return ssl;
 }
 
@@ -149,5 +158,81 @@ Base::OpenSSL::setCaDirAndFile(const Base::OpenSSL::string_type &ca_dir,
 }
 
 
+Base::SSLSocket::SSLSocket(OpenSSL& openssl, Int sock)
+    : ssl_(nullptr)
+    , close_(false)
+    , code_(OpenSSL::OK)
+{
+    this->ssl_ = openssl.newSSL(sock, this->code_);
+    if (!this->ssl_){
+        this->code_ = OpenSSL::Error;
+    }
+}
 
+Base::SSLSocket::~SSLSocket()
+{
+    if (!this->close_){
+        this->close();
+    }
+}
 
+Long Base::SSLSocket::read(void *buf, Size_t len)
+{
+    Size_t tmp = 0;
+    Int ret = SSL_read_ex(this->ssl_, buf, len, &tmp);
+    if (ret == 1 && tmp > 0){
+        return static_cast<Long>(tmp);
+    }
+    END:
+    ret = SSL_get_error(this->ssl_, ret);
+    OpenSSL::setSSLErrorCode(this->code_, ret);
+    return -1;
+}
+
+Long Base::SSLSocket::write(const void *buf, Size_t len)
+{
+    Size_t tmp = 0;
+    Int ret = SSL_write_ex(this->ssl_, buf, len, &tmp);
+    if (ret == 1 && tmp > 0){
+        this->code_ = OpenSSL::OK;
+        return static_cast<Long>(tmp);
+    }
+    END:
+    ret = SSL_get_error(this->ssl_, ret);
+    OpenSSL::setSSLErrorCode(this->code_, ret);
+    return -1;
+}
+
+void Base::SSLSocket::close()
+{
+    if (this->ssl_) {
+        SSL_shutdown(this->ssl_);
+        SSL_free(this->ssl_);
+        this->ssl_ = nullptr;
+    }
+    this->close_ = true;
+}
+
+bool Base::SSLSocket::canReadOrWrite()
+{
+    if (!this->ssl_){
+        return false;
+    }
+    return (SSL_pending(this->ssl_) > 0);
+}
+
+Int Base::SSLSocket::accept()
+{
+    Int ret = SSL_accept(this->ssl_);
+    if (ret == 1) return 1;
+    OpenSSL::setSSLErrorCode(this->code_, SSL_get_error(this->ssl_, ret));
+    return ret;
+}
+
+Int Base::SSLSocket::handShake()
+{
+    Int ret = SSL_do_handshake(this->ssl_);
+    if (ret == 1) return 1;
+    OpenSSL::setSSLErrorCode(this->code_, SSL_get_error(this->ssl_, ret));
+    return ret;
+}

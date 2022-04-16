@@ -5,7 +5,7 @@
 * Email:      2938384958@qq.com
 * Des:         
 */
-#include "core/EventLoopThread.h"
+#include "EventLoopThread.h"
 
 SinBack::Core::EventLoopThread::EventLoopThread()
     : running_(false)

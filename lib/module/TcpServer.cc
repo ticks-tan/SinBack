@@ -11,12 +11,9 @@
 
 using namespace SinBack;
 
-Module::TcpServer::TcpServer()
-{
-}
+Module::TcpServer::TcpServer() = default;
 
-Module::TcpServer::~TcpServer()
-{
+Module::TcpServer::~TcpServer() {
     this->channels_.clear();
 }
 
