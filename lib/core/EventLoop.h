@@ -10,7 +10,7 @@
 
 #include <list>
 #include <unordered_map>
-#include <unordered_set>
+#include <map>
 #include "base/Logger.h"
 #include "core/Selector.h"
 #include "base/ThreadPool.h"
@@ -231,7 +231,7 @@ namespace SinBack
             Int idle_count_;
 
             // 定时器事件
-            std::unordered_map<ULong , std::shared_ptr<TimerEvent>> timer_;
+            std::map<ULong , std::shared_ptr<TimerEvent>> timer_;
             // 定时任务数量
             Int timer_count_;
             // 线程池
