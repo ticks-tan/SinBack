@@ -68,11 +68,11 @@ namespace SinBack
         }
 
         // 信号处理函数
-        static bool system_signal(Int sig, const Function<void(Int)>& func, Int flags = 0){
-            struct sigaction action{};
-            action.sa_handler = (__sighandler_t) &func;
+        static bool system_signal(Int sig, void(*func)(int), Int flags = 0){
+            struct sigaction action{}, old_action{};
+            action.sa_handler = func;
             action.sa_flags = flags;
-            return (::sigaction(sig, &action, nullptr) == 0);
+            return (::sigaction(sig, &action, &old_action) == 0);
         }
         // 忽略指定信号
         static bool system_ignore_sig(Int sig) {

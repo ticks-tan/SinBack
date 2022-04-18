@@ -506,19 +506,18 @@ Int Core::IOEvent::close(bool timer)
                 if (this->id_ == id) {
                     this->close();
                 }
-            }, 100, 1);
+            }, 1000, 1);
             return 1;
         }
         this->closed_ = true;
-        // 清理IO事件
-        this->clean();
-        Core::EventLoop::loop_event_inactive(shared_from_this());
         // 关闭SSL套接字
         if (this->has_ssl_){
             this->ssl_->close();
-            this->ssl_.reset();
         }
         Base::closeSocket(this->fd_);
+        Core::EventLoop::loop_event_inactive(shared_from_this());
+        // 清理IO事件
+        this->clean();
     }
     // 关闭回调
     handle_close_cb(shared_from_this());
@@ -572,6 +571,6 @@ void Core::IOEvent::clean()
     this->read_buf_.clear();
     this->read_len_ = 0;
     this->write_queue_.clear();
-    this->ssl_ = nullptr;
+    this->ssl_.reset();
     this->has_ssl_ = false;
 }

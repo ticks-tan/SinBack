@@ -101,9 +101,9 @@ namespace SinBack
             void runProcessMode();
 
             // 处理子进程退出
-            void sigWaitChild(int sig);
+            static void sigWaitChild(int sig);
             // 处理退出信号(优雅退出)
-            void sigHandleExit(int sig);
+            static void sigHandleExit(int sig);
         private:
             // 是否运行
             bool running_;

@@ -7,6 +7,7 @@
 */
 
 #include "HttpParser.h"
+#include "base/Url.h"
 
 using namespace SinBack;
 using namespace SinBack::Module;
@@ -30,6 +31,8 @@ Int on_url(llhttp_t* parser, const Char* data, Size_t len)
     if (hp){
         hp->request_->url.clear();
         hp->request_->url.append(data, len);
+        // url解码
+        hp->request_->url = std::move(SinBack::Tools::url_decode(hp->request_->url));
         hp->set_status(Http::HP_PARSE_URL);
         return 0;
     }

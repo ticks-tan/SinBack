@@ -163,9 +163,12 @@ bool Main::Application::initSSL()
                 Log::FLogE("Http Server run on process mode error -> set CA cert error !");
                 return false;
             }
+            if (this->setting_.certVerityMode == Base::OpenSSL::VERIFY_PEER){
+                ssl->setVerifyMode(Base::OpenSSL::VERIFY_PEER);
+            }
         }
         // 设置证书验证模式
-        ssl->setVerifyMode(this->setting_.certVerityMode);
+        ssl->setVerifyMode(Base::OpenSSL::VERIFY_NONE);
         // 检查证书
         if (!ssl->check()){
             Log::FLogE("Http Server run on process mode error -> check SSL error !");
@@ -332,9 +335,10 @@ void Main::Application::onDisconnect(const std::weak_ptr<Core::IOEvent> &ev)
  */
 void Main::Application::runThreadMode()
 {
-    // 注册 TERM 信号处理函数
-    Base::system_signal(SIGTERM, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
-    Base::system_signal(SIGSEGV, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
+    // 注册信号处理函数
+    Base::system_signal(SIGTERM, Application::sigHandleExit);
+    Base::system_signal(SIGSEGV, Application::sigHandleExit);
+    Base::system_signal(SIGPIPE, SIG_IGN);
 
     if (this->setting_.workThreadNum > 0){
         this->work_th_.reset(new Core::EventLoopPool(this->setting_.workThreadNum));
@@ -364,10 +368,11 @@ void Main::Application::runProcessMode()
         pid_t pid;
 
         // 注册子进程退出信号
-        Base::system_signal(SIGCHLD, std::bind(&Application::sigWaitChild, this, std::placeholders::_1));
+        Base::system_signal(SIGCHLD, Application::sigWaitChild);
         // 注册 TERM 信号处理函数
-        Base::system_signal(SIGTERM, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
-        Base::system_signal(SIGSEGV, std::bind(&Application::sigHandleExit, this, std::placeholders::_1));
+        Base::system_signal(SIGTERM, Application::sigHandleExit);
+        Base::system_signal(SIGSEGV, Application::sigHandleExit);
+        Base::system_signal(SIGPIPE, SIG_IGN);
 
         for (; i < this->setting_.workProcessNum; ++i){
             pid = Base::system_fork();
@@ -428,7 +433,7 @@ void Main::Application::sigWaitChild(int sig)
  */
 void Main::Application::sigHandleExit(int sig)
 {
+    Log::FLogI("Server receive exit signal, exit now, pid = %ld", ::getpid());
     Log::Logger::unregisterAllLogger();
-    this->stop();
-    exit(0);
+    exit(1);
 }

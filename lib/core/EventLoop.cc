@@ -253,8 +253,7 @@ Int Core::EventLoop::processIdle()
             --item->repeat_;
         }
 
-        if (item->repeat_ <= 0){
-            EventLoop::loop_event_inactive(item);
+        if (item->repeat_ == 0){
             item->loop_->idle_count_--;
             it = this->idle_evs_.erase(it);
             continue;
@@ -296,10 +295,16 @@ Int Core::EventLoop::processPending()
                             if (timer->cb_) {
                                 timer->cb_(timer);
                             }
+                            if (timer->repeat_ == 0){
+                                EventLoop::loop_event_inactive(item);
+                            }
                         }else if (item->type() == Core::Event_Type_Idle){
                             auto idle = std::dynamic_pointer_cast<Core::IdleEvent>(item);
                             if (idle->cb_) {
                                 idle->cb_(idle);
+                            }
+                            if (idle->repeat_ == 0){
+                                EventLoop::loop_event_inactive(item);
                             }
                         }else {
                             if (item->cb_) {
@@ -354,7 +359,6 @@ Int Core::EventLoop::processTimer()
 
             if (item->repeat_ <= 0 && item->repeat_ != Core::TimerEvent::infinity){
                 // 次数用尽，删除定时器
-                EventLoop::loop_event_inactive(item);
                 item->loop_->timer_count_--;
                 it = this->timer_.erase(it);
             } else{
@@ -661,8 +665,8 @@ Core::EventLoop::changeIoLoop(const std::weak_ptr<Core::IOEvent> &ev, Core::Even
     auto io = ev.lock();
     if (io && loop && io->loop_ != loop /* 避免死锁 */) {
         Base::socket_t fd = io->fd_;
-
         std::unique_lock<std::mutex> lock(loop->mutex_, std::defer_lock);
+
         auto it = loop->io_evs_.find(fd);
         if (gettid() != loop->tid_) {
             // 不在一个线程，加锁

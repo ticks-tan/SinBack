@@ -12,20 +12,13 @@ Des:
 using namespace SinBack;
 using namespace SinBack::Module;
 
-void sig_exit(int sig){
-    if (sig == SIGSEGV){
-        Log::Logger::unregisterAllLogger();
-        ::exit(1);
-    }
-}
-
 int main(int argc, char* argv[])
 {
     // HTTP模块
     auto http = std::make_shared<Http::HttpServer>();
     Http::HttpService service;
     // 添加 Service
-    service.GET("/api/test", [](Http::HttpContext& cxt) -> Int {
+    service.GET("/api/测试接口", [](Http::HttpContext& cxt) -> Int {
         printf("url = %s\n", cxt.request().url.c_str());
         return cxt.sendText("我是测试接口");
     });
@@ -33,15 +26,15 @@ int main(int argc, char* argv[])
     // 开启 http 的keep-alive
     http->setting().keepAlive = true;
     // 设置静态文件根目录
-    http->setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/vscode/HtmlCode/Ticks/blog";
+    http->setting().staticFileDir = "/run/media/ticks/BigDisk/Codes/vscode/HtmlCode/wudang";
     http->addService("main", &service);
 
     Main::Application app;
     app.setting().workThreadNum = 4;
-    app.setting().listenPort = 2023;
-    app.setting().logPath = "./SinBack1";
+    app.setting().listenPort = 2022;
+    app.setting().logPath = "./SinBack";
     // 启用 SSL
-    app.setting().enableSSL = true;
+    app.setting().enableSSL = false;
     // 指定证书和私钥
     app.setting().certPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2.pem";
     app.setting().keyPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2-key.pem";
@@ -51,6 +44,9 @@ int main(int argc, char* argv[])
     app.run([](const String& msg){
         printf("%s\n", msg.c_str());
     });
+
+
+
     return 0;
 }
 

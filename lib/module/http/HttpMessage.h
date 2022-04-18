@@ -193,7 +193,7 @@ namespace SinBack
     XX(2,   ".txt",     "text/plain")   \
     XX(3,   ".xml",     "text/xml")     \
     XX(4,   ".gif",     "image/gif")    \
-    XX(5,   ".jpg",     "image/x-jpg")  \
+    XX(5,   ".jpg",     "image/jpeg")  \
     XX(6,   ".jpeg",    "image/jpeg")   \
     XX(7,   ".png",     "image/x-png")  \
     XX(8,   ".xhtml",   "application/xhtml+xml")    \

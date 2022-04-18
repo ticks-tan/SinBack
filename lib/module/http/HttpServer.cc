@@ -188,7 +188,7 @@ void Http::HttpServer::setIOKeepAlive(const std::weak_ptr<Core::IOEvent> &ev)
         if (io->loop_){
             ULong id = io->id_;
             io->loop_->addTimer([id, io](const std::weak_ptr<Core::TimerEvent>& ev){
-                if (io && io->id_ == id){
+                if (io && io->id_ == id) {
                     io->close();
                 }
             }, HttpServer::default_keep_alive, 1);
