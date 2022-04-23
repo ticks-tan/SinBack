@@ -13,71 +13,37 @@ using namespace SinBack;
 
 Module::TcpServer::TcpServer() = default;
 
-Module::TcpServer::~TcpServer() {
-    this->channels_.clear();
-}
-
-Module::TcpServer::ChannelPtr
-Module::TcpServer::addChannel(const std::weak_ptr<Core::IOEvent>& ev) {
-    std::shared_ptr<Core::IOEvent> io = ev.lock();
-    UInt id = io->id_;
-    auto channel = std::make_shared<Core::Channel>(io);
-    std::unique_lock<std::mutex> lock(mutex_);
-    this->channels_[id] = channel;
-    return this->channels_[id];
-}
-
-void
-Module::TcpServer::removeChannel(const TcpServer::ChannelPtr &channel)
-{
-    auto id = channel->getId();
-    std::unique_lock<std::mutex> lock(this->mutex_);
-    this->channels_.erase(id);
-}
-
-Module::TcpServer::ChannelPtr
-Module::TcpServer::getChannel(SinBack::Base::socket_t id) {
-    auto it = this->channels_.find(id);
-    std::unique_lock<std::mutex> lock(this->mutex_);
-    return (it != this->channels_.end()) ? it->second : nullptr;
-}
+Module::TcpServer::~TcpServer() = default;
 
 bool
 Module::TcpServer::onNewClient(Core::IOEvent& io)
 {
-    auto* server = static_cast<TcpServer*>(io.context_);
-    if (server) {
-        const ChannelPtr channel = server->addChannel(io.shared_from_this());
-
-        if (server->onNewClient_) {
-            server->onNewClient_(channel);
-        }
-        channel->read();
-        return true;
+  auto* server = this;
+  auto channel = new Core::Channel(io.shared_from_this());
+  if (!io.context_){
+    io.context_ = channel;
+    if (server->onNewClient_){
+          server->onNewClient_(channel);
     }
-    return false;
+  }
+  io.read();
+  return true;
 }
 
 bool Module::TcpServer::onNewMessage(Core::IOEvent &io, const String &read_msg)
 {
-    auto* server = static_cast<TcpServer*>(io.context_);
-    if (server) {
-        auto channel = server->getChannel(io.fd_);
-        if (channel && server->onMessage_) {
-            server->onMessage_(channel, read_msg);
-        }
+    auto* channel = static_cast<ChannelPtr>(io.context_);
+    if (channel && this->onMessage_) {
+        this->onMessage_(channel, read_msg);
         return true;
     }
     return false;
 }
 
 bool Module::TcpServer::onMessageError(Core::IOEvent &io, const String &err_msg) {
-    auto* server = static_cast<TcpServer*>(io.context_);
-    if (server) {
-        auto channel = server->getChannel(io.fd_);
-        if (channel && server->onErrorMessage_) {
-            server->onErrorMessage_(channel, err_msg);
-        }
+    auto* channel = static_cast<ChannelPtr>(io.context_);
+    if (channel && this->onErrorMessage_) {
+        this->onErrorMessage_(channel, err_msg);
         return true;
     }
     return false;
@@ -85,12 +51,9 @@ bool Module::TcpServer::onMessageError(Core::IOEvent &io, const String &err_msg)
 
 bool Module::TcpServer::onSend(Core::IOEvent &io, Size_t write_len)
 {
-    auto* server = static_cast<TcpServer*>(io.context_);
-    if (server) {
-        auto channel = server->getChannel(io.fd_);
-        if (channel && server->onWrite_) {
-            server->onWrite_(channel, write_len);
-        }
+    auto* channel = static_cast<ChannelPtr>(io.context_);
+    if (channel && this->onWrite_) {
+        this->onWrite_(channel, write_len);
         return true;
     }
     return false;
@@ -98,12 +61,9 @@ bool Module::TcpServer::onSend(Core::IOEvent &io, Size_t write_len)
 
 bool Module::TcpServer::onSendError(Core::IOEvent &io, const String &err_msg)
 {
-    auto* server = static_cast<TcpServer*>(io.context_);
-    if (server) {
-        auto channel = server->getChannel(io.fd_);
-        if (channel && server->onErrorWrite_) {
-            server->onErrorWrite_(channel, err_msg);
-        }
+    auto* channel = static_cast<ChannelPtr>(io.context_);
+    if (channel && this->onErrorWrite_) {
+        this->onErrorWrite_(channel, err_msg);
         return true;
     }
     return false;
@@ -111,13 +71,13 @@ bool Module::TcpServer::onSendError(Core::IOEvent &io, const String &err_msg)
 
 bool Module::TcpServer::onDisconnect(Core::IOEvent &io)
 {
-    auto* server = static_cast<TcpServer*>(io.context_);
-    if (server) {
-        auto channel = server->getChannel(io.fd_);
-        if (channel && server->onClose_) {
-            server->onClose_(channel);
+    auto* channel = static_cast<ChannelPtr>(io.context_);
+    if (channel) {
+        if (this->onClose_){
+            this->onClose_(channel);
         }
-        server->removeChannel(channel);
+        delete channel;
+        io.context_ = nullptr;
         return true;
     }
     return false;

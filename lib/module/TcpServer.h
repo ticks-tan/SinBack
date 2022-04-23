@@ -19,8 +19,8 @@ namespace SinBack
         {
         public:
             using string_type = SinBack::String;
-            using ChannelPtr = std::shared_ptr<SinBack::Core::Channel>;
-        public:
+            using ChannelPtr = Core::Channel*;
+         public:
             // 新客户端连接时调用
             bool onNewClient(Core::IOEvent &io) override;
             // 新消息回调
@@ -34,6 +34,7 @@ namespace SinBack
             // 客户端关闭
             bool onDisconnect(Core::IOEvent& ev) override;
 
+         public:
             void setOnNewClient(std::function<void(const ChannelPtr&)>&& func){
                 this->onNewClient_ = std::move(func);
             }
@@ -52,23 +53,10 @@ namespace SinBack
             void setDisconnect(std::function<void(const ChannelPtr&)>&& func){
                 this->onClose_ = std::move(func);
             }
+          TcpServer();
+          ~TcpServer();
 
         private:
-            TcpServer();
-            ~TcpServer();
-            // 添加channel
-            ChannelPtr addChannel(const std::weak_ptr<Core::IOEvent>& io);
-            // 移除channel
-            void removeChannel(const ChannelPtr& channel);
-            // 获取channel
-            ChannelPtr getChannel(Base::socket_t id);
-
-        private:
-            // 存储Channel
-            std::unordered_map<UInt, ChannelPtr> channels_;
-            // 互斥锁
-            std::mutex mutex_;
-
             // 新客户端连接
             std::function<void(const ChannelPtr&)> onNewClient_;
             // 有新消息
