@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     app.setting().listenPort = 2022;
     app.setting().logPath = "./SinBack";
     // 启用 SSL
-    app.setting().enableSSL = false;
+    app.setting().enableSSL = true;
     // 指定证书和私钥
     app.setting().certPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2.pem";
     app.setting().keyPath = "/run/media/ticks/BigDisk/Codes/Clion/Me/SinBack/build/cert/localhost+2-key.pem";

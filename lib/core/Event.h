@@ -184,7 +184,7 @@ namespace SinBack
             // 保持活跃时间
             Size_t keep_alive_ms_ = 0;
             // 读取缓冲区
-            Base::Buffer read_buf_;
+            string_type read_buf_;
             // 读取长度
             Size_t read_len_ = 0;
             // 写入缓冲队列

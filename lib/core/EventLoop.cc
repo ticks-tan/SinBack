@@ -491,7 +491,7 @@ Core::EventLoop::readIo(Base::socket_t fd, Size_t read_len,
             if (io->read_cb_){
                 std::basic_string<Char> buffer(io->read_buf_.data(), read_len);
                 io->read_cb_(io, buffer);
-                io->read_buf_.removeFront(read_len);
+                io->read_buf_.erase(0, read_len);
             }
             return io;
         }

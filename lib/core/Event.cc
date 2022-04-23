@@ -70,7 +70,6 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
     std::unique_lock<std::mutex> lock(io->write_mutex_);
 
     if (io->write_queue_.empty()){
-
         if (io->has_ssl_ && io->ssl_){
             write_len = io->ssl_->write(buf, len);
             io->last_write_time_ = Base::getTimeOfDayUs();
@@ -97,7 +96,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
             io->last_write_time_ = Base::getTimeOfDayUs();
 
             if (write_len < 0) {
-                if (errno == EINTR || errno == EAGAIN) {
+                if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
                     write_len = 0;
                     goto QUEUE_WRITE;
                 } else {
@@ -123,7 +122,7 @@ Int io_write(Core::IOEvent* io, const void *buf, Size_t len)
     }
 
     if (write_len < len){
-        SinBack::String buffer = (static_cast<const Char*>(buf) + write_len);
+        SinBack::String buffer(static_cast<const char*>(buf) + write_len, len - write_len);
         io->write_queue_.push_back(std::move(buffer));
     }
     WRITE_END:
@@ -271,7 +270,7 @@ void handle_accept(const std::weak_ptr<Core::IOEvent>& ev)
         io_ptr->context_ = io->context_;
         // OpenSSL
         if (io_ptr->has_ssl_ && !io_ptr->ssl_){
-            io_ptr->ssl_ = std::make_shared<Base::SSLSocket>(*io->loop_->getSSL(), io_ptr->fd_);
+            io_ptr->ssl_ = std::make_shared<Base::SSLSocket>(*io_ptr->loop_->getSSL(), io_ptr->fd_);
             if (io_ptr->ssl_ == nullptr || io_ptr->ssl_->code() != Base::OpenSSL::OK){
                 Log::FLogE("create SSL socket error! -- %ld", io_ptr->fd_);
                 io_ptr->close(false);
@@ -328,14 +327,14 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                     }
                     len = 0;
                 }
-                io->read_buf_.write(buf.data(), len);
+                io->read_buf_.append(buf.data(), len);
                 buf.clear();
                 read_len += len;
             }while(io->ssl_->canReadOrWrite());
 
             if (read_len > 0) {
                 handle_read_cb(io, (void *) (io->read_buf_.data()), read_len);
-                io->read_buf_.removeFront(read_len);
+                io->read_buf_.erase(0, read_len);
             }
             return;
         }else {
@@ -345,7 +344,7 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
 
             if (read_len < 0) {
                 // 信号中断，下次再读取
-                if (errno == EINTR || errno == EAGAIN) {
+                if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
                     return;
                 } else {
                     io->error_ = errno;
@@ -360,11 +359,11 @@ void handle_read(const std::weak_ptr<Core::IOEvent>& ev)
                 goto DISCONNECT;
             }
         }
-        io->read_buf_.write(buf.data(), read_len);
+        io->read_buf_.append(buf.data(), read_len);
         buf.clear();
         // 读取回调
         handle_read_cb(io, (void*)(io->read_buf_.data()), read_len);
-        io->read_buf_.removeFront(read_len);
+        io->read_buf_.erase(0, read_len);
         return;
         READ_ERROR:
         // 读取错误回调
@@ -424,7 +423,7 @@ void handle_write(const std::weak_ptr<Core::IOEvent>& ev)
 
             if (write_len < 0) {
                 // 写入失败，下次再写
-                if (errno == EINTR || errno == EAGAIN) {
+                if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
                     write_len = 0;
                     goto WRITE_END;
                 } else {
@@ -480,7 +479,7 @@ Int Core::IOEvent::read(Size_t read_len)
             if (this->read_buf_.size() == read_len){
                 this->read_buf_.clear();
             } else {
-                this->read_buf_.removeFront(read_len);
+                this->read_buf_.erase(0, read_len);
             }
         } else {
             return this->read();
@@ -506,7 +505,7 @@ Int Core::IOEvent::close(bool timer)
                 if (this->id_ == id) {
                     this->close();
                 }
-            }, 1000, 1);
+            }, 3000, 1);
             return 1;
         }
         this->closed_ = true;

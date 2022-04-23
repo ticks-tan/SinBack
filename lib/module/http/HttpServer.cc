@@ -250,8 +250,9 @@ void Http::HttpServer::sendStaticFile(Core::IOEvent &io, Http::HttpContext *cont
                                                Http::get_http_content_type(context->cache_file_->suffix()));
             context->response().content.data() = std::move(context->cache_file_->readAll());
             string_type buf = context->response().toString();
-            buf += context->response().content.data();
-            io->write(buf.c_str(), buf.length());
+
+            buf.append(context->response().content.data());
+            io->write(buf.data(), buf.size());
             // 清空数据
             context->clear();
             io->close();
