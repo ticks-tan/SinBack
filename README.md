@@ -5,7 +5,6 @@
 ---
 
 ### 外部依赖库：
- - [llhttp](https://github.com/nodejs/llhttp) : nodejs 官方 http1 请求响应解析库 。
  - [OpenSSL](https://www.openssl.org)
 
 ---

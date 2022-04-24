@@ -36,7 +36,6 @@ const String Http::HttpContext::notfound_str = "   _____  _______      _____    
 Http::HttpContext::HttpContext(Http::HttpServer* server)
     : parser_()
     , server_(server)
-    , url_params_(nullptr)
     , init_(false)
 {
     this->parser_.reset(new Http::Http1Parse(&request_, &response_));
@@ -47,17 +46,13 @@ Http::HttpContext::~HttpContext()
 {
     this->request_.clear();
     this->response_.clear();
-    if (this->url_params_ != nullptr){
-        delete url_params_;
-    }
-    this->url_params_ = nullptr;
 }
 
 Int Http::HttpContext::sendText(const string_type &text)
 {
     this->response_.status_code = 200;
     this->response_.header.setHead("Content-Type", "text/plain;charset=UTF-8");
-    this->response_.content.data().append(text);
+    this->response_.content.data() = text;
     return 1;
 }
 
@@ -79,18 +74,16 @@ Int Http::HttpContext::error() {
 Int Http::HttpContext::sendFile(const string_type &file_name)
 {
     if (!this->cache_file_->reOpen(file_name, Base::ReadOnly)){
-        goto NotFound;
+            return this->notFound();
     }
     if (this->cache_file_->exist()) {
         this->response_.status_code = 200;
         this->response_.header.setHead("Content-Type",
                                        Http::get_http_content_type(this->cache_file_->suffix()));
         this->response_.content.data() = std::move(this->cache_file_->readAll());
-    } else{
-        NotFound:
-        return this->notFound();
+        return 1;
     }
-    return 1;
+    return this->notFound();
 }
 
 bool Http::HttpContext::parseUrl()
@@ -140,11 +133,6 @@ bool Http::HttpContext::parseUrl()
     return false;
 }
 
-bool Http::HttpContext::parseBody()
-{
-    return false;
-}
-
 bool Http::HttpContext::init()
 {
     this->init_ = true;
@@ -156,5 +144,20 @@ bool Http::HttpContext::init()
         this->response_.header["Connection"] = "close";
     }
     return true;
+}
+
+
+bool Http::HttpContext::parseJson ()
+{
+    if (this->request().header["Content-Type"] == "application/json"){
+        try {
+            // 解析 Json
+            this->json() = Json::parse(this->request().content.data());
+            return true;
+        }catch (Json::exception& exp){
+                return false;
+        }
+    }
+    return false;
 }
 

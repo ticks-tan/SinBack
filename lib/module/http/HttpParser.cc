@@ -12,20 +12,20 @@
 using namespace SinBack;
 using namespace SinBack::Module;
 
-Int on_url(llhttp_t* parser, const Char* data, Size_t len);
-Int on_status(llhttp_t* parser, const Char* data, Size_t len);
-Int on_header_field(llhttp_t* parser, const Char* data, Size_t len);
-Int on_header_value(llhttp_t* parser, const Char* data, Size_t len);
-Int on_body(llhttp_t* parser, const Char* data, Size_t len);
+Int on_url(http_parser* parser, const Char* data, Size_t len);
+Int on_status(http_parser* parser, const Char* data, Size_t len);
+Int on_header_field(http_parser* parser, const Char* data, Size_t len);
+Int on_header_value(http_parser* parser, const Char* data, Size_t len);
+Int on_body(http_parser* parser, const Char* data, Size_t len);
 
-Int on_message_begin(llhttp_t* parse);
-Int on_headers_complete(llhttp_t* parser);
-Int on_message_complete(llhttp_t* parser);
-Int on_chunk_header(llhttp_t* parser);
-Int on_chunk_complete(llhttp_t* parser);
+Int on_message_begin(http_parser* parse);
+Int on_headers_complete(http_parser* parser);
+Int on_message_complete(http_parser* parser);
+Int on_chunk_header(http_parser* parser);
+Int on_chunk_complete(http_parser* parser);
 
 
-Int on_url(llhttp_t* parser, const Char* data, Size_t len)
+Int on_url(http_parser* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -38,7 +38,8 @@ Int on_url(llhttp_t* parser, const Char* data, Size_t len)
     }
     return 1;
 }
-Int on_status(llhttp_t* parser, const Char* data, Size_t len)
+
+Int on_status(http_parser* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -47,24 +48,17 @@ Int on_status(llhttp_t* parser, const Char* data, Size_t len)
     }
     return 1;
 }
-Int on_header_field(llhttp_t* parser, const Char* data, Size_t len)
+Int on_header_field(http_parser* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
         hp->header_field.append(data, len);
-        /*
-        if (!hp->header_field.empty() && !hp->header_value.empty()){
-            hp->request_->header.setHead(hp->header_field, hp->header_value);
-            hp->header_field.clear();
-            hp->header_value.clear();
-        }
-         */
         hp->set_status(Http::HP_PARSE_HEADER_FIELD);
         return 0;
     }
     return 1;
 }
-Int on_header_value(llhttp_t* parser, const Char* data, Size_t len)
+Int on_header_value(http_parser* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -79,7 +73,7 @@ Int on_header_value(llhttp_t* parser, const Char* data, Size_t len)
     }
     return 1;
 }
-Int on_body(llhttp_t* parser, const Char* data, Size_t len)
+Int on_body(http_parser* parser, const Char* data, Size_t len)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -90,7 +84,7 @@ Int on_body(llhttp_t* parser, const Char* data, Size_t len)
     return 1;
 }
 
-Int on_message_begin(llhttp_t* parser)
+Int on_message_begin(http_parser* parser)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -99,7 +93,7 @@ Int on_message_begin(llhttp_t* parser)
     }
     return 1;
 }
-Int on_headers_complete(llhttp_t* parser)
+Int on_headers_complete(http_parser* parser)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -108,7 +102,7 @@ Int on_headers_complete(llhttp_t* parser)
     }
     return 1;
 }
-Int on_message_complete(llhttp_t* parser)
+Int on_message_complete(http_parser* parser)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -118,7 +112,7 @@ Int on_message_complete(llhttp_t* parser)
     }
     return 1;
 }
-Int on_chunk_header(llhttp_t* parser)
+Int on_chunk_header(http_parser* parser)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -127,7 +121,7 @@ Int on_chunk_header(llhttp_t* parser)
     }
     return 1;
 }
-Int on_chunk_complete(llhttp_t* parser)
+Int on_chunk_complete(http_parser* parser)
 {
     auto* hp = (Http::Http1Parse*)(parser->data);
     if (hp){
@@ -145,8 +139,8 @@ Http::Http1Parse::Http1Parse(HttpRequest* req, HttpResponse* resp)
     , request_(req)
     , response_(resp)
 {
-    llhttp_settings_init(&this->setting_);
-    llhttp_init(&this->parser_, HTTP_REQUEST, &this->setting_);
+    http_parser_settings_init(&this->setting_);
+    http_parser_init(&this->parser_, HTTP_REQUEST);
     this->parser_.data = this;
 
     this->setting_.on_message_begin = on_message_begin;
@@ -167,9 +161,13 @@ Http::Http1Parse::~Http1Parse()
     this->header_field.clear();
 }
 
-Int Http::Http1Parse::parseData(const Char* data, Size_t len)
+bool Http::Http1Parse::parseData(const Char* data, Size_t len)
 {
-    return llhttp_execute(&this->parser_, data, len);
+    auto parse_len = http_parser_execute(&this->parser_, &this->setting_, data, len);
+    if (HTTP_PARSER_ERRNO(&this->parser_) == HPE_OK){
+            return true;
+    }
+    return false;
 }
 
 Int Http::Http1Parse::getStatus()
@@ -198,5 +196,5 @@ Int Http::Http1Parse::initResponse() {
 
 void Http::Http1Parse::resetParser()
 {
-    llhttp_reset(&this->parser_);
+    std::memset(&this->parser_, 0, sizeof(this->parser_));
 }

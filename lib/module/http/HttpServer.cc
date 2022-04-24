@@ -66,9 +66,9 @@ bool Http::HttpServer::onNewMessage(Core::IOEvent& io, const String& read_msg)
         // 取出 Http Parser 解析 Http 数据
         auto* parser = http_context->parser();
         // 解析数据
-        Int ret = parser->parseData(read_msg.c_str(), read_msg.length());
+        bool ret = parser->parseData(read_msg.c_str(), read_msg.size());
         // 解析失败，关闭连接
-        if (ret != HPE_OK){
+        if (!ret){
             io.close(false);
             return true;
         }

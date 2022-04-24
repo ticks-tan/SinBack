@@ -9,7 +9,7 @@
 #define SINBACK_HTTPPARSER_H
 
 #include <memory>
-#include <llhttp.h>
+#include "http_parser.h"
 #include "HttpMessage.h"
 
 namespace SinBack
@@ -38,7 +38,7 @@ namespace SinBack
                 virtual ~HttpParser() = default;
 
                 // 解析数据
-                virtual Int parseData(const Char *data, Size_t len) = 0;
+                virtual bool parseData(const Char *data, Size_t len) = 0;
 
                 // 重置解析器
                 virtual void resetParser() = 0;
@@ -67,7 +67,7 @@ namespace SinBack
 
                 ~Http1Parse() override;
 
-                Int parseData(const Char *data, Size_t len) override;
+                bool parseData(const Char *data, Size_t len) override;
 
                 void resetParser() override;
 
@@ -92,9 +92,9 @@ namespace SinBack
                 String header_field;
                 String header_value;
             private:
-                llhttp_t parser_;
+                http_parser parser_;
                 HttpParserStatus status_;
-                llhttp_settings_t setting_;
+                http_parser_settings setting_;
             };
         }
     }

@@ -10,6 +10,7 @@
 
 #include "base/File.h"
 #include "HttpParser.h"
+#include "Json.h"
 
 namespace SinBack
 {
@@ -19,6 +20,7 @@ namespace SinBack
 
             class HttpContext {
             public:
+                using Json = nlohmann::json;
                 using string_type = SinBack::String;
             public:
                 static const string_type notfound_str;
@@ -37,10 +39,20 @@ namespace SinBack
                 Int error();
                 // 解析Url
                 bool parseUrl();
-                // 解析请求数据
-                bool parseBody();
                 // 初始化
                 bool init();
+
+                // 解析 Json
+                bool parseJson();
+
+                // 获取Json
+                Json& json(){
+                    if (!this->json_){
+                        this->json_ = std::make_shared<Json>();
+                    }
+                    return *this->json_;
+                }
+
                 bool isInit() const {
                     return this->init_;
                 }
@@ -84,10 +96,10 @@ namespace SinBack
                     }
                     this->init_ = false;
                 }
-
+                // 获取 URL 请求参数
                 std::unordered_map<string_type, string_type> &urlParams() {
                     if (this->url_params_ == nullptr) {
-                        this->url_params_ = new std::unordered_map<string_type, string_type>;
+                        this->url_params_ = std::make_shared<std::unordered_map<string_type, string_type>>();
                     }
                     return *this->url_params_;
                 }
@@ -96,6 +108,8 @@ namespace SinBack
                 // Cache File
                 std::shared_ptr<Base::File> cache_file_;
             private:
+                // Json
+                std::shared_ptr<Json> json_;
                 // Http解析器
                 std::shared_ptr<HttpParser> parser_;
                 // Http请求
@@ -105,7 +119,7 @@ namespace SinBack
                 // 对应 HttpServer 指针
                 HttpServer *server_;
                 // URL 解析结果
-                std::unordered_map<string_type, string_type> *url_params_;
+                std::shared_ptr<std::unordered_map<string_type, string_type>> url_params_;
                 // 是否初始化
                 bool init_;
             };

@@ -71,9 +71,9 @@ if (OPENSSL_FOUND)
     message(STATUS "OpenSSL Found")
 endif()
 
-target_link_libraries(SinBack_Shared pthread llhttp OpenSSL::Crypto OpenSSL::SSL)
-target_link_libraries(SinBack_Static pthread llhttp OpenSSL::Crypto OpenSSL::SSL)
-target_link_libraries(SinBack_Test pthread llhttp OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(SinBack_Shared pthread OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(SinBack_Static pthread OpenSSL::Crypto OpenSSL::SSL)
+target_link_libraries(SinBack_Test pthread OpenSSL::Crypto OpenSSL::SSL)
 
 file(GLOB_RECURSE INSTALL_BASE_HEADER ${PROJECT_SOURCE_DIR}/lib/base/*.h)
 file(GLOB_RECURSE INSTALL_CORE_HEADER
