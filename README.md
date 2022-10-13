@@ -1,10 +1,10 @@
 # SinBack
 
-一个参考[libhv](https://github.com\/ithewei/libhv)，基于**C++11**的**Linux服务端**网络库，事件驱动IO， 欢迎使用。
+一个参考[libhv](https://github.com\/ithewei/libhv)，基于**C++11**的**Linux服务端**网络库，事件驱动IO。
 
 ---
 
-### 外部依赖库：
+### 外部依赖库(https -- 目前存在问题，未解决)：
  - [OpenSSL](https://www.openssl.org)
 
 ---
@@ -13,13 +13,6 @@
 
 Http(s)服务
 ```cpp
-/**
-FileName:   main.cc
-CreateDate: 20/1/2022
-Author:     ticks
-Email:      2938384958@qq.com
-Des:        
-*/
 #include "Application.h"
 #include "base/System.h"
 #include "module/http/HttpServer.h"
@@ -87,4 +80,4 @@ TCP服务：
 
 ---
 
-代码问题请发邮件：**tw2938384958@gmail.com** 、 **2938384958@qq.com**
+代码问题请 [联系邮箱](ticks.cc@gmail.com)
