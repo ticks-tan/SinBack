@@ -1,10 +1,10 @@
 # SinBack
 
-一个参考[libhv](https://github.com\/ithewei/libhv)，基于**C++11**的**Linux服务端**网络库，事件驱动IO。
+基于**C++11**实现的的**Linux服务端**网络库，事件驱动IO。
 
 ---
 
-### 外部依赖库(https -- 目前存在问题，未解决)：
+### 外部依赖库(https -- 存在一点问题，未解决)：
  - [OpenSSL](https://www.openssl.org)
 
 ---
